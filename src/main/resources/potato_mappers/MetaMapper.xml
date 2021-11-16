@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.thecover.potato.dao.MetaDao">
+    <select id="selectByNameAndNeId" resultType="cn.thecover.potato.model.po.Meta">
+        select `id`,`name` from `meta` where `name`=#{name}
+        <if test="id != null">
+            and id != #{id}
+        </if>
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id"
+            parameterType="cn.thecover.potato.model.po.Meta">
+        insert into `meta`(`name`,title,`version`,`create_time`) values(#{name},#{title},#{version},#{createTime})
+    </insert>
+
+    <select id="selectCount" resultType="java.lang.Long">
+        select count(*) from `meta` where 1=1
+        <if test="name != null">
+            and `name` like concat('%',#{name},'%')
+        </if>
+    </select>
+
+    <select id="selectList" resultType="cn.thecover.potato.model.po.Meta">
+        select id, `name`, `version`, create_time createTime, update_time updateTime, title from `meta`
+        where 1=1
+        <if test="name != null">
+            and `name` like concat('%',#{name},'%')
+        </if>
+        limit #{offset},#{pageSize}
+    </select>
+
+    <delete id="deleteById">
+        delete from `meta` where id=#{id}
+    </delete>
+
+    <select id="selectVersionById" resultType="java.lang.Integer">
+        select `version` from `meta` where id=#{id}
+    </select>
+
+    <update id="update" parameterType="cn.thecover.potato.model.po.Meta">
+        update `meta` set update_time=#{updateTime},`version`=`version`+1
+        <if test="name != null">
+            ,`name`=#{name}
+        </if>
+        <if test="title != null">
+            ,`title`=#{title}
+        </if>
+        <if test="db != null">
+            ,`db`=#{db}
+        </if>
+        <if test="table != null">
+            ,`table`=#{table}
+        </if>
+        <if test="search != null">
+            ,`search`=#{search}
+        </if>
+        <if test="operate != null">
+            ,`operate`=#{operate}
+        </if>
+        where id=#{id} and `version`=#{version}
+    </update>
+
+    <select id="selectById" resultType="cn.thecover.potato.model.po.Meta">
+        select * from `meta` where id=#{id}
+    </select>
+</mapper>

@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
+    <script src="${contextPath}/static/vue.min.js"></script>
+    <script src="${contextPath}/static/element-ui/index.js"></script>
+    <script src="${contextPath}/static/axios.min.js"></script>
+    <script src="${contextPath}/static/main.js"></script>
+    <style>
+        .el-dropdown-link {
+            cursor: pointer;
+            color: #409eff;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-loading="loading">
+    <div style="margin-bottom: 4px;">
+        <el-button icon="el-icon-plus" type="primary" size="medium" @click="showAdd">新增</el-button>
+        <el-table
+                :data="list"
+                border
+                style="width: 100%;margin-top: 10px;">
+            <el-table-column
+                    prop="name"
+                    label="名称">
+            </el-table-column>
+            <el-table-column
+                    prop="title"
+                    label="页面标题">
+            </el-table-column>
+            <el-table-column
+                    prop="version"
+                    label="版本"
+                    width="100">
+            </el-table-column>
+            <el-table-column
+                    prop="create_time"
+                    label="创建时间">
+            </el-table-column>
+            <el-table-column
+                    prop="update_time"
+                    label="最近修改时间">
+            </el-table-column>
+            <el-table-column
+                    fixed="right"
+                    label="操作"
+                    width="390">
+                <template slot-scope="props">
+                    <el-button type="text" @click="showGenerate(props.row)">代码生成</el-button>
+                    <el-divider direction="vertical"></el-divider>
+                    <el-button v-if="!props.row.url" type="text" @click="boot(props.row)">装载</el-button>
+                    <el-button v-if="props.row.url" type="text" @click="unBoot(props.row)">卸载</el-button>
+                    <el-divider v-if="props.row.url" direction="vertical"></el-divider>
+                    <el-link v-if="props.row.url" :href="props.row.url" target="_blank">查看</el-link>
+                    <el-divider direction="vertical"></el-divider>
+                    <el-button v-if="props.row.url" type="text" @click="showCode(props.row)">已装载的代码</el-button>
+                    <el-divider v-if="props.row.url" direction="vertical"></el-divider>
+                    <el-dropdown @command="handleCommand" trigger="click">
+                        <span class="el-dropdown-link">编辑<i class="el-icon-arrow-down el-icon--right"></i></span>
+                        <el-dropdown-menu slot="dropdown">
+                            <el-dropdown-item icon="el-icon-setting" :command="{'row':props.row,'t':'basic'}">基础配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-coin" :command="{'row':props.row,'t':'db'}">数据库配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-s-grid" :command="{'row':props.row,'t':'table'}">表格配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-search" :command="{'row':props.row,'t':'search'}">搜索表单配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-tickets" :command="{'row':props.row,'t':'operate'}">操作表单配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-delete" :command="{'row':props.row,'t':'delete'}">删除</el-dropdown-item>
+                        </el-dropdown-menu>
+                    </el-dropdown>
+                </template>
+            </el-table-column>
+        </el-table>
+        <div style="text-align: right;">
+            <el-pagination
+                    small
+                    background
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="totalCount"
+                    :page-size="pageSize"
+                    :current-page="page"
+                    @current-change="currentChange"
+                    @size-change="sizeChange">
+            </el-pagination>
+        </div>
+    </div>
+
+    <el-dialog
+            :title="dialogTitle"
+            :visible.sync="dialogVisible"
+            width="50%"
+            :before-close="handleClose">
+        <el-form :model="form" :rules="rules" ref="form" size="small" v-loading="loading">
+            <el-form-item label="名称" prop="name" :label-width="formLabelWidth">
+                <el-input v-model.trim="form.name" maxlength="20"></el-input>
+            </el-form-item>
+            <el-form-item label="页面标题" prop="title" :label-width="formLabelWidth">
+                <el-input v-model.trim="form.title" maxlength="20"></el-input>
+            </el-form-item>
+            <el-form-item style="text-align: right">
+                <el-button @click="handleClose" size="small" :disabled="loading">取 消</el-button>
+                <el-button type="primary" @click="add" size="small" :disabled="loading">确 定</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+
+    <el-dialog
+            title="代码生成"
+            :visible.sync="generate.visible"
+            width="50%"
+            :before-close="generateClose">
+        <el-form :model="generate" ref="generateForm" size="small" v-loading="loading">
+            <el-form-item prop="packageName" label="包名"
+                          :rules="[{required: true, message: '请填写正确的包名', validator: validatePackageName, trigger: 'change', javas: javas}]">
+                <el-input v-model="generate.packageName" placeholder="请填写基础包名" clearable/>
+            </el-form-item>
+            <el-table :data="generate.form"
+                      border
+                      style="width: 100%;margin-top: 3px;margin-bottom: 3px;">
+                <el-table-column
+                        prop="table"
+                        label="表名">
+                </el-table-column>
+                <el-table-column
+                        label="类名">
+                    <template slot-scope="props">
+                        <el-form-item :prop="'form.' + props.$index + '.clazz'"
+                                      :rules="[{required: true, message: '请填写正确的Java类名', validator: validateClazz, trigger: 'change', javas: javas}]">
+                            <el-input v-model="props.row.clazz" placeholder="请填写Java类名" clearable/>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="generateClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmGenerate" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog
+            title="已加载代码"
+            :visible.sync="bootCode.visible"
+            width="80%"
+            :before-close="bootCodeClose">
+        <el-row>
+            <el-col :span="6">
+                <el-tree :data="bootCode.labels" @node-click="handleNodeClick"></el-tree>
+            </el-col>
+            <el-col :span="18">
+                <el-input type="textarea" readOnly autosize v-model="code"></el-input>
+            </el-col>
+        </el-row>
+    </el-dialog>
+</div>
+</body>
+<script>
+    window.contextPath = '${contextPath}'
+    function validateClazz(rule, value, callback) {
+        if (typeof value == 'undefined' || value == null || value == '') {
+            if (rule.required) {
+                callback(new Error(rule.message));
+            } else {
+                callback();
+            }
+        } else {
+            if((/^[A-Z][a-zA-Z]*$/.test(value))){
+                if (rule.javas && rule.javas.length > 0) {
+                    if (rule.javas.indexOf(value) > -1) {
+                        callback(new Error(rule.message));
+                    } else {
+                        callback();
+                    }
+                } else {
+                    callback();
+                }
+            } else {
+                callback(new Error(rule.message));
+            }
+        }
+    }
+    function validatePackageName(rule, value, callback) {
+        if (typeof value == 'undefined' || value == null || value == '') {
+            if (rule.required) {
+                callback(new Error(rule.message));
+            } else {
+                callback();
+            }
+        } else {
+            if((/^[a-z_][a-z0-9_]*(\.[a-z_][a-z0-9_]*)*$/.test(value))){
+                if (rule.javas && rule.javas.length > 0) {
+                    let ss = value.split(".");
+                    for (let i = 0;i < ss.length; i ++) {
+                        if (rule.javas.indexOf(ss[i]) > -1) {
+                            callback(new Error(rule.message));
+                            return
+                        } else {
+                            callback();
+                            return
+                        }
+                    }
+                } else {
+                    callback();
+                }
+            } else {
+                callback(new Error(rule.message));
+            }
+        }
+    }
+    new Vue({
+        name: 'index',
+        el: '#app',
+        data() {
+            return {
+                loading: false,
+                formLabelWidth: '80px',
+                active: 'meta',
+                list: [],
+                totalCount: 0,
+                pageSize: 10,
+                page: 1,
+                dialogTitle: '',
+                dialogVisible: false,
+                form: {},
+                rules: {
+                    name: [{required : true, message: '请填写配置名称', trigger: 'change' }],
+                    title: [{required : true, message: '请填写页面标题', trigger: 'change' }]
+                },
+                generate: {
+                    visible: false,
+                    form: [],
+                    packageName: null
+                },
+                javas: [],
+                bootCode: {
+                    visible: false,
+                    labels: []
+                },
+                code: ''
+            }
+        },
+        methods: {
+            handleNodeClick(data) {
+                this.code = data.content
+                console.log(this.code)
+            },
+            bootCodeClose() {
+                this.bootCode = {
+                    visible: false,
+                    labels: []
+                }
+                this.code = ''
+            },
+            showCode(row) {
+                this.loading = true
+                axios.get(window.contextPath + '/meta/getBootCode',{
+                    params: {
+                        id: row.id
+                    }
+                }).then(res => {
+                    if (res.data.status != 0) {
+                        this.loading = false
+                        this.$message.error(res.data.msg);
+                    }
+                    else {
+                        this.loading = false
+                        this.bootCode = {
+                            visible: true,
+                            labels: res.data.content.labels
+                        }
+                    }
+                }).catch(res => {
+                    console.error(res)
+                    this.loading = false
+                })
+            },
+            handleClose() {
+                this.form = {}
+                this.$refs.form.resetFields();
+                this.dialogVisible = false
+            },
+            generateClose() {
+                this.$nextTick(() => {
+                    this.$refs.generateForm.resetFields();
+                })
+                this.generate = {
+                    visible: false,
+                    form: [],
+                    packageName: null
+                }
+            },
+            showGenerate(row) {
+                this.loading = true;
+                axios.get('${contextPath}/metaDb/info',{
+                    params: {
+                        id: row.id
+                    }
+                }).then(res => {
+                    if (res.data.status != 0) {
+                        this.loading = false
+                        this.$message.error(res.data.msg);
+                    }
+                    else {
+                        this.loading = false
+                        this.generate = {
+                            visible: true,
+                            form: [],
+                            id: row.id,
+                            packageName: null
+                        }
+                        if (res.data.content.dbConf.table) {
+                            this.generate.form.push({
+                                table: res.data.content.dbConf.table.name
+                            })
+                        }
+                        if (res.data.content.dbConf.associationTables) {
+                            res.data.content.dbConf.associationTables.forEach(t => {
+                                this.generate.form.push({
+                                    table: t.name
+                                })
+                            })
+                        }
+                        if (res.data.content.dbConf.followTables) {
+                            res.data.content.dbConf.followTables.forEach(t => {
+                                this.generate.form.push({
+                                    table: t.name
+                                })
+                            })
+                        }
+                    }
+                }).catch(res => {
+                    console.error(res)
+                    this.loading = false
+                })
+            },
+            confirmGenerate() {
+                this.$refs['generateForm'].validate((valid) => {
+                    if (valid) {
+                        this.loading = true;
+                        axios({
+                            url: window.contextPath + '/meta/generate',
+                            method: 'post',
+                            responseType: 'blob',
+                            data: {
+                                id: this.generate.id,
+                                packageName: this.generate.packageName,
+                                entityNames: this.generate.form
+                            }
+                        }).then(res => {
+                            if (res.data.type == 'application/json') {
+                                let that  = this
+                                let reader = new FileReader();
+                                reader.onload = function(event){
+                                    let content = JSON.parse(reader.result)
+                                    that.$message.error(content.msg);
+                                    that.loading = false;
+                                };
+                                reader.readAsText(res.data);
+                                return
+                            } else {
+                                const filename = res.headers["content-disposition"];
+                                const blob = new Blob([res.data]);
+                                let downloadElement = document.createElement("a");
+                                let href = window.URL.createObjectURL(blob);
+                                downloadElement.href = href;
+                                downloadElement.download = decodeURIComponent(filename.split("filename=")[1]);
+                                document.body.appendChild(downloadElement);
+                                downloadElement.click();
+                                document.body.removeChild(downloadElement);
+                                window.URL.revokeObjectURL(href);
+                                this.loading = false;
+                                this.generateClose();
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    }
+                });
+            },
+            unBoot(row) {
+                this.loading = true;
+                axios.get(window.contextPath + '/meta/unBoot',{
+                    params: {
+                        id: row.id
+                    }
+                }).then(res => {
+                    this.loading = false;
+                    if (res.data.status != 0) {
+                        this.$message.error(res.data.msg);
+                    }
+                    else {
+                        this.getList();
+                    }
+                }).catch(res => {
+                    console.error(res)
+                    this.loading = false;
+                })
+            },
+            boot(row) {
+                this.loading = true;
+                axios.get(window.contextPath + '/meta/boot',{
+                    params: {
+                        id: row.id
+                    }
+                }).then(res => {
+                    this.loading = false;
+                    if (res.data.status != 0) {
+                        this.$message.error(res.data.msg);
+                    }
+                    else {
+                        // window.open(res.data.content.url, '_blank')
+                        this.getList();
+                    }
+                }).catch(res => {
+                    console.error(res)
+                    this.loading = false;
+                })
+            },
+            add() {
+                this.loading = true;
+                this.$refs.form.validate((valid) => {
+                    if (valid) {
+                        let url = window.contextPath + '/meta/update';
+                        if ( this.dialogTitle == '新增') {
+                            url = window.contextPath + '/meta/add'
+                        }
+                        axios.post(url, this.form).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                                this.loading = false;
+                            }
+                            else {
+                                this.handleClose()
+                                this.loading = false;
+                                this.getList()
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    } else {
+                        this.loading = false;
+                        return false;
+                    }
+                });
+            },
+            showAdd() {
+                this.dialogTitle = '新增'
+                this.dialogVisible = true
+            },
+            sizeChange(size) {
+                this.pageSize = size;
+                this.page = 1;
+                this.getList()
+            },
+            currentChange(currentPage) {
+                this.page = currentPage;
+                this.getList()
+            },
+            getList() {
+                let name = null;
+                if (this.searchName && this.searchName != '') {
+                    name = this.searchName
+                }
+                this.loading = true;
+                axios.get(window.contextPath + '/meta/list',{
+                    params: {
+                        page: this.page,
+                        page_size: this.pageSize,
+                        name: name
+                    }
+                }).then(res => {
+                    if (res.data.status != 0) {
+                        this.$message.error(res.data.msg);
+                    }
+                    else {
+                        this.list = res.data.content.list;
+                        this.totalCount = res.data.content.totalCount;
+                    }
+                    this.loading = false;
+                }).catch(res => {
+                    console.error(res)
+                    this.loading = false;
+                })
+            },
+            handleCommand(command) {
+                if (command.t == 'db') {
+                    window.location.href = window.contextPath + '/meta/db' + command.row.id + '.html'
+                } else if (command.t == 'delete') {
+                    this.$confirm('确定要删除?', '提示', {
+                        confirmButtonText: '确定',
+                        cancelButtonText: '取消',
+                        type: 'warning'
+                    }).then(() => {
+                        this.loading = true;
+                        axios.get(window.contextPath + '/meta/delete',{
+                            params: {
+                                id: command.row.id
+                            }
+                        }).then(res => {
+                            this.loading = false;
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                            }
+                            else {
+                                this.getList()
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    }).catch(() => {
+                    });
+                } else if (command.t == 'table') {
+                    window.location.href = window.contextPath + '/meta/table' + command.row.id + '.html'
+                } else if (command.t == 'basic') {
+                    this.form = JSON.parse(JSON.stringify(command.row))
+                    this.dialogTitle = '基础配置'
+                    this.dialogVisible = true
+                } else if (command.t == 'search') {
+                    window.location.href = window.contextPath + '/meta/search' + command.row.id + '.html'
+                } else if (command.t == 'operate') {
+                    window.location.href = window.contextPath + '/meta/operate' + command.row.id + '.html'
+                }
+            }
+        },
+        created: function () {
+            axios.get(window.contextPath + '/setting/java',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.javas = res.data.content.list
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+            this.getList()
+        }
+    })
+</script>
+</html>

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="cn.thecover.potato.dao.BootDao">
+    <select id="selectByMetaIdAndVersion" resultType="cn.thecover.potato.model.po.Boot">
+        select id,meta_id metaId,`version`,`data`,`loaded` from `boot` where meta_id=#{metaId} and `version`=#{version}
+    </select>
+    <select id="selectListByMetaId" resultType="cn.thecover.potato.model.po.Boot">
+        select id,meta_id metaId,`version`,`data`,`loaded` from `boot` where meta_id=#{metaId}
+    </select>
+    <delete id="deleteByMetaId">
+        delete from `boot` where meta_id=#{metaId}
+    </delete>
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id" parameterType="cn.thecover.potato.model.po.Boot">
+        insert into `boot`(meta_id,`version`,`data`) values(#{metaId},#{version},#{data})
+    </insert>
+</mapper>
