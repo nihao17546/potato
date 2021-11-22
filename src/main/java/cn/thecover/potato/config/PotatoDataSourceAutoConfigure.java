@@ -12,7 +12,6 @@ import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.ibatis.transaction.TransactionFactory;
-import org.apache.ibatis.transaction.jdbc.JdbcTransactionFactory;
 import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -115,7 +114,7 @@ public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
         return MapperBoot.registerMapper(data, MetaDao.class);
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "booBootDaotDao")
+    @Bean(name = BasicConstant.beanNamePrefix + "BootDao")
     public BootDao bootDao() {
         log.info("创建 BootDao");
         String data = getResource("BootMapper.xml");
