@@ -15,6 +15,7 @@ import cn.thecover.potato.model.po.Meta;
 import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.model.vo.ListVO;
 import cn.thecover.potato.model.vo.MetaVO;
+import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.service.IGenerateService;
 import cn.thecover.potato.service.IMetaService;
 import cn.thecover.potato.util.CommonUtil;
@@ -38,6 +39,8 @@ public class MetaServiceImpl implements IMetaService {
     private GenerateBoot generateBoot;
     @Autowired
     private IGenerateService generateService;
+    @Autowired
+    private CoreProperties coreProperties;
 
     private void checkName(Integer id, String name) {
         List<Meta> list = metaDao.selectByNameAndNeId(id, name);
@@ -46,7 +49,6 @@ public class MetaServiceImpl implements IMetaService {
         }
     }
 
-    @Transactional
     @Override
     public void add(MetaParam param) {
         checkName(null, param.getName());
@@ -56,9 +58,6 @@ public class MetaServiceImpl implements IMetaService {
         meta.setCreateTime(new Date());
         meta.setVersion(1);
         metaDao.insert(meta);
-        if (param.getName().equals("0")) {
-            System.out.println(1/0);
-        }
     }
 
     @Override
@@ -74,7 +73,7 @@ public class MetaServiceImpl implements IMetaService {
             MetaVO vo = transfer(po);
             BootResult bootResult = generateBoot.getLoaded(po.getId());
             if (bootResult != null) {
-                vo.setUrl(request.getContextPath() + bootResult.getUrl());
+                vo.setUrl(request.getContextPath() + coreProperties.getPath() + bootResult.getUrl());
                 vo.setVersion(bootResult.getVersion());
             }
             return vo;

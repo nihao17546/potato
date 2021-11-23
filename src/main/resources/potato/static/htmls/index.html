@@ -486,7 +486,7 @@
             },
             handleCommand(command) {
                 if (command.t == 'db') {
-                    window.location.href = window.contextPath + '/meta/db' + command.row.id + '.html'
+                    window.location.href = window.contextPath + '/db.html?id=' + command.row.id
                 } else if (command.t == 'delete') {
                     this.$confirm('确定要删除?', '提示', {
                         confirmButtonText: '确定',
@@ -513,15 +513,15 @@
                     }).catch(() => {
                     });
                 } else if (command.t == 'table') {
-                    window.location.href = window.contextPath + '/meta/table' + command.row.id + '.html'
+                    window.location.href = window.contextPath + '/table.html?id=' + command.row.id
                 } else if (command.t == 'basic') {
                     this.form = JSON.parse(JSON.stringify(command.row))
                     this.dialogTitle = '基础配置'
                     this.dialogVisible = true
                 } else if (command.t == 'search') {
-                    window.location.href = window.contextPath + '/meta/search' + command.row.id + '.html'
+                    window.location.href = window.contextPath + '/search.html?id=' + command.row.id
                 } else if (command.t == 'operate') {
-                    window.location.href = window.contextPath + '/meta/operate' + command.row.id + '.html'
+                    window.location.href = window.contextPath + '/operate.html?id=' + command.row.id
                 }
             }
         },

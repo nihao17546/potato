@@ -29,10 +29,10 @@ public class BootFrontExecutor extends FrontExecutor {
     @Override
     protected Map<String, Map<String, String>> analysis() {
         Map<String, Map<String, String>> result = new HashMap<>();
-        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         Map<String, String> map = new HashMap<>();
         result.put(context.getPath(), map);
-        map.put("contextPath", request.getContextPath());
+//        map.put("contextPath", request.getContextPath());
         map.put("title", context.getTitle());
 
         StringBuilder searchBuilder = new StringBuilder();
@@ -87,9 +87,8 @@ public class BootFrontExecutor extends FrontExecutor {
                 String requestUrl = BootConstant.requestPrefix + methodName;
                 methodsBuilder
                         .append("            ").append(methodName).append("() {\n")
-                        .append("                axios.get('").append(request.getContextPath()).append(requestUrl).append("',{\n")
-                        .append("                    params: {},\n")
-                        .append("                    headers: {'boot': window.boot}\n")
+                        .append("                axios.get('").append("${contextPath}").append(requestUrl).append("',{\n")
+                        .append("                    params: {}\n")
                         .append("                }).then(res => {\n")
                         .append("                    this.").append(optionsName).append(" = res.data\n")
                         .append("                }).catch(res => {\n")
@@ -203,9 +202,8 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                for(let i = 0; i < pks.length; i ++) {\n")
                     .append("                    param[pks[i]] = row[pks[i]]\n")
                     .append("                }\n")
-                    .append("                axios.get('").append(request.getContextPath()).append(context.getInfoRequest()).append("',{\n")
-                    .append("                    params: param,\n")
-                    .append("                    headers: {'boot': window.boot}\n")
+                    .append("                axios.get('").append("${contextPath}").append(context.getInfoRequest()).append("',{\n")
+                    .append("                    params: param\n")
                     .append("                }).then(res => {\n")
                     .append("                    if (res.data) {\n")
                     .append("                        this.form = res.data\n")
@@ -283,11 +281,11 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                this.loading = true;\n")
                     .append("                this.$refs[formName].validate((valid) => {\n")
                     .append("                    if (valid) {\n")
-                    .append("                        let url = '").append(request.getContextPath()).append(context.getSaveRequest()).append("';\n")
+                    .append("                        let url = '").append("${contextPath}").append(context.getSaveRequest()).append("';\n")
                     .append("                        if ( this.formTitle == '编辑') {\n")
-                    .append("                            url = '").append(request.getContextPath()).append(context.getUpdateRequest()).append("'\n")
+                    .append("                            url = '").append("${contextPath}").append(context.getUpdateRequest()).append("'\n")
                     .append("                        }\n")
-                    .append("                        axios.post(url, this.form, {headers: {'boot': window.boot}}).then(res => {\n")
+                    .append("                        axios.post(url, this.form).then(res => {\n")
                     .append("                            this.loading = false;\n")
                     .append("                            if (res.data.code != 0) {\n")
                     .append("                                this.$message.error(res.data.message);\n")
@@ -313,7 +311,7 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showFollow(props.row, ")
                         .append("'").append(follow.getForeignKeyProp()).append("'").append(", '")
                         .append(follow.getParentKeyProp(context.getPropMap())).append("', '")
-                        .append(follow.getPath()).append("', '").append(follow.getTitle()).append("')\">")
+                        .append("${potatoPath}").append(follow.getPath()).append("', '").append(follow.getTitle()).append("')\">")
                         .append(follow.getTitle())
                         .append("</el-button>\n");
             }
@@ -325,7 +323,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                let v = row[pk];\n")
                     .append("                this.followVisible = true;\n")
                     .append("                this.followTitle = title;\n")
-                    .append("                this.followPath = '" + request.getContextPath() + "' + path + '?' + fk + '=' + v;\n")
+                    .append("                this.followPath = '" + "${contextPath}" + "' + path + '?' + fk + '=' + v;\n")
                     .append("            },\n");
             methodsBuilder
                     .append("            followClose() {\n")
@@ -358,7 +356,7 @@ public class BootFrontExecutor extends FrontExecutor {
         }
 
 
-        String getListUrl = request.getContextPath() + context.getListRequest();
+        String getListUrl = "${contextPath}" + context.getListRequest();
 
         datasBuilder.append("                list: [],\n");
         datasBuilder.append("                sort: null,\n");
@@ -388,8 +386,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                        curPage: this.curPage,\n")
                     .append("                        pageSize: this.pageSize,\n")
                     .append(searchParamsBuilder.toString())
-                    .append("                    },\n")
-                    .append("                    headers: {'boot': window.boot}\n")
+                    .append("                    }\n")
                     .append("                }).then(res => {\n")
                     .append("                    this.list = res.data.list;\n")
                     .append("                    this.totalCount = res.data.count;\n")
@@ -423,8 +420,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                        sort: this.sort,\n")
                     .append("                        order: this.order,\n")
                     .append(searchParamsBuilder.toString())
-                    .append("                    },\n")
-                    .append("                    headers: {'boot': window.boot}\n")
+                    .append("                    }\n")
                     .append("                }).then(res => {\n")
                     .append("                    this.list = res.data;\n")
                     .append("                    this.loading = false;\n")

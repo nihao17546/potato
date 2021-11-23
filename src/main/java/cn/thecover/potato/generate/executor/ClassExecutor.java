@@ -8,7 +8,6 @@ import cn.thecover.potato.generate.context.JavaClassContext;
 import cn.thecover.potato.generate.method.MethodInfo;
 import cn.thecover.potato.generate.method.ParamInfo;
 import cn.thecover.potato.util.SimpleDateUtil;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
@@ -54,7 +53,7 @@ public class ClassExecutor extends Executor {
             }
 
             StringBuilder classNameSuffixBuilder = new StringBuilder();
-            if (Strings.isNotBlank(context.getExtendsClassName())) {
+            if (context.getExtendsClassName() != null && !context.getExtendsClassName().isEmpty()) {
                 String className = context.addImport(context.getExtendsClassName());
                 classNameSuffixBuilder.append("extends ").append(className).append(" ");
             }
@@ -97,7 +96,7 @@ public class ClassExecutor extends Executor {
                         fillParam(constructor.getParams(), constructorBuilder, context);
                     }
                     constructorBuilder.append(") {\n");
-                    if (Strings.isNotBlank(constructor.getContent())) {
+                    if (constructor.getContent() != null && !constructor.getContent().isEmpty()) {
                         constructorBuilder.append(constructor.getContent());
                     }
                     constructorBuilder.append("    }\n");
@@ -118,7 +117,7 @@ public class ClassExecutor extends Executor {
 
                     methodsBuilder.append("    ");
                     methodsBuilder.append(methodInfo.getDecorate()).append(" ");
-                    if (Strings.isNotBlank(methodInfo.getReturnString())) {
+                    if (methodInfo.getReturnString() != null && !methodInfo.getReturnString().isEmpty()) {
                         String str = methodInfo.getReturnString();
                         if (!CollectionUtils.isEmpty(methodInfo.getContentClass())) {
                             for (String className : methodInfo.getContentClass()) {
@@ -138,7 +137,7 @@ public class ClassExecutor extends Executor {
                         methodsBuilder.append(");");
                     } else {
                         methodsBuilder.append(") {\n");
-                        if (Strings.isNotBlank(methodInfo.getContent())) {
+                        if (methodInfo.getContent() != null && !methodInfo.getContent().isEmpty()) {
                             String str = methodInfo.getContent();
                             if (!CollectionUtils.isEmpty(methodInfo.getContentClass())) {
                                 for (String className : methodInfo.getContentClass()) {

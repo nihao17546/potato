@@ -11,6 +11,6 @@ import java.util.Map;
  */
 public interface IGenerateService {
     Map<String,String> generate(GenerateParam param, Config config);
-    BootResult boot(Integer id, Config config);
+    void boot(Integer id, Config config);
     void unBoot(Integer id);
 }

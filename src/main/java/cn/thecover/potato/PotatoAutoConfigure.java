@@ -3,7 +3,6 @@ package cn.thecover.potato;
 import cn.thecover.potato.aop.ExceptionHandlerAop;
 import cn.thecover.potato.config.BeanConfig;
 import cn.thecover.potato.config.PotatoDataSourceAutoConfigure;
-import cn.thecover.potato.generate.boot.GenerateBoot;
 import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.util.SpringContextUtil;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
@@ -17,7 +16,6 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @ConditionalOnProperty("spring.potato.path")
 @EnableConfigurationProperties({CoreProperties.class})
-@Import({PotatoDataSourceAutoConfigure.class, BeanConfig.class, SpringContextUtil.class, ExceptionHandlerAop.class,
-        GenerateBoot.class})
+@Import({PotatoDataSourceAutoConfigure.class, BeanConfig.class, SpringContextUtil.class, ExceptionHandlerAop.class})
 public class PotatoAutoConfigure {
 }

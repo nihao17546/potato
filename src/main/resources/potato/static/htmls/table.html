@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>表格配置</title>
+    <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
+    <script src="${contextPath}/static/vue.min.js"></script>
+    <script src="${contextPath}/static/element-ui/index.js"></script>
+    <script src="${contextPath}/static/axios.min.js"></script>
+    <script src="${contextPath}/static/main.js"></script>
+    <style>
+        .el-input-group__append {
+            padding-left: 5px;
+            padding-right: 5px;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-loading="loading">
+    <el-card class="box-card">
+        <div slot="header">
+            <el-link href="${contextPath}/index.html"><i class="el-icon-back"></i></el-link>
+            <el-divider direction="vertical"></el-divider>
+            <span>表格配置</span>
+            <el-button style="float: right;" type="primary" size="small" @click="submit">确认</el-button>
+        </div>
+        <el-form :model="form" :rules="rules" ref="form" :inline="true" size="small">
+            <el-tabs type="border-card">
+                <el-tab-pane label="主表">
+                    <el-form-item label="是否分页:" prop="pagination" :label-width="formLabelWidth">
+                        <el-select style="width: 100%" v-model="form.pagination">
+                            <el-option :key="true" label="是" :value="true"></el-option>
+                            <el-option :key="false" label="否" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="操作列列宽:" prop="optionColumnWidth" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                        <el-input v-model="form.optionColumnWidth" clearable>
+                            <template slot="append">px</template>
+                        </el-input>
+                    </el-form-item>
+                    <el-row :gutter="24">
+                        <el-col :span="6">
+                            <el-form-item label="排序字段:" prop="sorts" :label-width="formLabelWidth">
+                                <el-select @change="orderChange(form)" value-key="key"
+                                           v-model="form.sorts" placeholder="请选择" multiple style="width: 100%">
+                                    <el-option
+                                            v-for="(column,colIndex) in mainDbColumns"
+                                            :key="column.table+'.'+column.column.field"
+                                            :label="'表:'+column.table+',字段:'+column.column.field"
+                                            :value="{table:column.table,column:column.column.field,key:column.table+'_'+column.column.field}">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="18">
+                            <el-form-item v-for="(order,orIndex) in form.sorts"
+                                          :prop="'sorts.' + orIndex + '.sort'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          :label="order.table+'.'+order.column+':'">
+                                <el-select style="width: 100%" v-model="order.sort" placeholder="请选择排序方式">
+                                    <el-option key="DESC" label="正序" value="ASC"></el-option>
+                                    <el-option key="ASC" label="倒序" value="DESC"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="24" type="flex" align="middle" justify="center" style="margin-bottom: 5px;">
+                        <el-col :span="8" v-show="!mainExplain.ex">
+                            <el-form-item>
+                                <el-button v-show="!mainExplain.ex" size="mini" :disabled="leftSelection.length == 0" type="primary"
+                                           @click="to(mainTableColumns,{'obj':form,key:'columns'},leftSelection,'leftSelection','columns',1)">添加展示字段</el-button>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="mainExplain.ex ? 24 : 16">
+                            <el-form-item :prop="'columns'" :rules="[{required: true, message: '请选择字段',validator: validateArray, trigger: 'change'}]">
+                                <el-button size="mini" :disabled="rightSelection.length == 0" type="primary"
+                                           @click="to(form.columns,{'key':'mainTableColumns'},rightSelection,'rightSelection','columns',2)">移除展示字段</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button size="mini" @click="explain({'key':'mainExplain'})">{{mainExplain.title}}</el-button>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="24" type="flex" align="middle" justify="center">
+                        <el-col :span="8" v-show="!mainExplain.ex">
+                            <el-table :data="mainTableColumns"
+                                      ref="leftSelection"
+                                      height="390"
+                                      border size="mini"
+                                      @selection-change="selectionChange($event,{'key':'leftSelection'})"
+                                      style="width: 100%">
+                                <el-table-column label="待选字段">
+                                    <el-table-column
+                                            type="selection"
+                                            width="55">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="table"
+                                            label="表">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.field"
+                                            label="字段">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.type"
+                                            label="类型">
+                                    </el-table-column>
+                                </el-table-column>
+                            </el-table>
+                        </el-col>
+                        <el-col :span="mainExplain.ex ? 24 : 16">
+                            <el-table :data="form.columns"
+                                      ref="rightSelection"
+                                      height="390"
+                                      border size="mini"
+                                      @selection-change="selectionChange($event,{'key':'rightSelection'})"
+                                      style="width: 100%">
+                                <el-table-column label="表格展示字段">
+                                    <el-table-column
+                                            type="selection"
+                                            width="55">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="table"
+                                            label="表">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.field"
+                                            label="字段">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.type"
+                                            label="类型">
+                                    </el-table-column>
+                                    <el-table-column
+                                            width="110"
+                                            label="位置">
+                                        <template slot-scope="props">
+                                            <el-button-group>
+                                                <el-button @click="up(props.$index,form.columns)" v-if="props.$index != 0"
+                                                           size="mini" type="primary" icon="el-icon-top"></el-button>
+                                                <el-button @click="down(props.$index,form.columns)" v-if="props.$index != form.columns.length-1"
+                                                           size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                                            </el-button-group>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="表头标题" width="120">
+                                        <template slot-scope="props">
+                                            <el-form-item :prop="'columns.' + props.$index + '.label'" :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                                                <el-input maxlength="15" size="mini" v-model="props.row.label"></el-input>
+                                            </el-form-item>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="列宽" width="130">
+                                        <template slot-scope="props">
+                                            <el-form-item :prop="'columns.' + props.$index + '.width'"
+                                                          :rules="[{required: false, message: '请填写正确的宽度',validator: validateNumber, trigger: 'change'}]">
+                                                <el-input maxlength="3" size="mini" v-model="props.row.width" clearable>
+                                                    <template slot="append">px</template>
+                                                </el-input>
+                                            </el-form-item>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="可排序" width="80">
+                                        <template slot-scope="props">
+                                            <el-switch v-model="props.row.sortable" active-color="#13ce66" inactive-color="gray">
+                                            </el-switch>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="展示格式化" width="150">
+                                        <template slot-scope="props">
+                                            <el-button-group>
+                                                <el-button @click="showFormatter(props.row)" size="mini">设置</el-button>
+                                                <el-button @click="clearFormatter(props.row)" size="mini" v-if="props.row.formatter">清空</el-button>
+                                            </el-button-group>
+                                        </template>
+                                    </el-table-column>
+                                </el-table-column>
+                            </el-table>
+                        </el-col>
+                    </el-row>
+                </el-tab-pane>
+                <el-tab-pane label="一对多从表" v-for="(follow, index) in form.follows" :name="index">
+                    <el-form-item label="按钮文案:" :prop="'follows.'+index+'.bottom'"
+                                  :rules="[{required : true, message: '请输入按钮文案', trigger: 'change' }]"
+                                  :label-width="formLabelWidth">
+                        <el-input maxlength="15" size="mini" v-model="follow.bottom"></el-input>
+                    </el-form-item>
+                    <el-form-item label="是否分页:" :prop="'follows.'+index+'.pagination'"
+                                  :rules="[{required : true, message: '请选择', trigger: 'change' }]"
+                                  :label-width="formLabelWidth">
+                        <el-select style="width: 100%" v-model="follow.pagination">
+                            <el-option :key="true" label="是" :value="true"></el-option>
+                            <el-option :key="false" label="否" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="操作列列宽:" :prop="'follows.'+index+'.optionColumnWidth'" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                        <el-input v-model="follow.optionColumnWidth" clearable>
+                            <template slot="append">px</template>
+                        </el-input>
+                    </el-form-item>
+                    <el-row :gutter="24">
+                        <el-col :span="6">
+                            <el-form-item label="排序字段:" :label-width="formLabelWidth">
+                                <el-select @change="orderChange(follow)" value-key="key"
+                                           v-model="follow.sorts" placeholder="请选择" multiple style="width: 100%">
+                                    <el-option
+                                            v-for="(column,colIndex) in foes[index].dbColumns"
+                                            :key="column.table+'.'+column.column.field"
+                                            :label="'表:'+column.table+',字段:'+column.column.field"
+                                            :value="{table:column.table,column:column.column.field,key:column.table+'_'+column.column.field}">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="18">
+                            <el-form-item v-for="(order,orIndex) in follow.sorts"
+                                          :prop="'follows.'+index+'.sorts.' + orIndex + '.sort'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          :label="order.table+'.'+order.column+':'">
+                                <el-select style="width: 100%" v-model="order.sort" placeholder="请选择排序方式">
+                                    <el-option key="DESC" label="正序" value="ASC"></el-option>
+                                    <el-option key="ASC" label="倒序" value="DESC"></el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="24" type="flex" align="middle" justify="center" style="margin-bottom: 5px;">
+                        <el-col :span="8" v-show="!foes[index].explain.ex">
+                            <el-form-item>
+                                <el-button v-show="!foes[index].explain.ex" size="mini" :disabled="foes[index].leftSelection.length == 0" type="primary"
+                                           @click="to(foes[index].columns,{'obj':form.follows[index],key:'columns'},foes[index].leftSelection,index+'leftSelection','follows.'+index+'.columns',1)">添加展示字段</el-button>
+                            </el-form-item>
+                        </el-col>
+                        <el-col :span="foes[index].explain.ex ? 24 : 16">
+                            <el-form-item :prop="'follows.'+index+'.columns'" :rules="[{required: true, message: '请选择字段',validator: validateArray, trigger: 'change'}]">
+                                <el-button size="mini" :disabled="foes[index].rightSelection.length == 0" type="primary"
+                                           @click="to(form.follows[index].columns,{'obj':foes[index],'key':'columns'},foes[index].rightSelection,index+'rightSelection','follows.'+index+'.columns',2)">移除展示字段</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button size="mini" @click="explain({'obj':foes[index],'key':'explain'})">{{foes[index].explain.title}}</el-button>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-row :gutter="24" type="flex" align="middle" justify="center">
+                        <el-col :span="8" v-show="!foes[index].explain.ex">
+                            <el-table :data="foes[index].columns"
+                                      :ref="index+'leftSelection'"
+                                      height="390"
+                                      border size="mini"
+                                      @selection-change="selectionChange($event,{'obj':foes[index],'key':'leftSelection'})"
+                                      style="width: 100%">
+                                <el-table-column label="待选字段">
+                                    <el-table-column
+                                            type="selection"
+                                            width="55">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="table"
+                                            label="表">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.field"
+                                            label="字段">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.type"
+                                            label="类型">
+                                    </el-table-column>
+                                </el-table-column>
+                            </el-table>
+                        </el-col>
+                        <el-col :span="foes[index].explain.ex ? 24 : 16">
+                            <el-table :data="form.follows[index].columns"
+                                      :ref="index+'rightSelection'"
+                                      height="390"
+                                      border size="mini"
+                                      @selection-change="selectionChange($event,{'obj':foes[index],'key':'rightSelection'})"
+                                      style="width: 100%">
+                                <el-table-column label="表格展示字段">
+                                    <el-table-column
+                                            type="selection"
+                                            width="55">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="table"
+                                            label="表">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.field"
+                                            label="字段">
+                                    </el-table-column>
+                                    <el-table-column
+                                            prop="column.type"
+                                            label="类型">
+                                    </el-table-column>
+                                    <el-table-column
+                                            width="110"
+                                            label="位置">
+                                        <template slot-scope="props">
+                                            <el-button-group>
+                                                <el-button @click="up(props.$index,form.follows[index].columns)" v-if="props.$index != 0"
+                                                           size="mini" type="primary" icon="el-icon-top"></el-button>
+                                                <el-button @click="down(props.$index,form.follows[index].columns)" v-if="props.$index != form.follows[index].columns.length-1"
+                                                           size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                                            </el-button-group>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="表头标题">
+                                        <template slot-scope="props">
+                                            <el-form-item :prop="'follows.'+index+'.columns.' + props.$index + '.label'" :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                                                <el-input maxlength="15" size="mini" v-model="props.row.label"></el-input>
+                                            </el-form-item>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="列宽">
+                                        <template slot-scope="props">
+                                            <el-form-item :prop="'follows.'+index+'.columns.' + props.$index + '.width'"
+                                                          :rules="[{required: false, message: '请填写正确的宽度',validator: validateNumber, trigger: 'change'}]">
+                                                <el-input maxlength="3" size="mini" v-model="props.row.width" clearable>
+                                                    <template slot="append">px</template>
+                                                </el-input>
+                                            </el-form-item>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="可排序" width="80">
+                                        <template slot-scope="props">
+                                            <el-switch v-model="props.row.sortable" active-color="#13ce66" inactive-color="gray">
+                                            </el-switch>
+                                        </template>
+                                    </el-table-column>
+                                    <el-table-column label="展示格式化" width="150">
+                                        <template slot-scope="props">
+                                            <el-button-group>
+                                                <el-button @click="showFormatter(props.row)" size="mini">设置</el-button>
+                                                <el-button @click="clearFormatter(props.row)" size="mini" v-if="props.row.formatter">清空</el-button>
+                                            </el-button-group>
+                                        </template>
+                                    </el-table-column>
+                                </el-table-column>
+                            </el-table>
+                        </el-col>
+                    </el-row>
+                </el-tab-pane>
+            </el-tabs>
+        </el-form>
+    </el-card>
+
+    <el-dialog title="展示格式化" :visible.sync="dialog.formatter.visible" width="60%" :before-close="formatterClose">
+        <el-form :model="dialog.formatter.form" ref="formatterForm" size="small" :label-width="formLabelWidth">
+            <el-form-item label="">
+                <el-button @click="showFormatterDb" size="mini">从格式化库选择</el-button>
+            </el-form-item>
+            <el-form-item label="格式化编码:" prop="formatter" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input type="textarea" placeholder="row表示行数据，prop表示列字段，row[prop]表示表格项数据" v-model="dialog.formatter.form.formatter" clearable></el-input>
+            </el-form-item>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="formatterClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmFormatter" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="格式化库" :visible.sync="dialog.formatterDb.visible" width="30%" :before-close="formatterDbClose">
+        <el-select size="small" style="width: 100%" v-model="dialog.formatterDb.value">
+            <el-option
+                    v-for="(item, formatterDataIndex) in formatterData"
+                    :key="formatterDataIndex"
+                    :label="item.name"
+                    :value="formatterDataIndex">
+            </el-option>
+        </el-select>
+        <div style="text-align: right; margin-top: 5px;">
+            <el-button @click="formatterDbClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmFormatterDb" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+<script>
+    window.contextPath = '${contextPath}'
+    var vue = new Vue({
+        name: 'table',
+        el: '#app',
+        data() {
+            return {
+                id: ${id},
+                version: null,
+                loading: false,
+                formLabelWidth: '100px',
+                form: {
+                    columns: [],
+                    follows: []
+                },
+                rules: {
+                    pagination: [{required : true, message: '请选择', trigger: 'change' }]
+                },
+                mainTableColumns: [],
+                leftSelection: [],
+                rightSelection: [],
+                mainDbColumns: [],
+                mainExplain: {
+                    title:'展开',
+                    ex: false
+                },
+                foes: [],
+                dialog: {
+                    formatter: {
+                        visible: false,
+                        form: {
+                            formatter: null
+                        },
+                        row: null
+                    },
+                    formatterDb: {
+                        visible: false,
+                        value: null
+                    }
+                },
+                formatterData: [{
+                    id: 1,
+                    name: '日期时间格式化',
+                    value: 'if (row[prop]) {return new Date(row[prop]).format("yyyy-MM-dd hh:mm:ss")}'
+                }, {
+                    id: 2,
+                    name: '日期格式化',
+                    value: 'if (row[prop]) {return new Date(row[prop]).format("yyyy-MM-dd")}'
+                }, {
+                    id: 3,
+                    name: '图片格式化',
+                    value: 'if (row[prop]) {return "<img width=\"+50+\" height=\"+50+\" src=\"+row[prop]+\">"}'
+                }]
+            }
+        },
+        methods: {
+            submit() {
+                this.loading = true;
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        this.loading = false;
+                        axios.post('${contextPath}/metaTable/update',{
+                            id: this.id,
+                            version: this.version,
+                            config: this.form
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                                this.loading = false;
+                            }
+                            else {
+                                this.loading = false;
+                                window.location.href = window.contextPath + '/index.html'
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    } else {
+                        this.loading = false;
+                        return false;
+                    }
+                });
+            },
+            confirmFormatterDb() {
+                if (typeof this.dialog.formatterDb.value != 'undefined' && this.dialog.formatterDb.value != null) {
+                    let v = this.formatterData[this.dialog.formatterDb.value].value;
+                    // v = v.replace(/【field】/g, this.dialog.formatter.form.column.field)
+                    this.$set(this.dialog.formatter.form,'formatter',v);
+                    this.dialog.formatter.form = JSON.parse(JSON.stringify(this.dialog.formatter.form))
+                }
+                this.formatterDbClose()
+            },
+            formatterDbClose() {
+                this.dialog.formatterDb = {
+                    visible: false,
+                    value: null
+                }
+            },
+            showFormatterDb() {
+                this.dialog.formatterDb = {
+                    visible: true,
+                    value: null
+                }
+            },
+            clearFormatter(row) {
+                row.formatter = ''
+            },
+            confirmFormatter() {
+                this.$refs['formatterForm'].validate((valid) => {
+                    if (valid) {
+                        this.$set(this.dialog.formatter.row,'formatter',this.dialog.formatter.form.formatter)
+                        // this.dialog.formatter.row = JSON.parse(JSON.stringify(this.dialog.formatter.row))
+                        this.formatterClose()
+                    } else {
+                        return false;
+                    }
+                });
+            },
+            formatterClose() {
+                this.dialog.formatter = {
+                    visible: false,
+                    form: {
+                        formatter: null
+                    },
+                    row: null
+                }
+            },
+            showFormatter(row) {
+                this.dialog.formatter = {
+                    visible: true,
+                    form: {
+                        formatter: row.formatter
+                    },
+                    row: row
+                }
+                this.$nextTick(() => {
+                    this.$refs.formatterForm.resetFields();
+                })
+            },
+            explain(e) {
+                if (!e.obj) {
+                    e.obj = this
+                }
+                if (e.obj[e.key].ex == false) {
+                    this.$set(e.obj,e.key,{
+                        title:'折叠',
+                        ex: true
+                    })
+                } else {
+                    this.$set(e.obj,e.key,{
+                        title:'展开',
+                        ex: false
+                    })
+                }
+            },
+            up(index, elements) {
+                elements[index] = elements.splice(index - 1, 1, elements[index])[0];
+            },
+            down(index, elements) {
+                elements[index] = elements.splice(index + 1, 1, elements[index])[0];
+            },
+            orderChange(table) {
+            },
+            to(from,to,selection,formName,validateKey,type) {
+                if (!to.obj) {
+                    to.obj = this
+                }
+                let value = []
+                if (to.obj[to.key]) {
+                    value = to.obj[to.key]
+                }
+                for (let i = 0; i < selection.length; i ++) {
+                    if (type === 1) {
+                        if (typeof selection[i].label == 'undefined' || selection[i].label == null || selection[i].label == '') {
+                            selection[i].label = selection[i].column.field
+                        }
+                    } else if (type === 2) {
+                        selection[i].label = null
+                        selection[i].width = null
+                        selection[i].sortable = null
+                        selection[i].formatter = null
+                    }
+                    value.push(selection[i])
+                }
+                this.$set(to.obj,to.key,value)
+                for (let i = from.length - 1; i >= 0; i--) {
+                    if (selection.indexOf(from[i]) > -1) {
+                        from.splice(i, 1);
+                    }
+                }
+                this.form = JSON.parse(JSON.stringify(this.form))
+                // this.$refs[formName].clearSelection();
+                this.$nextTick(() => {
+                    this.$refs.form.validateField(validateKey)
+                })
+            },
+            selectionChange(val,e) {
+                if (!e.obj) {
+                    e.obj = this
+                }
+                this.$set(e.obj,e.key,val)
+            }
+        },
+        mounted() {
+            this.loading = true
+            axios.get('${contextPath}/metaTable/info',{
+                params: {
+                    id: this.id
+                }
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.version = res.data.content.version
+                    let b = true;
+                    if (res.data.content.table) {
+                        this.$set(this,'form',res.data.content.table)
+                        b = false
+                    }
+                    this.mainTableColumns = res.data.content.mainTableColumns
+                    this.mainDbColumns = res.data.content.mainDbColumns
+                    if (res.data.content.followTableColumns) {
+                        res.data.content.followTableColumns.forEach(f => {
+                            this.foes.push({
+                                columns: f.followUiColumns,
+                                dbColumns: f.dbColumns,
+                                leftSelection: [],
+                                rightSelection: [],
+                                explain: {
+                                    title:'展开',
+                                    ex: false
+                                }
+                            })
+                            if (b) {
+                                this.form.follows.push({})
+                            }
+                        })
+                    }
+                }
+                this.loading = false
+            }).catch(res => {
+                console.error(res)
+                this.loading = false
+            })
+        },
+        created: function () {
+
+        }
+    })
+</script>
+</body>
+</html>

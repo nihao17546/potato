@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author nihao 2021/11/14
@@ -24,7 +27,14 @@ public class HtmlController {
                       HttpServletRequest request) throws IOException {
         response.setCharacterEncoding("utf-8");
         response.setContentType("text/html; charset=utf-8");
-        String text = PageUtil.getPage(request, properties.getPath(), key);
+        Enumeration enu = request.getParameterNames();
+        Map<String,String> params = new HashMap<>();
+        while(enu.hasMoreElements()){
+            String k = (String) enu.nextElement();
+            String v = request.getParameter(k);
+            params.put(k, v);
+        }
+        String text = PageUtil.getPage(request, properties.getPath(), key, params);
         response.getWriter().write(text);
     }
 

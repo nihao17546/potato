@@ -21,7 +21,6 @@ import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.GenerateUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.logging.log4j.util.Strings;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -99,8 +98,10 @@ public class ComponentExecutor extends Executor {
         constructor.addParam(paramInfo);
         StringBuilder sb = new StringBuilder();
         for (ClassField classField : po.getFields()) {
-            sb.append("        this.").append(classField.getName()).append(" = ").append(paramInfo.getName()).append(".")
-                    .append(CamelUtil.get(classField.getName())).append("();\n");
+            if (vo.getFields().contains(classField)) {
+                sb.append("        this.").append(classField.getName()).append(" = ").append(paramInfo.getName()).append(".")
+                        .append(CamelUtil.get(classField.getName())).append("();\n");
+            }
         }
         constructor.setContent(sb.toString());
         vo.addConstructor(constructor);
@@ -413,10 +414,10 @@ public class ComponentExecutor extends Executor {
         Assert.hasText(el.getSql(), "sql can not be null");
         StringBuilder sb = new StringBuilder();
         sb.append("    <").append(el.getType()).append(" id=\"").append(el.getId()).append("\"");
-        if (Strings.isNotBlank(el.getParameterType())) {
+        if (el.getParameterType() != null && !el.getParameterType().isEmpty()) {
             sb.append(" parameterType=\"").append(el.getParameterType()).append("\"");
         }
-        if (Strings.isNotBlank(el.getResultType())) {
+        if (el.getResultType() != null && !el.getResultType().isEmpty()) {
             sb.append(" resultType=\"").append(el.getResultType()).append("\"");
         }
         if (el.getUseGeneratedKeys() != null) {

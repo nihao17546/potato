@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>操作表单配置</title>
+    <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
+    <script src="${contextPath}/static/vue.min.js"></script>
+    <script src="${contextPath}/static/element-ui/index.js"></script>
+    <script src="${contextPath}/static/axios.min.js"></script>
+    <script src="${contextPath}/static/main.js"></script>
+    <style>
+        .icon-style {
+            font-size: 19px;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-loading="loading">
+    <el-card class="box-card">
+        <div slot="header">
+            <el-link href="${contextPath}/index.html"><i class="el-icon-back"></i></el-link>
+            <el-divider direction="vertical"></el-divider>
+            <span>操作表单配置</span>
+            <el-button style="float: right;" type="primary" size="small" @click="submit">确认</el-button>
+        </div>
+        <el-form :model="form" :rules="rules" ref="form" :inline="true" size="small">
+            <el-tabs type="border-card">
+                <el-tab-pane v-if="db.table" :label="'主表-'+db.table.name">
+                    <el-form-item label="新增按钮:" prop="insert" :label-width="formLabelWidth"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="form.insert">
+                            <el-option :key="true" label="有" :value="true"></el-option>
+                            <el-option :key="false" label="无" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="编辑按钮:" prop="update" :label-width="formLabelWidth"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="form.update">
+                            <el-option :key="true" label="有" :value="true"></el-option>
+                            <el-option :key="false" label="无" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="删除按钮:" prop="delete" :label-width="formLabelWidth"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="form.delete">
+                            <el-option :key="true" label="有" :value="true"></el-option>
+                            <el-option :key="false" label="无" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-card shadow="hover">
+                        <div slot="header" class="clearfix">
+                            <span>表单项</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="showColumns(db.table, form.elements, {'obj':form,'key':'elements'})">添加</el-button>
+                        </div>
+                        <el-card shadow="hover" v-for="(element,indexElement) in form.elements" style="margin-top: 3px;">
+                            <el-form-item>
+                                <el-button-group>
+                                    <el-button @click="up(indexElement,form.elements)" :disabled="indexElement == 0"
+                                               size="mini" type="primary" icon="el-icon-top"></el-button>
+                                    <el-button @click="down(indexElement,form.elements)" :disabled="indexElement == form.elements.length-1"
+                                               size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                                </el-button-group>
+                            </el-form-item>
+                            <el-form-item label="字段:">
+                                <el-input v-model="element.column.field" readOnly></el-input>
+                            </el-form-item>
+                            <el-form-item v-if="element.column" :prop="'elements.'+indexElement+'.elementType'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="控件类型:">
+                                <el-select @change="elementTypeChange({'obj':element})" style="width: 100%"
+                                           v-model="element.elementType" placeholder="请选择控件类型" clearable>
+                                    <el-option
+                                            v-for="(elementType,elementTypeIndex) in elementTypes"
+                                            :key="elementType.value"
+                                            :label="elementType.label"
+                                            :value="elementType.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('timeFormatType') > -1"
+                                          :prop="'elements.'+indexElement+'.timeFormatType'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="数据类型:">
+                                <el-select style="width: 110px;" v-model="element.timeFormatType" placeholder="请选择数据类型">
+                                    <el-option key="DATE" label="日期时间" value="DATE"></el-option>
+                                    <el-option key="LONG" label="时间戳" value="LONG"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('canEdit') > -1"
+                                          :prop="'elements.'+indexElement+'.canEdit'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="允许更新:">
+                                <el-select style="width: 100px;" v-model="element.canEdit" placeholder="请选择">
+                                    <el-option :key="true" label="是" :value="true"></el-option>
+                                    <el-option :key="false" label="否" :value="false"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('label') > -1"
+                                          :prop="'elements.'+indexElement+'.label'"
+                                          :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="控件标题:">
+                                <el-input maxlength="200" v-model="element.label" clearable></el-input>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('options') > -1"
+                                          :prop="'elements.'+indexElement+'.options'" label="选项:"
+                                          :rules="[{required: false, message: '请添加', validator: validateArray, trigger: 'change'}]">
+                                <el-button type="text" @click="showOptions({'obj':element,'key':'options','validateKey':'elements.'+indexElement+'.options'})">设置</el-button>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('sql') > -1"
+                                          :prop="'elements.'+indexElement+'.sql'" label="查询配置:"
+                                          :rules="[{required: true, message: '请设置', validator: validateSql, trigger: 'change', obj: element}]">
+                                <el-button type="text" @click="showSql({'obj':element,'validateKey':'elements.'+indexElement+'.sql'})">点击设置</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="danger" @click="remove({'obj':form,'key':'elements','index':indexElement})" size="mini">移除该字段</el-button>
+                            </el-form-item>
+                            <el-collapse accordion v-if="element.elementType">
+                                <el-collapse-item>
+                                    <template slot="title">
+                                        其他配置 <i style="margin-left: 5px;" class="el-icon-setting"></i>
+                                    </template>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('format') > -1"
+                                                  :prop="'elements.'+indexElement+'.format'" label="外显格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.format" placeholder="默认yyyy-MM-dd HH:mm:ss" clearable>
+                                            <el-option
+                                                    v-for="(format,formatIndex) in formats"
+                                                    :key="format.value"
+                                                    :label="format.label"
+                                                    :value="format.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('valueFormat') > -1"
+                                                  :prop="'elements.'+indexElement+'.valueFormat'" label="绑定值格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.valueFormat" placeholder="默认Date日期对象" clearable>
+                                            <el-option
+                                                    v-for="(valueFormat,valueFormatIndex) in valueFormats"
+                                                    :key="valueFormat.value"
+                                                    :label="valueFormat.label"
+                                                    :value="valueFormat.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('placeholder') > -1"
+                                                  :prop="'elements.'+indexElement+'.placeholder'" label="提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.placeholder" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('border') > -1"
+                                                  :prop="'elements.'+indexElement+'.border'" label="是否显示边框:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.border" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('size') > -1 && (element.elementType != 'RADIO' || element.border)"
+                                                  :prop="'elements.'+indexElement+'.size'" label="控件大小:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.size" clearable>
+                                            <el-option
+                                                    v-for="(elementSize,elementSizeIndex) in elementSizes"
+                                                    :key="elementSize.value"
+                                                    :label="elementSize.label"
+                                                    :disabled="elementSize.disableTypes.indexOf(element.elementType) > -1"
+                                                    :value="elementSize.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('maxlength') > -1"
+                                                  :prop="'elements.'+indexElement+'.maxlength'" label="最大输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.maxlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('minlength') > -1"
+                                                  :prop="'elements.'+indexElement+'.minlength'" label="最小输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.minlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showWordLimit') > -1 && element.maxlength"
+                                                  :prop="'elements.'+indexElement+'.showWordLimit'" label="显示字数统计:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showWordLimit" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('clearable') > -1"
+                                                  :prop="'elements.'+indexElement+'.clearable'" label="可清空:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.clearable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('filterable') > -1"
+                                                  :prop="'elements.'+indexElement+'.filterable'" label="可搜索:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.filterable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('autosize') > -1"
+                                                  :prop="'elements.'+indexElement+'.autosize'" label="自适应内容高度:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.autosize" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('rows') > -1"
+                                                  :prop="'elements.'+indexElement+'.rows'" label="输入框行数:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.rows" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showPassword') > -1"
+                                                  :prop="'elements.'+indexElement+'.showPassword'" label="显示切换密码图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showPassword" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('prefixIcon') > -1"
+                                                  :prop="'elements.'+indexElement+'.prefixIcon'" label="组件首部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'prefixIcon'})">
+                                            <i class="icon-style" v-if="element.prefixIcon" :class="element.prefixIcon"></i>
+                                            <span v-if="!element.prefixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.prefixIcon" type="text" @click="removeIcon({'obj':element,'key':'prefixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('suffixIcon') > -1"
+                                                  :prop="'elements.'+indexElement+'.suffixIcon'" label="组件尾部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'suffixIcon'})">
+                                            <i class="icon-style" v-if="element.suffixIcon" :class="element.suffixIcon"></i>
+                                            <span v-if="!element.suffixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.suffixIcon" type="text" @click="removeIcon({'obj':element,'key':'suffixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('rule') > -1"
+                                                  :prop="'elements.'+indexElement+'.rule'" label="校验规则:">
+                                        <el-button type="text" @click="showRule({'obj':element,'validateKey':'elements.'+indexElement+'.rule'})">点击设置</el-button>
+                                    </el-form-item>
+                                </el-collapse-item>
+                            </el-collapse>
+                        </el-card>
+                    </el-card>
+                    <el-card shadow="hover">
+                        <div slot="header" class="clearfix">
+                            <span>唯一键组合</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="addUnique({'obj':form})">添加</el-button>
+                        </div>
+                        <template v-if="form.uniques && form.uniques.length > 0">
+                            <el-card shadow="hover" v-for="(unique,uniqueIndex) in form.uniques" style="margin-top: 3px;">
+                                <el-row style="border: 0px solid gray;" :gutter="24">
+                                    <el-col :span="11">
+                                        <el-form-item label="冲突前端提示文案:"
+                                                      :prop="'uniques.' + uniqueIndex + '.toast'"
+                                                      :rules="[{required: true, message: '请填写', trigger: 'change'}]"
+                                                      label-width="150px">
+                                            <el-input style="width: 100%" v-model.trim="unique.toast" placeholder="唯一键冲突前端提示文案"
+                                                      autocomplete="off" size="small" maxlength="500"></el-input>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="11">
+                                        <el-form-item label="唯一键组合:"
+                                                      :prop="'uniques.' + uniqueIndex + '.columns'"
+                                                      :rules="[{required: true, message: '请添加', validator: validateArray, trigger: 'change'}]"
+                                                      label-width="130px">
+                                            <el-select size="small" v-model="unique.columns" multiple placeholder="请选择唯一键组合"
+                                                       style="width: 100%;">
+                                                <el-option v-for="uniqueColumn in db.table.columns"
+                                                           :key="uniqueColumn.field"
+                                                           :label="'列名:' + uniqueColumn.field + '   类型:' + uniqueColumn.type"
+                                                           :value="uniqueColumn.field"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="2" style="text-align: right;">
+                                        <el-button type="danger" plain size="mini" @click="remove({'obj':form,'key':'uniques','index':uniqueIndex})">移除</el-button>
+                                    </el-col>
+                                </el-row>
+                            </el-card>
+                        </template>
+                    </el-card>
+                </el-tab-pane>
+                <el-tab-pane v-if="form.follows" :label="'从表-'+db.followTables[index].name" v-for="(follow, index) in form.follows" :name="index">
+                    <el-form-item label="新增按钮:" :prop="'follows.'+index+'.insert'" :label-width="formLabelWidth"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="follow.insert">
+                            <el-option :key="true" label="有" :value="true"></el-option>
+                            <el-option :key="false" label="无" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="编辑按钮:" :prop="'follows.'+index+'.update'" :label-width="formLabelWidth"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="follow.update">
+                            <el-option :key="true" label="有" :value="true"></el-option>
+                            <el-option :key="false" label="无" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="删除按钮:" :prop="'follows.'+index+'.delete'" :label-width="formLabelWidth"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="follow.delete">
+                            <el-option :key="true" label="有" :value="true"></el-option>
+                            <el-option :key="false" label="无" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <el-form-item label="随主表级联删除:" :prop="'follows.'+index+'.cascadingDelete'" :label-width="120"
+                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                        <el-select style="width: 100%" v-model="follow.cascadingDelete">
+                            <el-option :key="true" label="是" :value="true"></el-option>
+                            <el-option :key="false" label="否" :value="false"></el-option>
+                        </el-select>
+                    </el-form-item>
+                    <br>
+                    <el-card shadow="hover">
+                        <div slot="header" class="clearfix">
+                            <span>表单项</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="showColumns(db.followTables[index], form.follows[index].elements, {'obj':form.follows[index],'key':'elements'})">添加</el-button>
+                        </div>
+                        <el-card shadow="hover" v-for="(element,indexElement) in form.follows[index].elements" style="margin-top: 3px;">
+                            <el-form-item>
+                                <el-button-group>
+                                    <el-button @click="up(indexElement,form.follows[index].elements)" :disabled="indexElement == 0"
+                                               size="mini" type="primary" icon="el-icon-top"></el-button>
+                                    <el-button @click="down(indexElement,form.follows[index].elements)" :disabled="indexElement == form.follows[index].elements.length-1"
+                                               size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                                </el-button-group>
+                            </el-form-item>
+                            <el-form-item label="字段:">
+                                <el-input v-model="element.column.field" readOnly></el-input>
+                            </el-form-item>
+                            <el-form-item v-if="element.column" :prop="'follows.'+index+'.elements.'+indexElement+'.elementType'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="控件类型:">
+                                <el-select @change="elementTypeChange({'obj':element})" style="width: 100%"
+                                           v-model="element.elementType" placeholder="请选择控件类型" clearable>
+                                    <el-option
+                                            v-for="(elementType,elementTypeIndex) in elementTypes"
+                                            :key="elementType.value"
+                                            :label="elementType.label"
+                                            :value="elementType.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('timeFormatType') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.timeFormatType'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="数据类型:">
+                                <el-select style="width: 110px;" v-model="element.timeFormatType" placeholder="请选择数据类型">
+                                    <el-option key="DATE" label="日期时间" value="DATE"></el-option>
+                                    <el-option key="LONG" label="时间戳" value="LONG"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('canEdit') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.canEdit'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="允许更新:">
+                                <el-select style="width: 100px;" v-model="element.canEdit" placeholder="请选择">
+                                    <el-option :key="true" label="是" :value="true"></el-option>
+                                    <el-option :key="false" label="否" :value="false"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('label') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.label'"
+                                          :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="控件标题:">
+                                <el-input maxlength="200" v-model="element.label" clearable></el-input>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('options') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.options'" label="选项:"
+                                          :rules="[{required: false, message: '请添加', validator: validateArray, trigger: 'change'}]">
+                                <el-button type="text" @click="showOptions({'obj':element,'key':'options','validateKey':'follows.'+index+'.elements.'+indexElement+'.options'})">设置</el-button>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('sql') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.sql'" label="选项:"
+                                          :rules="[{required: true, message: '请设置', validator: validateSql, trigger: 'change', obj: element}]">
+                                <el-button type="text" @click="showSql({'obj':element,'validateKey':'follows.'+index+'.elements.'+indexElement+'.sql'})">点击设置</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="danger" @click="remove({'obj':form.follows[index],'key':'elements','index':indexElement})" size="mini">移除该字段</el-button>
+                            </el-form-item>
+                            <el-collapse accordion v-if="element.elementType">
+                                <el-collapse-item>
+                                    <template slot="title">
+                                        其他配置 <i style="margin-left: 5px;" class="el-icon-setting"></i>
+                                    </template>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('format') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.format'" label="外显格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.format" placeholder="默认yyyy-MM-dd HH:mm:ss" clearable>
+                                            <el-option
+                                                    v-for="(format,formatIndex) in formats"
+                                                    :key="format.value"
+                                                    :label="format.label"
+                                                    :value="format.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('valueFormat') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.valueFormat'" label="绑定值格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.valueFormat" placeholder="默认Date日期对象" clearable>
+                                            <el-option
+                                                    v-for="(valueFormat,valueFormatIndex) in valueFormats"
+                                                    :key="valueFormat.value"
+                                                    :label="valueFormat.label"
+                                                    :value="valueFormat.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('placeholder') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.placeholder'" label="提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.placeholder" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('border') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.border'" label="是否显示边框:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.border" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('size') > -1 && (element.elementType != 'border' || element.border)"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.size'" label="控件大小:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.size" clearable>
+                                            <el-option
+                                                    v-for="(elementSize,elementSizeIndex) in elementSizes"
+                                                    :key="elementSize.value"
+                                                    :label="elementSize.label"
+                                                    :disabled="elementSize.disableTypes.indexOf(element.elementType) > -1"
+                                                    :value="elementSize.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('maxlength') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.maxlength'" label="最大输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.maxlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('minlength') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.minlength'" label="最小输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.minlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showWordLimit') > -1 && element.maxlength"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.showWordLimit'" label="显示字数统计:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showWordLimit" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('clearable') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.clearable'" label="可清空:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.clearable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('filterable') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.filterable'" label="可搜索:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.filterable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('autosize') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.autosize'" label="自适应内容高度:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.autosize" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('rows') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.rows'" label="输入框行数:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.rows" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showPassword') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.showPassword'" label="显示切换密码图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showPassword" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('prefixIcon') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.prefixIcon'" label="组件首部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'prefixIcon'})">
+                                            <i class="icon-style" v-if="element.prefixIcon" :class="element.prefixIcon"></i>
+                                            <span v-if="!element.prefixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.prefixIcon" type="text" @click="removeIcon({'obj':element,'key':'prefixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('suffixIcon') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.suffixIcon'" label="组件尾部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'suffixIcon'})">
+                                            <i class="icon-style" v-if="element.suffixIcon" :class="element.suffixIcon"></i>
+                                            <span v-if="!element.suffixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.suffixIcon" type="text" @click="removeIcon({'obj':element,'key':'suffixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('rule') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.rule'" label="校验规则:">
+                                        <el-button type="text" @click="showRule({'obj':element,'validateKey':'follows.'+index+'.elements.'+indexElement+'.rule'})">点击设置</el-button>
+                                    </el-form-item>
+                                </el-collapse-item>
+                            </el-collapse>
+                        </el-card>
+                    </el-card>
+                    <el-card shadow="hover">
+                        <div slot="header" class="clearfix">
+                            <span>唯一键组合</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="addUnique({'obj':form.follows[index]})">添加</el-button>
+                        </div>
+                        <template v-if="form.follows[index].uniques && form.follows[index].uniques.length > 0">
+                            <el-card shadow="hover" v-for="(unique,uniqueIndex) in form.follows[index].uniques" style="margin-top: 3px;">
+                                <el-row style="border: 0px solid gray;" :gutter="24">
+                                    <el-col :span="11">
+                                        <el-form-item label="冲突前端提示文案:"
+                                                      :prop="'follows.' + index + '.uniques.' + uniqueIndex + '.toast'"
+                                                      :rules="[{required: true, message: '请填写', trigger: 'change'}]"
+                                                      label-width="150px">
+                                            <el-input style="width: 100%" v-model.trim="unique.toast" placeholder="唯一键冲突前端提示文案"
+                                                      autocomplete="off" size="small" maxlength="500"></el-input>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="11">
+                                        <el-form-item label="唯一键组合:"
+                                                      :prop="'follows.' + index + '.uniques.' + uniqueIndex + '.columns'"
+                                                      :rules="[{required: true, message: '请添加', validator: validateArray, trigger: 'change'}]"
+                                                      label-width="130px">
+                                            <el-select size="small" v-model="unique.columns" multiple placeholder="请选择唯一键组合"
+                                                       style="width: 100%;">
+                                                <el-option v-for="uniqueColumn in db.followTables[index].columns"
+                                                           :key="uniqueColumn.field"
+                                                           :label="'列名:' + uniqueColumn.field + '   类型:' + uniqueColumn.type"
+                                                           :value="uniqueColumn.field"></el-option>
+                                            </el-select>
+                                        </el-form-item>
+                                    </el-col>
+                                    <el-col :span="2" style="text-align: right;">
+                                        <el-button type="danger" plain size="mini" @click="remove({'obj':form.follows[index],'key':'uniques','index':uniqueIndex})">移除</el-button>
+                                    </el-col>
+                                </el-row>
+                            </el-card>
+                        </template>
+                    </el-card>
+                </el-tab-pane>
+            </el-tabs>
+        </el-form>
+    </el-card>
+
+    <el-dialog title="添加字段" :visible.sync="dialog.element.visible" width="50%" :before-close="elementClose">
+        <el-table :data="dialog.element.columns"
+                  height="390"
+                  ref="elementTable"
+                  border size="mini"
+                  style="width: 100%">
+            <el-table-column label="待选字段">
+                <el-table-column
+                        type="selection"
+                        width="55">
+                </el-table-column>
+                <el-table-column
+                        prop="field"
+                        label="字段">
+                </el-table-column>
+                <el-table-column
+                        prop="type"
+                        label="类型">
+                </el-table-column>
+            </el-table-column>
+        </el-table>
+        <div style="text-align: right;margin-top: 5px;">
+            <el-button @click="elementClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmElement" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="选项" :visible.sync="dialog.option.visible" width="80%" :before-close="optionClose">
+        <el-row>
+            <el-col :span="12">
+                <el-button type="primary" @click="addOption" size="mini" :disabled="loading">添加选项</el-button>
+            </el-col>
+        </el-row>
+        <el-form :model="dialog.option" ref="dialogOption" :inline="true" size="small">
+            <el-table :data="dialog.option.value"
+                      border size="mini"
+                      style="width: 100%;">
+                <el-table-column
+                        label="选项标签名称">
+                    <template slot-scope="props">
+                        <el-form-item :prop="'value.' + props.$index + '.label'"
+                                      :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                            <el-input v-model="props.row.label" clearable/>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        label="选项标签值类型">
+                    <template slot-scope="props">
+                        <el-form-item :prop="'value.' + props.$index + '.type'"
+                                      :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                            <el-select @change="optionTypeChange({'obj':props.row})" style="width: 100%" v-model="props.row.type" clearable>
+                                <el-option key="string" label="字符串类型" value="string"></el-option>
+                                <el-option key="number" label="数字类型" value="number"></el-option>
+                                <el-option key="boolean" label="布尔类型" value="boolean"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        label="选项标签值">
+                    <template slot-scope="props">
+                        <el-form-item v-if="props.row.type=='string'" :prop="'value.'+props.$index+'.value'"
+                                      :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                            <el-input v-model="props.row.value" clearable>
+                        </el-form-item>
+                        <el-form-item v-if="props.row.type=='number'" :prop="'value.'+props.$index+'.value'"
+                                      :rules="[{required: true, message: '请填写正确的数字格式内容',validator: validateAllNumber, trigger: 'change'}]">
+                            <el-input v-model="props.row.value" clearable>
+                        </el-form-item>
+                        <el-form-item v-if="props.row.type=='boolean'" :prop="'value.'+props.$index+'.value'"
+                                      :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                            <el-select style="width: 100%" v-model="props.row.value" clearable>
+                                <el-option :key="true" label="TRUE" :value="true"></el-option>
+                                <el-option :key="false" label="FALSE" :value="false"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        label="操作">
+                    <template slot-scope="props">
+                        <el-button-group>
+                            <el-button @click="up(props.$index,dialog.option.value)" :disabled="props.$index == 0"
+                                       size="mini" type="primary" icon="el-icon-top"></el-button>
+                            <el-button @click="down(props.$index,dialog.option.value)" :disabled="props.$index == dialog.option.value.length-1"
+                                       size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                        </el-button-group>
+                        <el-button type="danger" @click="remove({'obj':dialog.option,'key':'value','index':props.$index})" size="mini">移除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="optionClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmOption" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="远程下拉选择框配置" :visible.sync="dialog.sql.visible" width="60%" :before-close="sqlClose">
+        <el-form :model="dialog.sql" ref="dialogSql" size="small" :label-width="formLabelWidth">
+            <el-form-item label="查询SQL:" prop="value.sql" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input type="textarea" v-model="dialog.sql.value.sql" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="外显字段:" prop="value.labelColumn" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input v-model="dialog.sql.value.labelColumn" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="值字段:" prop="value.valueColumn" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input v-model="dialog.sql.value.valueColumn" clearable></el-input>
+            </el-form-item>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="sqlClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmSql" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="图标" :visible.sync="dialog.icon.visible" width="60%" :before-close="iconClose">
+        <el-radio size="medium" v-model="dialog.icon.value" v-for="(ic,index) in icons" :label="ic"><i class="icon-style" :class="ic"></i></el-radio>
+        <div style="text-align: right">
+            <el-button @click="iconClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmIcon" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="校验规则配置" :visible.sync="dialog.rule.visible" width="60%" :before-close="ruleClose">
+        <el-form :model="dialog.rule" ref="dialogRule" size="small" :label-width="120">
+            <el-form-item label="是否必填:" prop="value.required" :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                <el-select style="width: 100%" v-model="dialog.rule.value.required">
+                    <el-option :key="true" label="是" :value="true"></el-option>
+                    <el-option :key="false" label="否" :value="false"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="正则校验表达式:" prop="value.regular" :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                <el-input v-model="dialog.rule.value.regular" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="校验失败提示文案:" prop="value.message" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input v-model="dialog.rule.value.message" clearable></el-input>
+            </el-form-item>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="ruleClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmRule" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+<script>
+    window.contextPath = '${contextPath}'
+    function validateSql(rule, value, callback) {
+        if (typeof rule.obj.sql == 'undefined' || rule.obj.sql == null || rule.obj.sql == ''
+            || typeof rule.obj.labelColumn == 'undefined' || rule.obj.labelColumn == null || rule.obj.labelColumn == ''
+            || typeof rule.obj.valueColumn == 'undefined' || rule.obj.valueColumn == null || rule.obj.valueColumn == '') {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    }
+    var vue = new Vue({
+        name: 'operate',
+        el: '#app',
+        data() {
+            return {
+                id: ${id},
+                version: null,
+                loading: false,
+                formLabelWidth: '100px',
+                form: {},
+                rules: {},
+                db: {},
+                dialog: {
+                    element: {
+                        visible: false,
+                        columns: [],
+                        elements: null,
+                        e: null
+                    },
+                    option: {
+                        visible: false,
+                        e: null
+                    },
+                    sql: {
+                        visible: false,
+                        value: {},
+                        e: null
+                    },
+                    icon: {
+                        visible: false,
+                        value: null,
+                        e: null
+                    },
+                    rule: {
+                        visible: false,
+                        value: {},
+                        e: null
+                    }
+                },
+                elementTypes: [],
+                typeContains: [],
+                allContains: [],
+                defaults: {},
+                formats: [{
+                    label: 'yyyy-MM-dd',
+                    value: 'yyyy-MM-dd'
+                },{
+                    label: 'yyyy年MM月dd日',
+                    value: 'yyyy年MM月dd日'
+                }, {
+                    label: 'yyyy-MM-dd HH:mm:ss',
+                    value: 'yyyy-MM-dd HH:mm:ss'
+                }, {
+                    label: 'yyyy年MM月dd日 HH时mm分ss秒',
+                    value: 'yyyy年MM月dd日 HH时mm分ss秒'
+                }],
+                valueFormats: [{
+                    label: '字符串 yyyy-MM-dd',
+                    value: 'yyyy-MM-dd'
+                },{
+                    label: '字符串 yyyy年MM月dd日',
+                    value: 'yyyy年MM月dd日'
+                }, {
+                    label: '字符串 yyyy-MM-dd HH:mm:ss',
+                    value: 'yyyy-MM-dd HH:mm:ss'
+                }, {
+                    label: '字符串 yyyy年MM月dd日 HH时mm分ss秒',
+                    value: 'yyyy年MM月dd日 HH时mm分ss秒'
+                }, {
+                    label: '时间戳',
+                    value: 'timestamp'
+                }],
+                elementSizes: [],
+                icons: ['el-icon-platform-eleme','el-icon-eleme','el-icon-delete-solid','el-icon-delete',
+                    'el-icon-s-tools','el-icon-setting','el-icon-user-solid','el-icon-user','el-icon-phone',
+                    'el-icon-phone-outline','el-icon-more','el-icon-more-outline','el-icon-star-on','el-icon-star-off',
+                    'el-icon-s-goods','el-icon-goods','el-icon-warning','el-icon-warning-outline','el-icon-question',
+                    'el-icon-info','el-icon-remove','el-icon-circle-plus','el-icon-success','el-icon-error','el-icon-zoom-in',
+                    'el-icon-zoom-out','el-icon-remove-outline','el-icon-circle-plus-outline','el-icon-circle-check',
+                    'el-icon-circle-close','el-icon-s-help','el-icon-help','el-icon-minus','el-icon-plus','el-icon-check',
+                    'el-icon-close','el-icon-picture','el-icon-picture-outline','el-icon-picture-outline-round','el-icon-upload',
+                    'el-icon-upload2','el-icon-download','el-icon-camera-solid','el-icon-camera','el-icon-video-camera-solid',
+                    'el-icon-video-camera','el-icon-message-solid','el-icon-bell']
+            }
+        },
+        methods: {
+            submit() {
+                this.loading = true;
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        axios.post('${contextPath}/metaOperate/update',{
+                            id: this.id,
+                            config: this.form,
+                            version: this.version
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                                this.loading = false;
+                            }
+                            else {
+                                this.loading = false;
+                                window.location.href = window.contextPath + '/index.html'
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    } else {
+                        this.loading = false;
+                        return false;
+                    }
+                });
+            },
+            addUnique(e) {
+                let v;
+                if (!e.obj.uniques) {
+                    v = []
+                } else {
+                    v = e.obj.uniques
+                }
+                v.push({
+                    toast: '',
+                    columns: []
+                })
+                this.$set(e.obj,'uniques',v)
+            },
+            confirmRule() {
+                this.$refs['dialogRule'].validate((valid) => {
+                    if (valid) {
+                        this.$set(this.dialog.rule.e.obj,'rule',this.dialog.rule.value)
+                        this.ruleClose()
+                    }
+                });
+            },
+            ruleClose() {
+                if (this.dialog.rule.e.validateKey) {
+                    let key = this.dialog.rule.e.validateKey
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(key)
+                    })
+                }
+                this.dialog.rule = {
+                    visible: false,
+                    value: {},
+                    e: null
+                }
+            },
+            showRule(e) {
+                let value;
+                if (e.obj.rule) {
+                    value = {
+                        required: e.obj.rule['required'],
+                        message: e.obj.rule['message'],
+                        regular: e.obj.rule['regular']
+                    }
+                } else {
+                    value = {
+                        required: null,
+                        message: null,
+                        regular: null
+                    }
+                }
+                this.dialog.rule = {
+                    visible: true,
+                    value: value,
+                    e: e
+                }
+                this.$nextTick(() => {
+                    this.$refs.dialogRule.clearValidate()
+                })
+            },
+            remove(e) {
+                e.obj[e.key].splice(e.index, 1)
+                if (e.validateKey) {
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(e.validateKey)
+                    })
+                }
+            },
+            removeIcon(e) {
+                this.$set(e.obj,e.key,null)
+            },
+            confirmIcon() {
+                this.$set(this.dialog.icon.e.obj,this.dialog.icon.e.key,this.dialog.icon.value)
+                this.iconClose()
+            },
+            iconClose() {
+                this.dialog.icon = {
+                    visible: false,
+                    value: null,
+                    e: null
+                }
+            },
+            showIcon(e) {
+                this.dialog.icon = {
+                    visible: true,
+                    value: e.obj[e.key],
+                    e: e
+                }
+            },
+            confirmSql() {
+                this.$refs['dialogSql'].validate((valid) => {
+                    if (valid) {
+                        this.$set(this.dialog.sql.e.obj,'sql',this.dialog.sql.value.sql)
+                        this.$set(this.dialog.sql.e.obj,'labelColumn',this.dialog.sql.value.labelColumn)
+                        this.$set(this.dialog.sql.e.obj,'valueColumn',this.dialog.sql.value.valueColumn)
+                        this.sqlClose()
+                    }
+                });
+            },
+            sqlClose() {
+                if (this.dialog.sql.e.validateKey) {
+                    let key = this.dialog.sql.e.validateKey
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(key)
+                    })
+                }
+                this.dialog.sql = {
+                    visible: false,
+                    value: {},
+                    e: null
+                }
+            },
+            showSql(e) {
+                this.dialog.sql = {
+                    visible: true,
+                    value: {
+                        sql: e.obj['sql'],
+                        labelColumn: e.obj['labelColumn'],
+                        valueColumn: e.obj['valueColumn']
+                    },
+                    e: e
+                }
+            },
+            confirmOption() {
+                this.$refs['dialogOption'].validate((valid) => {
+                    if (valid) {
+                        this.$set(this.dialog.option.e.obj,this.dialog.option.e.key,this.dialog.option.value)
+                        this.optionClose()
+                    }
+                });
+            },
+            optionTypeChange(e) {
+                this.$set(e.obj,'value',null)
+            },
+            addOption() {
+                let v = this.dialog.option.value
+                if (typeof v == 'undefined' || v == null) {
+                    v = []
+                }
+                v.push({})
+                this.$set(this.dialog.option,'value',v)
+            },
+            optionClose() {
+                if (this.dialog.option.e.validateKey) {
+                    let key = this.dialog.option.e.validateKey
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(key)
+                    })
+                }
+                this.dialog.option = {
+                    visible: false,
+                    value: null,
+                    e: null
+                }
+            },
+            showOptions(e) {
+                this.dialog.option = {
+                    visible: true,
+                    value: e.obj[e.key],
+                    e: e
+                }
+            },
+            elementTypeChange(e) {
+                let currentContains = []
+                if (e.obj.elementType) {
+                    currentContains = this.typeContains[e.obj.elementType]
+                }
+                // 移除多余的属性
+                this.allContains.forEach(c => {
+                    if (currentContains.indexOf(c) == -1) {
+                        this.$set(e.obj, c, null)
+                    }
+                })
+                // 设置默认属性
+                currentContains.forEach(cc => {
+                    if (typeof this.defaults[cc] != 'undefined' && this.defaults[cc] != null) {
+                        if (typeof e.obj[cc] == 'undefined' || e.obj[cc] == null) {
+                            this.$set(e.obj, cc, this.defaults[cc])
+                        }
+                    } else if (cc == 'label') {
+                        if (typeof e.obj[cc] == 'undefined' || e.obj[cc] == null) {
+                            this.$set(e.obj, cc, e.obj.column.field)
+                        }
+                    }
+                    if (cc == 'size') {
+                        this.$set(e.obj, cc, null)
+                    }
+                })
+            },
+            up(index, elements) {
+                elements[index] = elements.splice(index - 1, 1, elements[index])[0];
+            },
+            down(index, elements) {
+                elements[index] = elements.splice(index + 1, 1, elements[index])[0];
+            },
+            confirmElement() {
+                if (this.$refs.elementTable.selection && this.$refs.elementTable.selection.length > 0) {
+                    for (let i = 0; i < this.$refs.elementTable.selection.length; i ++) {
+                        let el = this.$refs.elementTable.selection[i]
+                        this.dialog.element.elements.push({
+                            column: el
+                        })
+                    }
+                }
+                this.$set(this.dialog.element.e.obj, this.dialog.element.e.key, this.dialog.element.elements)
+                this.elementClose()
+                console.log(this.form)
+            },
+            elementClose() {
+                this.dialog.element = {
+                    visible: false,
+                    columns: [],
+                    elements: null,
+                    e: null
+                }
+            },
+            showColumns(table, elements, e) {
+                let columns = JSON.parse(JSON.stringify(table.columns))
+                if (table.primaryType == 'AUTO' || table.primaryType == 'UUID') {
+                    for (let i = 0; i < columns.length; i ++) {
+                        let column = columns[i]
+                        if (table.primaryFields.indexOf(column.field) > -1) {
+                            // 去除主键
+                            columns.splice(i, 1)
+                            i --
+                        }
+                    }
+                }
+                if (table.foreignKey) {
+                    for (let i = 0; i < columns.length; i ++) {
+                        let column = columns[i]
+                        if (table.foreignKey == column.field) {
+                            // 去除外键
+                            columns.splice(i, 1)
+                            i --
+                        }
+                    }
+                }
+                if (elements) {
+                    for (let i = 0; i < elements.length; i ++) {
+                        let element = elements[i]
+                        for (let j = 0; j < columns.length; j ++) {
+                            let column = columns[j]
+                            if (column.field == element.column.field) {
+                                // 去除主键
+                                columns.splice(j, 1)
+                                j --
+                            }
+                        }
+                    }
+                }
+                this.dialog.element = {
+                    visible: true,
+                    columns: columns,
+                    elements: elements,
+                    e: e
+                }
+            }
+        },
+        mounted() {
+            this.loading = true
+            axios.get('${contextPath}/metaOperate/info',{
+                params: {
+                    id: this.id
+                }
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.version = res.data.content.version
+                    this.$set(this,'form',res.data.content.operate)
+                    this.$set(this,'db',res.data.content.db)
+                }
+                this.loading = false
+            }).catch(res => {
+                console.error(res)
+                this.loading = false
+            })
+        },
+        created: function () {
+            axios.get('${contextPath}/setting/operateElementType',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.elementTypes = res.data.content.list
+                    this.typeContains = res.data.content.typeContains
+                    this.allContains = res.data.content.all
+                    this.defaults  = res.data.content.operateDefaults
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+            axios.get('${contextPath}/setting/size',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.elementSizes = res.data.content.list
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+        }
+    })
+</script>
+</body>
+</html>

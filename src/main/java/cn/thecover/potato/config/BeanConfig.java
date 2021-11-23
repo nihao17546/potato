@@ -1,13 +1,14 @@
 package cn.thecover.potato.config;
 
-import cn.thecover.potato.controller.HtmlController;
-import cn.thecover.potato.controller.MetaController;
-import cn.thecover.potato.controller.SettingController;
+import cn.thecover.potato.controller.*;
+import cn.thecover.potato.generate.boot.GenerateBoot;
 import cn.thecover.potato.generate.boot.HtmlServlet;
 import cn.thecover.potato.model.constant.BasicConstant;
 import cn.thecover.potato.properties.CoreProperties;
+import cn.thecover.potato.service.IDbService;
 import cn.thecover.potato.service.IGenerateService;
 import cn.thecover.potato.service.IMetaService;
+import cn.thecover.potato.service.impl.DbServiceImpl;
 import cn.thecover.potato.service.impl.GenerateServiceImpl;
 import cn.thecover.potato.service.impl.MetaServiceImpl;
 import cn.thecover.potato.servlet.ResourceServlet;
@@ -36,6 +37,11 @@ public class BeanConfig {
     @Autowired
     private SpringContextUtil springContextUtil;
 
+    @Bean(BasicConstant.beanNamePrefix + "GenerateBoot")
+    public GenerateBoot generateBoot() {
+        return new GenerateBoot();
+    }
+
     @Bean(BasicConstant.beanNamePrefix + "resourceServletRegistrationBean")
     public ServletRegistrationBean resourceServletRegistrationBean() {
         return new ServletRegistrationBean(new ResourceServlet(BasicConstant.resourcePath, properties.getPath()), properties.getPath() + "/static/*");
@@ -56,6 +62,11 @@ public class BeanConfig {
         return new MetaServiceImpl();
     }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "dbService")
+    public IDbService dbService() {
+        return new DbServiceImpl();
+    }
+
     @Bean(name = BasicConstant.beanNamePrefix + "generateService")
     public IGenerateService generateService() {
         return new GenerateServiceImpl();
@@ -64,16 +75,36 @@ public class BeanConfig {
     @PostConstruct
     public void init() throws Exception {
         modify(HtmlController.class);
-        springContextUtil.addBean(HtmlController.class, BasicConstant.beanNamePrefix + "configController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "configController");
+        springContextUtil.addBean(HtmlController.class, BasicConstant.beanNamePrefix + "HtmlController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "HtmlController");
 
         modify(SettingController.class);
-        springContextUtil.addBean(SettingController.class, BasicConstant.beanNamePrefix + "settingController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "settingController");
+        springContextUtil.addBean(SettingController.class, BasicConstant.beanNamePrefix + "SettingController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "SettingController");
 
         modify(MetaController.class);
-        springContextUtil.addBean(MetaController.class, BasicConstant.beanNamePrefix + "metaController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "metaController");
+        springContextUtil.addBean(MetaController.class, BasicConstant.beanNamePrefix + "MetaController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaController");
+
+        modify(DbController.class);
+        springContextUtil.addBean(DbController.class, BasicConstant.beanNamePrefix + "DbController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "DbController");
+
+        modify(MetaTableController.class);
+        springContextUtil.addBean(MetaTableController.class, BasicConstant.beanNamePrefix + "MetaTableController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaTableController");
+
+        modify(MetaDbController.class);
+        springContextUtil.addBean(MetaDbController.class, BasicConstant.beanNamePrefix + "MetaDbController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaDbController");
+
+        modify(MetaSearchController.class);
+        springContextUtil.addBean(MetaSearchController.class, BasicConstant.beanNamePrefix + "MetaSearchController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaSearchController");
+
+        modify(MetaOperateController.class);
+        springContextUtil.addBean(MetaOperateController.class, BasicConstant.beanNamePrefix + "MetaOperateController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaOperateController");
     }
 
     /**

@@ -78,8 +78,7 @@ public class MetaController {
     @ResponseBody
     public String boot(@RequestParam Integer id) {
         Config config = metaService.getConfig(id);
-        BootResult bootResult = generateService.boot(id, config);
-        generateBoot.boot(bootResult);
+        generateService.boot(id, config);
         return HttpResult.success().json();
     }
 

@@ -26,6 +26,8 @@ public class GenerateBoot {
     private SpringContextUtil springContextUtil;
     @Autowired
     private HtmlServlet htmlServlet;
+    @Autowired
+    private MapperBoot mapperBoot;
 
     private final Map<Integer,BootResult> loadMap = new ConcurrentHashMap<>();
 
@@ -48,6 +50,7 @@ public class GenerateBoot {
                     }
                     for (BootResult.Mapper mapper : bootResult.getMappers()) {
                         springContextUtil.destroySingleton(mapper.getMapperId());
+                        // TODO: 11/23/21 情况mapper 
                     }
                     loadMap.remove(metaId);
                     for (String html : htmls) {
@@ -133,7 +136,7 @@ public class GenerateBoot {
                     }
 
                     for (BootResult.Mapper mapper : bootResult.getMappers()) {
-                        MapperBoot.addMapper(mapper.getMapperId(), mapper.getSource());
+                        mapperBoot.addMapper(mapper.getMapperId(), mapper.getSource());
                     }
                     for (BootResult.Java java : bootResult.getServiceImpls()) {
                         springContextUtil.addBean(java.getClassName(), CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName())));

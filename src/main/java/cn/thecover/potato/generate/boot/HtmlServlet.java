@@ -4,8 +4,10 @@ import cn.thecover.potato.cache.ResourceCache;
 import cn.thecover.potato.cache.SoftResourceCache;
 import cn.thecover.potato.dao.BootDao;
 import cn.thecover.potato.model.po.Boot;
+import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.DesUtil;
+import cn.thecover.potato.util.Parser;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -21,8 +23,10 @@ import java.io.IOException;
  */
 @Slf4j
 public class HtmlServlet extends HttpServlet {
-    @Autowired(required = false)
+    @Autowired
     private BootDao bootDao;
+    @Autowired
+    private CoreProperties coreProperties;
 
     private ResourceCache<String,String> cache;
     private final long expireTime = 1000L * 60 * 60 * 24;
@@ -37,7 +41,7 @@ public class HtmlServlet extends HttpServlet {
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        String key = request.getRequestURI().replaceFirst(request.getContextPath(), "");
+        String key = request.getRequestURI().replaceFirst(request.getContextPath() + coreProperties.getPath(), "");
         String html = cache.get(key);
         if (html == null) {
             String path = key.replaceFirst("/boot/page/", "");
@@ -72,6 +76,8 @@ public class HtmlServlet extends HttpServlet {
             }
             BootResult bootResult = CommonUtil.unserialize(boot.getData(), BootResult.class);
             html = bootResult.getHtml().get(key).getSource();
+            html = Parser.parse(html, "contextPath", request.getContextPath());
+            html = Parser.parse(html, "potatoPath", coreProperties.getPath());
             log.debug("补充静态资源缓存:{}", key);
             cache.set(key, html);
         }

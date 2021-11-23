@@ -1,18 +1,13 @@
 package cn.thecover.potato.config;
 
 import cn.thecover.potato.dao.BootDao;
+import cn.thecover.potato.dao.DbDao;
 import cn.thecover.potato.dao.MetaDao;
 import cn.thecover.potato.generate.boot.MapperBoot;
 import cn.thecover.potato.model.constant.BasicConstant;
 import cn.thecover.potato.properties.DbProperties;
-import com.alibaba.druid.pool.DruidDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.mapping.Environment;
-import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
-import org.apache.ibatis.session.SqlSessionFactoryBuilder;
-import org.apache.ibatis.transaction.TransactionFactory;
-import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
@@ -22,8 +17,6 @@ import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 
-import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
 import java.io.*;
 
 /**
@@ -32,93 +25,39 @@ import java.io.*;
 @Slf4j
 @EnableConfigurationProperties(DbProperties.class)
 public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
-    @Autowired
-    private DbProperties dbProperties;
     private ApplicationContext applicationContext;
 
-    private DataSource dataSource() {
-        log.info("创建指定数据源");
-        DruidDataSource druidDataSource = new DruidDataSource();
-        druidDataSource.setUrl(dbProperties.getUrl());
-        druidDataSource.setUsername(dbProperties.getUsername());
-        druidDataSource.setPassword(dbProperties.getPassword());
-        if (dbProperties.getInitialSize() != null) {
-            druidDataSource.setInitialSize(dbProperties.getInitialSize());
-        }
-        if (dbProperties.getMinIdle() != null) {
-            druidDataSource.setMinIdle(dbProperties.getMinIdle());
-        }
-        if (dbProperties.getMaxActive() != null) {
-            druidDataSource.setMaxActive(dbProperties.getMaxActive());
-        }
-        if (dbProperties.getMaxWait() != null) {
-            druidDataSource.setMaxWait(dbProperties.getMaxWait());
-        }
-        if (dbProperties.getTimeBetweenEvictionRunsMillis() != null) {
-            druidDataSource.setTimeBetweenEvictionRunsMillis(dbProperties.getTimeBetweenEvictionRunsMillis());
-        }
-        if (dbProperties.getMinEvictableIdleTimeMillis() != null) {
-            druidDataSource.setMinEvictableIdleTimeMillis(dbProperties.getMinEvictableIdleTimeMillis());
-        }
-        if (dbProperties.getValidationQuery() != null) {
-            druidDataSource.setValidationQuery(dbProperties.getValidationQuery());
-        }
-        if (dbProperties.getTestWhileIdle() != null) {
-            druidDataSource.setTestWhileIdle(dbProperties.getTestWhileIdle());
-        }
-        if (dbProperties.getTestOnBorrow() != null) {
-            druidDataSource.setTestOnBorrow(dbProperties.getTestOnBorrow());
-        }
-        if (dbProperties.getTestOnReturn() != null) {
-            druidDataSource.setTestOnReturn(dbProperties.getTestOnReturn());
-        }
-        if (dbProperties.getPoolPreparedStatements() != null) {
-            druidDataSource.setPoolPreparedStatements(dbProperties.getPoolPreparedStatements());
-        }
-        if (dbProperties.getMaxPoolPreparedStatementPerConnectionSize() != null) {
-            druidDataSource.setMaxPoolPreparedStatementPerConnectionSize(dbProperties.getMaxPoolPreparedStatementPerConnectionSize());
-        }
-        log.info("数据源创建成功");
-        return druidDataSource;
-    }
 
-    @PostConstruct
-    public void init() {
-        DataSource dataSource = null;
-        if (dbProperties.getUrl() != null) {
-            log.info("创建指定数据源");
-            dataSource = dataSource();
-        } else {
-            log.info("使用项目自带数据源");
-            try {
-                dataSource = applicationContext.getBean(DataSource.class);
-            } catch (Exception e) {
-                log.error("未找到项目自带数据源");
-                throw new RuntimeException(e);
-            }
+    @Bean(name = BasicConstant.beanNamePrefix + "MapperBoot")
+    public MapperBoot mapperBoot() {
+        SqlSessionFactory sqlSessionFactory = null;
+        try {
+            sqlSessionFactory = applicationContext.getBean(SqlSessionFactory.class);
+        } catch (Exception e) {
+            throw new RuntimeException("SqlSessionFactory 未找到");
         }
-        log.info("创建SqlSessionFactory");
-        TransactionFactory transactionFactory = new SpringManagedTransactionFactory();
-        Environment environment = new Environment ("development", transactionFactory, dataSource);
-        Configuration configuration = new Configuration(environment);
-        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
-
-        MapperBoot.setSqlSessionFactory(sqlSessionFactory);
-        MapperBoot.setBeanFactory((DefaultListableBeanFactory)((ConfigurableApplicationContext) applicationContext).getBeanFactory());
+        return new MapperBoot((DefaultListableBeanFactory)((ConfigurableApplicationContext) applicationContext).getBeanFactory(), sqlSessionFactory);
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaDao")
-    public MetaDao metaDao() {
+    public MetaDao metaDao(@Autowired MapperBoot mapperBoot) {
         log.info("创建 MetaDao");
         String data = getResource("MetaMapper.xml");
-        return MapperBoot.registerMapper(data, MetaDao.class);
+        return mapperBoot.registerMapper(data, MetaDao.class);
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "BootDao")
-    public BootDao bootDao() {
+    public BootDao bootDao(@Autowired MapperBoot mapperBoot) {
         log.info("创建 BootDao");
         String data = getResource("BootMapper.xml");
-        return MapperBoot.registerMapper(data, BootDao.class);
+        return mapperBoot.registerMapper(data, BootDao.class);
+    }
+
+    @Bean(name = BasicConstant.beanNamePrefix + "DbDao")
+    public DbDao dbDao(@Autowired MapperBoot mapperBoot) {
+        log.info("创建 DbDao");
+        String data = getResource("DbMapper.xml");
+        return mapperBoot.registerMapper(data, DbDao.class);
     }
 
     private String getResource(String fileName) {

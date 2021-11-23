@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>数据库配置</title>
+    <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
+    <script src="${contextPath}/static/vue.min.js"></script>
+    <script src="${contextPath}/static/element-ui/index.js"></script>
+    <script src="${contextPath}/static/axios.min.js"></script>
+    <script src="${contextPath}/static/main.js"></script>
+</head>
+<body>
+<div id="app" v-loading="loading">
+    <el-card class="box-card">
+        <div slot="header">
+            <el-link href="${contextPath}/index.html"><i class="el-icon-back"></i></el-link>
+            <el-divider direction="vertical"></el-divider>
+            <span>数据库配置</span>
+            <el-button style="float: right;" type="primary" size="small" :disabled="disabled" @click="submit">确认</el-button>
+        </div>
+        <el-form :model="form" :rules="rules" ref="form" :inline="true" size="small">
+            <div style="margin-bottom: 10px;">
+                <el-row :gutter="24">
+                    <el-col :span="24">
+                        <el-form-item>
+                            <el-button size="small" :disabled="disabled" @click="addOneToOneTable">添加左连接查询从表</el-button>
+                            <el-button size="small" :disabled="disabled" @click="addOneToMoreTable">添加一对多从表</el-button>
+                        </el-form-item>
+                    </el-col>
+                </el-row>
+            </div>
+            <el-tabs v-model="active" type="border-card">
+                <el-tab-pane label="主表" name="main">
+                    <el-row :gutter="24">
+                        <el-col :span="24">
+                            <el-form-item label="主表表名:" prop="table.name" :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model="form.table.name" placeholder="请选择" size="small"
+                                           style="width: 100%" @change="tableChange(form.table, true)">
+                                    <el-option
+                                            v-for="item in tables"
+                                            :key="item"
+                                            :label="item"
+                                            :value="item">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="主键:" prop="table.primaryFields"
+                                          :rules="[{required : true, validator: validateArray, message: '主键不能为空', trigger: 'change' }]">
+                                <el-select v-model="form.table.primaryFields" multiple :disabled="disabled"
+                                           placeholder="请选择" @change="primaryChange(form.table)">
+                                    <el-option
+                                            v-for="item in form.table.columns"
+                                            :disabled="primaryAllows.indexOf(item.type) == -1"
+                                            :key="item.field"
+                                            :label="item.field"
+                                            :value="item.field">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="主键策略:" prop="table.primaryType" :rules="[{required: true, message: '请选择主键策略', trigger: 'change'}]">
+                                <el-select v-model="form.table.primaryType" :disabled="disabled"
+                                           placeholder="请选择" @change="primaryTypeChange(form.table)">
+                                    <el-option
+                                            v-for="item in primaryTypes"
+                                            :disabled="!form.table.primaryFields || form.table.primaryFields.length == 0
+                                            || (item.value != 'NORMAL' && form.table.primaryFields.length != 1)"
+                                            :key="item.value"
+                                            :label="item.label"
+                                            :value="item.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-table :data="form.table.columns"
+                              height="300"
+                              border :disabled="disabled"
+                              style="width: 100%">
+                        <el-table-column
+                                prop="field"
+                                label="字段名称">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="字段类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="length"
+                                label="长度">
+                        </el-table-column>
+                        <el-table-column
+                                prop="canBeNull"
+                                label="是否允许空">
+                            <template slot-scope="props">
+                                <el-tag v-if="props.row.canBeNull" type="success">是</el-tag>
+                                <el-tag v-if="!props.row.canBeNull" type="info">否</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column
+                                prop="defaultValue"
+                                label="默认值">
+                        </el-table-column>
+                    </el-table>
+                </el-tab-pane>
+                <el-tab-pane :key="item.title" v-for="(item, index) in form.associationTables" :name="item.title">
+                    <span slot="label">左连接查询从表 <i class="el-icon-delete" @click="closeTab(index, form.associationTables)"></i></span>
+                    <el-row :gutter="24">
+                        <el-col :span="24">
+                            <el-form-item label="表名:" :prop="'associationTables.'+index+'.name'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model.trim="item.name" placeholder="请选择" size="small"
+                                           style="width: 100%" @change="tableChange(item)">
+                                    <el-option
+                                            v-for="item in tables"
+                                            :key="item"
+                                            :label="item"
+                                            :value="item">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="当前表外键:" :prop="'associationTables.'+index+'.foreignKey'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model.trim="item.foreignKey" placeholder="请选择" size="small"
+                                           style="width: 100%">
+                                    <el-option
+                                            v-for="column in item.columns"
+                                            :key="column.field"
+                                            :label="column.field"
+                                            :value="column.field">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="关联主表字段:" :prop="'associationTables.'+index+'.parentKey'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model.trim="item.parentKey" placeholder="请选择" size="small"
+                                           style="width: 100%">
+                                    <el-option
+                                            v-for="column in form.table.columns"
+                                            :key="column.field"
+                                            :label="column.field"
+                                            :value="column.field">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-table :data="item.columns"
+                              height="300"
+                              border :disabled="disabled"
+                              style="width: 100%">
+                        <el-table-column
+                                prop="field"
+                                label="字段名称">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="字段类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="length"
+                                label="长度">
+                        </el-table-column>
+                        <el-table-column
+                                prop="canBeNull"
+                                label="是否允许空">
+                            <template slot-scope="props">
+                                <el-tag v-if="props.row.canBeNull" type="success">是</el-tag>
+                                <el-tag v-if="!props.row.canBeNull" type="info">否</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column
+                                prop="defaultValue"
+                                label="默认值">
+                        </el-table-column>
+                    </el-table>
+                </el-tab-pane>
+                <el-tab-pane :key="item.title" v-for="(item, index) in form.followTables" :name="item.title">
+                    <span slot="label">一对多从表 <i class="el-icon-delete" @click="closeTab(index, form.followTables)"></i></span>
+                    <el-row :gutter="24">
+                        <el-col :span="24">
+                            <el-form-item label="表名:" :prop="'followTables.'+index+'.name'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model.trim="item.name" placeholder="请选择" size="small"
+                                           style="width: 100%" @change="tableChange(item)">
+                                    <el-option
+                                            v-for="item in tables"
+                                            :key="item"
+                                            :label="item"
+                                            :value="item">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="主键:" :prop="'followTables.'+index+'.primaryFields'"
+                                          :rules="[{required : true, validator: validateArray, message: '主键不能为空', trigger: 'change' }]">
+                                <el-select v-model="item.primaryFields" multiple :disabled="disabled"
+                                           placeholder="请选择" @change="primaryChange(form.followTables[index])">
+                                    <el-option
+                                            v-for="col in item.columns"
+                                            :disabled="primaryAllows.indexOf(col.type) == -1"
+                                            :key="col.field"
+                                            :label="col.field"
+                                            :value="col.field">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="主键策略:" :prop="'followTables.'+index+'.primaryType'"
+                                          :rules="[{required: true, message: '请选择主键策略', trigger: 'change'}]">
+                                <el-select v-model="item.primaryType" :disabled="disabled"
+                                           placeholder="请选择" @change="primaryTypeChange(form.followTables[index])">
+                                    <el-option
+                                            v-for="tp in primaryTypes"
+                                            :disabled="!form.followTables[index].primaryFields || form.followTables[index].primaryFields.length == 0
+                                            || (item.value != 'NORMAL' && form.followTables[index].primaryFields.length != 1)"
+                                            :key="tp.value"
+                                            :label="tp.label"
+                                            :value="tp.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="当前表外键:" :prop="'followTables.'+index+'.foreignKey'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model.trim="item.foreignKey" placeholder="请选择" size="small"
+                                           style="width: 100%">
+                                    <el-option
+                                            v-for="column in item.columns"
+                                            :key="column.field"
+                                            :label="column.field"
+                                            :value="column.field">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item label="关联主表字段:" :prop="'followTables.'+index+'.parentKey'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select filterable :disabled="disabled" v-model.trim="item.parentKey" placeholder="请选择" size="small"
+                                           style="width: 100%">
+                                    <el-option
+                                            v-for="column in form.table.columns"
+                                            :key="column.field"
+                                            :label="column.field"
+                                            :value="column.field">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                        </el-col>
+                    </el-row>
+                    <el-table :data="item.columns"
+                              height="300"
+                              border :disabled="disabled"
+                              style="width: 100%">
+                        <el-table-column
+                                prop="field"
+                                label="字段名称">
+                        </el-table-column>
+                        <el-table-column
+                                prop="type"
+                                label="字段类型">
+                        </el-table-column>
+                        <el-table-column
+                                prop="length"
+                                label="长度">
+                        </el-table-column>
+                        <el-table-column
+                                prop="canBeNull"
+                                label="是否允许空">
+                            <template slot-scope="props">
+                                <el-tag v-if="props.row.canBeNull" type="success">是</el-tag>
+                                <el-tag v-if="!props.row.canBeNull" type="info">否</el-tag>
+                            </template>
+                        </el-table-column>
+                        <el-table-column
+                                prop="defaultValue"
+                                label="默认值">
+                        </el-table-column>
+                    </el-table>
+                </el-tab-pane>
+            </el-tabs>
+        </el-form>
+    </el-card>
+</div>
+<script>
+    window.contextPath = '${contextPath}'
+    var vue = new Vue({
+        name: 'meta',
+        el: '#app',
+        data() {
+            return {
+                id: ${id},
+                loading: false,
+                version: null,
+                form: {
+                    table: {},
+                    associationTables: [],
+                    followTables: []
+                },
+                rules: {
+                    db: [{required : true, message: '请选择数据源', trigger: 'change' }],
+                    schema: [{required : true, message: '请选择schema', trigger: 'change' }]
+                },
+                disabled: false,
+                formLabelWidth: '100px',
+                dbs: [],
+                schemas: [],
+                tables: [],
+                active: 'main',
+                primaryTypes: [{
+                    value: 'NORMAL',
+                    label: '普通'
+                }, {
+                    value: 'AUTO',
+                    label: '自增'
+                }, {
+                    value: 'UUID',
+                    label: '随机字符串'
+                }],
+                primaryAllows: ['INT','BIGINT','VARCHAR','TEXT','CHAR','TINYTEXT','MEDIUMTEXT','LONGTEXT'],
+                autoTypes: ['INT','BIGINT'],
+                uuidTypes: ['VARCHAR','TEXT','CHAR','TINYTEXT','MEDIUMTEXT','LONGTEXT']
+            }
+        },
+        methods: {
+            renderHeader(h, { column }) {
+                return h('div', [
+                    h('span', column.label),
+                    h(
+                        'el-tooltip',
+                        {
+                            props: {
+                                effect: 'dark',
+                                content: 'NONE:非主键，AUTO:自增主键，UUID:随机字符串主键',
+                                placement: 'top',
+                            },
+                        },
+                        [
+                            h('i', {
+                                class: 'el-icon-question',
+                                style: 'color:#909399;margin-left:5px;',
+                            }),
+                        ],
+                    ),
+                ]);
+            },
+            primaryTypeChange(table) {
+                if (table.primaryType == 'AUTO') {
+                    if (table.primaryFields.length == 1) {
+                        let type
+                        for (let i = 0; i < table.columns.length; i ++) {
+                            if (table.columns[i].field === table.primaryFields[0]) {
+                                type = table.columns[i].type
+                                break
+                            }
+                        }
+                        if (this.autoTypes.indexOf(type) == -1) {
+                            this.$set(table,'primaryType','NORMAL')
+                            this.$message.warning('该字段类型不能设置为自增策略');
+                        }
+                    } else {
+                        this.$set(table,'primaryType','NORMAL')
+                        this.$message.warning('多个字段不能设置自增策略');
+                    }
+                } else if (table.primaryType == 'UUID') {
+                    if (table.primaryFields.length == 1) {
+                        let type
+                        for (let i = 0; i < table.columns.length; i ++) {
+                            if (table.columns[i].field === table.primaryFields[0]) {
+                                type = table.columns[i].type
+                                break
+                            }
+                        }
+                        if (this.uuidTypes.indexOf(type) == -1) {
+                            this.$set(table,'primaryType','NORMAL')
+                            this.$message.warning('该字段类型不能设置为随机字符串策略');
+                        }
+                    } else {
+                        this.$set(table,'primaryType','NORMAL')
+                        this.$message.warning('多个字段不能设置随机字符串策略');
+                    }
+                }
+            },
+            primaryChange(table) {
+                this.$set(table,'primaryType',null)
+                if (table.primaryFields && table.primaryFields.length > 0) {
+                    if (table.primaryFields.length == 1) {
+                        let type
+                        for (let i = 0; i < table.columns.length; i ++) {
+                            if (table.columns[i].field === table.primaryFields[0]) {
+                                type = table.columns[i].type
+                                break
+                            }
+                        }
+                        if (this.autoTypes.indexOf(type) > -1) {
+                            this.$set(table,'primaryType','AUTO')
+                        } else if (this.uuidTypes.indexOf(type) > -1) {
+                            this.$set(table,'primaryType','UUID')
+                        } else {
+                            this.$set(table,'primaryType','NORMAL')
+                        }
+                    } else {
+                        this.$set(table,'primaryType','NORMAL')
+                    }
+                }
+            },
+            submit() {
+                this.loading = true;
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        axios.post('${contextPath}/metaDb/update',{
+                            id: this.id,
+                            version: this.version,
+                            config: this.form
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                                this.loading = false;
+                            }
+                            else {
+                                this.loading = false;
+                                window.location.href = window.contextPath + '/index.html'
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    } else {
+                        this.loading = false;
+                        return false;
+                    }
+                });
+            },
+            closeTab(index, tabs) {
+                this.$confirm('确定要删除?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    tabs.splice(index, 1)
+                    this.active = 'main'
+                }).catch(() => {
+                });
+            },
+            addOneToOneTable() {
+                let n = guid();
+                if (typeof this.form.associationTables == 'undefined' || this.form.associationTables == null) {
+                    this.form.associationTables = []
+                }
+                this.form.associationTables.push({
+                    title: n
+                })
+                this.active = n
+                this.$nextTick(() => {
+                    this.$refs.form.clearValidate()
+                })
+            },
+            addOneToMoreTable() {
+                let n = guid();
+                if (typeof this.form.followTables == 'undefined' || this.form.followTables == null) {
+                    this.form.followTables = []
+                }
+                this.form.followTables.push({
+                    title: n
+                })
+                this.active = n
+                this.$nextTick(() => {
+                    this.$refs.form.clearValidate()
+                })
+            },
+            getAllTables() {
+                this.tables = []
+                this.$set(this.form,'table',{})
+                this.$set(this.form,'associationTables',[])
+                this.$set(this.form,'followTables',[])
+                this.active = 'main'
+                this.$nextTick(() => {
+                    this.$refs.form.clearValidate()
+                })
+                this.disabled = true
+                axios.get('${contextPath}/db/tables',{
+                    params: {}
+                }).then(res => {
+                    if (res.data.status != 0) {
+                        this.$message.error(res.data.msg);
+                    }
+                    else {
+                        this.tables = res.data.content.list
+                    }
+                    this.disabled = false
+                }).catch(res => {
+                    console.error(res)
+                    this.disabled = false
+                })
+            },
+            tableChange(table, isMain) {
+                this.$set(table,'columns',[])
+                this.$set(table,'sql',null)
+                this.$set(table,'primaryType',null)
+                this.$set(table,'primaryFields',null)
+                this.$set(table,'uniques',null)
+                if (isMain === true) {
+                    if (this.form.associationTables && this.form.associationTables.length > 0) {
+                        for (let i = 0; i < this.form.associationTables.length; i ++) {
+                            this.$set(this.form.associationTables[i],'parentKey',null)
+                        }
+                    }
+                    if (this.form.followTables && this.form.followTables.length > 0) {
+                        for (let i = 0; i < this.form.followTables.length; i ++) {
+                            this.$set(this.form.followTables[i],'parentKey',null)
+                        }
+                    }
+                } else {
+                    this.$set(table,'foreignKey',null)
+                }
+                this.$nextTick(() => {
+                    // this.$forceUpdate()
+                    this.$refs.form.clearValidate()
+                })
+                if (table.name) {
+                    this.disabled = true
+                    axios.get('${contextPath}/db/descTable',{
+                        params: {
+                            db: this.form.db,
+                            schema: this.form.schema,
+                            table: table.name
+                        }
+                    }).then(res => {
+                        if (res.data.status != 0) {
+                            this.$message.error(res.data.msg);
+                        }
+                        else {
+                            this.$set(table,'columns',res.data.content.columns)
+                            this.$set(table,'sql',res.data.content.sql)
+                            this.$set(table,'primaryType',res.data.content.primaryType)
+                            this.$set(table,'primaryFields',res.data.content.primaryFields)
+                            this.$set(table,'uniques',res.data.content.uniques)
+                        }
+                        this.disabled = false
+                    }).catch(res => {
+                        console.error(res)
+                        this.disabled = false;
+                    })
+                }
+            }
+        },
+        mounted() {
+            this.getAllTables()
+            this.loading = true
+            axios.get('${contextPath}/metaDb/info',{
+                params: {
+                    id: this.id
+                }
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.loading = false
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.version = res.data.content.version
+                    if (res.data.content.dbConf) {
+                        this.loading = false
+                        this.form = res.data.content.dbConf
+                        axios.get('${contextPath}/db/schemas',{
+                            params: {
+                                db: this.form.db
+                            }
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                            }
+                            else {
+                                this.schemas = res.data.content.list
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                        })
+                        axios.get('${contextPath}/db/tables',{
+                            params: {
+                                schema: this.form.schema,
+                                db: this.form.db
+                            }
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                            }
+                            else {
+                                this.tables = res.data.content.list
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                        })
+                    }
+                    this.loading = false
+                }
+            }).catch(res => {
+                console.error(res)
+                this.loading = false
+            })
+            this.$nextTick(() => {
+                this.$refs.form.clearValidate()
+            })
+        },
+        created: function () {
+        }
+    })
+</script>
+</body>
+</html>

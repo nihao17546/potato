@@ -1,0 +1,1057 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>搜索表单配置</title>
+    <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
+    <script src="${contextPath}/static/vue.min.js"></script>
+    <script src="${contextPath}/static/element-ui/index.js"></script>
+    <script src="${contextPath}/static/axios.min.js"></script>
+    <script src="${contextPath}/static/main.js"></script>
+    <style>
+        .icon-style {
+            font-size: 19px;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-loading="loading">
+    <el-card class="box-card">
+        <div slot="header">
+            <el-link href="${contextPath}/index.html"><i class="el-icon-back"></i></el-link>
+            <el-divider direction="vertical"></el-divider>
+            <span>搜索表单配置</span>
+            <el-button style="float: right;" type="primary" size="small" @click="submit">确认</el-button>
+        </div>
+        <el-form :model="form" :rules="rules" ref="form" :inline="true" size="small">
+            <el-tabs type="border-card">
+                <el-tab-pane label="主表">
+                    <el-card shadow="never">
+                        <div slot="header">
+                            <span>默认搜索条件</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="addDefaultSearchGroup({'obj':form,'key':'defaultSearchGroups'})">添加组</el-button>
+                        </div>
+                        <el-card shadow="hover" v-for="(defaultSearchGroup,indexGroup) in form.defaultSearchGroups" :style="'margin-top: '+(indexGroup==0?'0':'3')+'px;'">
+                            <el-form-item :prop="'defaultSearchGroups.' + indexGroup + '.relation'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="关联类型" v-if="indexGroup != 0">
+                                <el-select style="width: 100%" v-model="defaultSearchGroup.relation" placeholder="请选择关联类型">
+                                    <el-option key="AND" label="与" value="AND"></el-option>
+                                    <el-option key="OR" label="或" value="OR"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item :prop="'defaultSearchGroups.'+indexGroup+'.columns'"
+                                          :rules="[{required: true, message: '请添加',validator: validateArray, trigger: 'change'}]">
+                                <el-button type="success" @click="addDefaultSearchColumn({'obj':defaultSearchGroup,'key':'columns','validateKey':'defaultSearchGroups.'+indexGroup+'.columns'})" size="small">添加字段</el-button>
+                            </el-form-item>
+                            <el-form-item style="float: right;">
+                                <el-button type="danger" @click="removeGroup({'obj':form,'key':'defaultSearchGroups','index':indexGroup})" size="small">移除该组</el-button>
+                            </el-form-item>
+                            <el-card shadow="never" v-for="(defaultSearchColumn,indexColumn) in form.defaultSearchGroups[indexGroup].columns" :style="'margin-top: '+(indexColumn==0?'0':'3')+'px;'">
+                                <el-form-item :prop="'defaultSearchGroups.' + indexGroup + '.columns.' + indexColumn + '.relation'"
+                                              :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                              label="关联类型" v-if="indexColumn != 0">
+                                    <el-select style="width: 100%" v-model="defaultSearchColumn.relation" placeholder="请选择关联类型">
+                                        <el-option key="AND" label="与" value="AND"></el-option>
+                                        <el-option key="OR" label="或" value="OR"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="字段:" :prop="'defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.column'"
+                                              :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                    <el-select value-key="key" @change="defaultSearchColumnChange({'obj':defaultSearchColumn})"
+                                               v-model="defaultSearchColumn.column" placeholder="请选择" style="width: 100%">
+                                        <el-option
+                                                v-for="(column,colIndex) in mainDbColumns"
+                                                :key="column.table+'.'+column.column.field"
+                                                :label="'表:'+column.table+',字段:'+column.column.field"
+                                                :value="{table:column.table,column:column.column.field,key:column.table+'_'+column.column.field}">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.column" :prop="'defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.judge'"
+                                              :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                              label="判断类型">
+                                    <el-select @change="defaultSearchJudgeChange({'obj':defaultSearchColumn})" style="width: 100%"
+                                               v-model="defaultSearchColumn.judge" placeholder="请选择判断类型">
+                                        <el-option
+                                                v-for="(judge,judgeIndex) in judges"
+                                                :key="judge.value"
+                                                :label="judge.label"
+                                                :value="judge.value">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['isnull','isnotnull','bt','in'].indexOf(defaultSearchColumn.judge) == -1" :prop="'defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.value'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="值">
+                                    <el-input maxlength="200" v-model="defaultSearchColumn.value" clearable></el-input>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['bt'].indexOf(defaultSearchColumn.judge) > -1" :prop="'defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.startValue'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="最小值">
+                                    <el-input maxlength="200" v-model="defaultSearchColumn.startValue" clearable></el-input>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['bt'].indexOf(defaultSearchColumn.judge) > -1" :prop="'defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.endValue'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="最大值">
+                                    <el-input maxlength="200" v-model="defaultSearchColumn.endValue" clearable></el-input>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['in'].indexOf(defaultSearchColumn.judge) > -1" :prop="'defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.inValue'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="值">
+                                    <el-select style="width: 100%"
+                                            v-model="defaultSearchColumn.inValue"
+                                            multiple
+                                            filterable
+                                            allow-create
+                                            default-first-option
+                                            no-data-text="请输入值,然后回车键确认"
+                                            placeholder="请输入值,然后回车键确认">
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button type="danger" @click="remove({'obj':defaultSearchGroup,'key':'columns','validateKey':'defaultSearchGroups.'+indexGroup+'.columns','index':indexColumn})" size="mini">移除该字段</el-button>
+                                </el-form-item>
+                            </el-card>
+                        </el-card>
+                    </el-card>
+                    <el-card shadow="hover" style="margin-top: 3px;">
+                        <div slot="header">
+                            <span>搜索表单</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="addSearchElement({'obj':form,'key':'elements'})">添加搜索项</el-button>
+                        </div>
+                        <el-card shadow="hover" v-for="(element,indexElement) in form.elements" :style="'margin-top: '+(indexElement==0?'0':'3')+'px;'">
+                            <el-form-item>
+                                <el-button-group>
+                                    <el-button @click="up(indexElement,form.elements)" :disabled="indexElement == 0"
+                                               size="mini" type="primary" icon="el-icon-top"></el-button>
+                                    <el-button @click="down(indexElement,form.elements)" :disabled="indexElement == form.elements.length-1"
+                                               size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                                </el-button-group>
+                            </el-form-item>
+                            <el-form-item label="字段:" :prop="'elements.'+indexElement+'.column'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select value-key="key" @change="searchColumnChange({'obj':element})"
+                                           v-model="element.column" placeholder="请选择" style="width: 100%">
+                                    <el-option
+                                            v-for="(column,colIndex) in mainDbColumns"
+                                            :key="column.table+'.'+column.column.field"
+                                            :label="'表:'+column.table+',字段:'+column.column.field"
+                                            :value="{table:column.table,column:column.column.field,key:column.table+'_'+column.column.field}">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.column" :prop="'elements.'+indexElement+'.label'"
+                                          :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="控件标题:">
+                                <el-input maxlength="200" v-model="element.label" clearable></el-input>
+                            </el-form-item>
+                            <el-form-item v-if="element.column" :prop="'elements.'+indexElement+'.elementType'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="控件类型:">
+                                <el-select @change="elementTypeChange({'obj':element})" style="width: 100%"
+                                           v-model="element.elementType" placeholder="请选择控件类型" clearable>
+                                    <el-option
+                                            v-for="(elementType,elementTypeIndex) in elementTypes"
+                                            :key="elementType.value"
+                                            :label="elementType.label"
+                                            :value="elementType.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('options') > -1"
+                                          :prop="'elements.'+indexElement+'.options'" label="选项:"
+                                          :rules="[{required: false, message: '请添加', validator: validateArray, trigger: 'change'}]">
+                                <el-button type="text" @click="showOptions({'obj':element,'key':'options','validateKey':'elements.'+indexElement+'.options'})">设置</el-button>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('sql') > -1"
+                                          :prop="'elements.'+indexElement+'.sql'" label="查询配置:"
+                                          :rules="[{required: true, message: '请设置', validator: validateSql, trigger: 'change', obj: element}]">
+                                <el-button type="text" @click="showSql({'obj':element,'validateKey':'elements.'+indexElement+'.sql'})">点击设置</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="danger" @click="remove({'obj':form,'key':'elements','index':indexElement})" size="mini">移除该字段</el-button>
+                            </el-form-item>
+                            <el-collapse accordion v-if="element.elementType">
+                                <el-collapse-item>
+                                    <template slot="title">
+                                        其他配置 <i style="margin-left: 5px;" class="el-icon-setting"></i>
+                                    </template>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('maxlength') > -1"
+                                                  :prop="'elements.'+indexElement+'.maxlength'" label="最大输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.maxlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('minlength') > -1"
+                                                  :prop="'elements.'+indexElement+'.minlength'" label="最小输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.minlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showWordLimit') > -1 && element.maxlength"
+                                                  :prop="'elements.'+indexElement+'.showWordLimit'" label="显示字数统计:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showWordLimit" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('placeholder') > -1"
+                                                  :prop="'elements.'+indexElement+'.placeholder'" label="提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.placeholder" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('clearable') > -1"
+                                                  :prop="'elements.'+indexElement+'.clearable'" label="可清空:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.clearable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showPassword') > -1"
+                                                  :prop="'elements.'+indexElement+'.showPassword'" label="显示切换密码图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showPassword" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('size') > -1"
+                                                  :prop="'elements.'+indexElement+'.size'" label="控件大小:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.size" clearable>
+                                            <el-option
+                                                    v-for="(elementSize,elementSizeIndex) in elementSizes"
+                                                    :key="elementSize.value"
+                                                    :label="elementSize.label"
+                                                    :disabled="elementSize.disableTypes.indexOf(element.elementType) > -1"
+                                                    :value="elementSize.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('prefixIcon') > -1"
+                                                  :prop="'elements.'+indexElement+'.prefixIcon'" label="组件首部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'prefixIcon'})">
+                                            <i class="icon-style" v-if="element.prefixIcon" :class="element.prefixIcon"></i>
+                                            <span v-if="!element.prefixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.prefixIcon" type="text" @click="removeIcon({'obj':element,'key':'prefixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('suffixIcon') > -1"
+                                                  :prop="'elements.'+indexElement+'.suffixIcon'" label="组件尾部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'suffixIcon'})">
+                                            <i class="icon-style" v-if="element.suffixIcon" :class="element.suffixIcon"></i>
+                                            <span v-if="!element.suffixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.suffixIcon" type="text" @click="removeIcon({'obj':element,'key':'suffixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('multiple') > -1"
+                                                  :prop="'elements.'+indexElement+'.multiple'" label="多选:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.multiple" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && element.multiple && typeContains[element.elementType].indexOf('multipleLimit') > -1"
+                                                  :prop="'elements.'+indexElement+'.multipleLimit'" label="多选项目数量限制:"
+                                                  :rules="[{required: false, message: '请输入正整数',validator: validateZNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.multipleLimit" clearable placeholder="0表示不限制">
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('filterable') > -1"
+                                                  :prop="'elements.'+indexElement+'.filterable'" label="可搜索:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.filterable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('valueFormat') > -1"
+                                                  :prop="'elements.'+indexElement+'.valueFormat'" label="绑定值格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.valueFormat" placeholder="默认Date日期对象" clearable>
+                                            <el-option
+                                                    v-for="(valueFormat,valueFormatIndex) in valueFormats"
+                                                    :key="valueFormat.value"
+                                                    :label="valueFormat.label"
+                                                    :value="valueFormat.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('format') > -1"
+                                                  :prop="'elements.'+indexElement+'.format'" label="外显格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.format" placeholder="默认yyyy-MM-dd HH:mm:ss" clearable>
+                                            <el-option
+                                                    v-for="(format,formatIndex) in formats"
+                                                    :key="format.value"
+                                                    :label="format.label"
+                                                    :value="format.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('startPlaceholder') > -1"
+                                                  :prop="'elements.'+indexElement+'.startPlaceholder'" label="开始日期提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.startPlaceholder" clearable></el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('endPlaceholder') > -1"
+                                                  :prop="'elements.'+indexElement+'.endPlaceholder'" label="结束日期提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.endPlaceholder" clearable></el-input>
+                                    </el-form-item>
+                                </el-collapse-item>
+                            </el-collapse>
+                        </el-card>
+                    </el-card>
+                </el-tab-pane>
+                <el-tab-pane label="一对多从表" v-for="(follow, index) in form.follows" :name="index">
+                    <el-card shadow="never">
+                        <div slot="header">
+                            <span>默认搜索条件</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="addDefaultSearchGroup({'obj':form.follows[index],'key':'defaultSearchGroups'})">添加组</el-button>
+                        </div>
+                        <el-card shadow="hover" v-for="(defaultSearchGroup,indexGroup) in form.follows[index].defaultSearchGroups" :style="'margin-top: '+(indexGroup==0?'0':'3')+'px;'">
+                            <el-form-item :prop="'follows.'+index+'.defaultSearchGroups.' + indexGroup + '.relation'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="关联类型" v-if="indexGroup != 0">
+                                <el-select style="width: 100%" v-model="defaultSearchGroup.relation" placeholder="请选择关联类型">
+                                    <el-option key="AND" label="与" value="AND"></el-option>
+                                    <el-option key="OR" label="或" value="OR"></el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item :prop="'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns'"
+                                          :rules="[{required: true, message: '请添加',validator: validateArray, trigger: 'change'}]">
+                                <el-button type="success" @click="addDefaultSearchColumn({'obj':defaultSearchGroup,'key':'columns','validateKey':'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns'})" size="small">添加字段</el-button>
+                            </el-form-item>
+                            <el-form-item style="float: right;">
+                                <el-button type="danger" @click="removeGroup({'obj':form.follows[index],'key':'defaultSearchGroups','index':indexGroup})" size="small">移除该组</el-button>
+                            </el-form-item>
+                            <el-card shadow="never" v-for="(defaultSearchColumn,indexColumn) in form.follows[index].defaultSearchGroups[indexGroup].columns" :style="'margin-top: '+(indexColumn==0?'0':'3')+'px;'">
+                                <el-form-item :prop="'follows.'+index+'.defaultSearchGroups.' + indexGroup + '.columns.' + indexColumn + '.relation'"
+                                              :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                              label="关联类型" v-if="indexColumn != 0">
+                                    <el-select style="width: 100%" v-model="defaultSearchColumn.relation" placeholder="请选择关联类型">
+                                        <el-option key="AND" label="与" value="AND"></el-option>
+                                        <el-option key="OR" label="或" value="OR"></el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item label="字段:" :prop="'follows.'+index+'.defaultSearchGroups.' + indexGroup + '.columns.' + indexColumn + '.column'"
+                                              :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                    <el-select value-key="key" @change="defaultSearchColumnChange({'obj':defaultSearchColumn})"
+                                               v-model="defaultSearchColumn.column" placeholder="请选择" style="width: 100%">
+                                        <el-option
+                                                v-for="(column,colIndex) in foes[index].dbColumns"
+                                                :key="column.table+'.'+column.column.field"
+                                                :label="'表:'+column.table+',字段:'+column.column.field"
+                                                :value="{table:column.table,column:column.column.field,key:column.table+'_'+column.column.field}">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.column" :prop="'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.judge'"
+                                              :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                              label="判断类型">
+                                    <el-select @change="defaultSearchJudgeChange({'obj':defaultSearchColumn})" style="width: 100%"
+                                               v-model="defaultSearchColumn.judge" placeholder="请选择判断类型">
+                                        <el-option
+                                                v-for="(judge,judgeIndex) in judges"
+                                                :key="judge.value"
+                                                :label="judge.label"
+                                                :value="judge.value">
+                                        </el-option>
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['isnull','isnotnull','bt','in'].indexOf(defaultSearchColumn.judge) == -1"
+                                              :prop="'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.value'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="值">
+                                    <el-input maxlength="200" v-model="defaultSearchColumn.value" clearable></el-input>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['bt'].indexOf(defaultSearchColumn.judge) > -1"
+                                              :prop="'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.startValue'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="最小值">
+                                    <el-input maxlength="200" v-model="defaultSearchColumn.startValue" clearable></el-input>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['bt'].indexOf(defaultSearchColumn.judge) > -1"
+                                              :prop="'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.endValue'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="最大值">
+                                    <el-input maxlength="200" v-model="defaultSearchColumn.endValue" clearable></el-input>
+                                </el-form-item>
+                                <el-form-item v-if="defaultSearchColumn.judge && ['in'].indexOf(defaultSearchColumn.judge) > -1"
+                                              :prop="'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns.'+indexColumn+'.inValue'"
+                                              :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="值">
+                                    <el-select style="width: 100%"
+                                               v-model="defaultSearchColumn.inValue"
+                                               multiple
+                                               filterable
+                                               allow-create
+                                               default-first-option
+                                               no-data-text="请输入值,然后回车键确认"
+                                               placeholder="请输入值,然后回车键确认">
+                                    </el-select>
+                                </el-form-item>
+                                <el-form-item>
+                                    <el-button type="danger" @click="remove({'obj':defaultSearchGroup,'key':'columns','validateKey':'follows.'+index+'.defaultSearchGroups.'+indexGroup+'.columns','index':indexColumn})" size="mini">移除该字段</el-button>
+                                </el-form-item>
+                            </el-card>
+                        </el-card>
+                    </el-card>
+                    <el-card shadow="hover" style="margin-top: 3px;">
+                        <div slot="header">
+                            <span>搜索表单</span>
+                            <el-button style="float: right; padding: 3px 0" type="text" @click="addSearchElement({'obj':form.follows[index],'key':'elements'})">添加搜索项</el-button>
+                        </div>
+                        <el-card shadow="hover" v-for="(element,indexElement) in form.follows[index].elements" :style="'margin-top: '+(indexElement==0?'0':'3')+'px;'">
+                            <el-form-item>
+                                <el-button-group>
+                                    <el-button @click="up(indexElement,form.follows[index].elements)" :disabled="indexElement == 0"
+                                               size="mini" type="primary" icon="el-icon-top"></el-button>
+                                    <el-button @click="down(indexElement,form.follows[index].elements)" :disabled="indexElement == form.follows[index].elements.length-1"
+                                               size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                                </el-button-group>
+                            </el-form-item>
+                            <el-form-item label="字段:" :prop="'follows.'+index+'.elements.'+indexElement+'.column'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                                <el-select value-key="key" @change="searchColumnChange({'obj':element})"
+                                           v-model="element.column" placeholder="请选择" style="width: 100%">
+                                    <el-option
+                                            v-for="(column,colIndex) in foes[index].dbColumns"
+                                            :key="column.table+'.'+column.column.field"
+                                            :label="'表:'+column.table+',字段:'+column.column.field"
+                                            :value="{table:column.table,column:column.column.field,key:column.table+'_'+column.column.field}">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.column" :prop="'follows.'+index+'.elements.'+indexElement+'.label'"
+                                          :rules="[{required: true, message: '请填写', trigger: 'change'}]" label="控件标题:">
+                                <el-input maxlength="200" v-model="element.label" clearable></el-input>
+                            </el-form-item>
+                            <el-form-item v-if="element.column" :prop="'follows.'+index+'.elements.'+indexElement+'.elementType'"
+                                          :rules="[{required: true, message: '请选择', trigger: 'change'}]"
+                                          label="控件类型:">
+                                <el-select @change="elementTypeChange({'obj':element})" style="width: 100%"
+                                           v-model="element.elementType" placeholder="请选择控件类型" clearable>
+                                    <el-option
+                                            v-for="(elementType,elementTypeIndex) in elementTypes"
+                                            :key="elementType.value"
+                                            :label="elementType.label"
+                                            :value="elementType.value">
+                                    </el-option>
+                                </el-select>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('options') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.options'" label="选项:"
+                                          :rules="[{required: false, message: '请添加', validator: validateArray, trigger: 'change'}]">
+                                <el-button type="text" @click="showOptions({'obj':element,'key':'options','validateKey':'follows.'+index+'.elements.'+indexElement+'.options'})">设置</el-button>
+                            </el-form-item>
+                            <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('sql') > -1"
+                                          :prop="'follows.'+index+'.elements.'+indexElement+'.sql'" label="选项:"
+                                          :rules="[{required: true, message: '请设置', validator: validateSql, trigger: 'change', obj: element}]">
+                                <el-button type="text" @click="showSql({'obj':element,'validateKey':'follows.'+index+'.elements.'+indexElement+'.sql'})">点击设置</el-button>
+                            </el-form-item>
+                            <el-form-item>
+                                <el-button type="danger" @click="remove({'obj':form.follows[index],'key':'elements','index':indexElement})" size="mini">移除该字段</el-button>
+                            </el-form-item>
+                            <el-collapse accordion v-if="element.elementType">
+                                <el-collapse-item>
+                                    <template slot="title">
+                                        其他配置 <i style="margin-left: 5px;" class="el-icon-setting"></i>
+                                    </template>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('maxlength') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.maxlength'" label="最大输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.maxlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('minlength') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.minlength'" label="最小输入长度:"
+                                                  :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.minlength" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showWordLimit') > -1 && element.maxlength"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.showWordLimit'" label="显示字数统计:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showWordLimit" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('placeholder') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.placeholder'" label="提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.placeholder" clearable>
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('clearable') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.clearable'" label="可清空:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.clearable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('showPassword') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.showPassword'" label="显示切换密码图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.showPassword" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('size') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.size'" label="控件大小:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.size" clearable>
+                                            <el-option
+                                                    v-for="(elementSize,elementSizeIndex) in elementSizes"
+                                                    :key="elementSize.value"
+                                                    :label="elementSize.label"
+                                                    :disabled="elementSize.disableTypes.indexOf(element.elementType) > -1"
+                                                    :value="elementSize.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('prefixIcon') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.prefixIcon'" label="组件首部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'prefixIcon'})">
+                                            <i class="icon-style" v-if="element.prefixIcon" :class="element.prefixIcon"></i>
+                                            <span v-if="!element.prefixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.prefixIcon" type="text" @click="removeIcon({'obj':element,'key':'prefixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('suffixIcon') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.suffixIcon'" label="组件尾部图标:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-button style="padding: 0px;" type="text" @click="showIcon({'obj':element,'key':'suffixIcon'})">
+                                            <i class="icon-style" v-if="element.suffixIcon" :class="element.suffixIcon"></i>
+                                            <span v-if="!element.suffixIcon">设置</span>
+                                        </el-button>
+                                        <el-button v-if="element.suffixIcon" type="text" @click="removeIcon({'obj':element,'key':'suffixIcon'})">移除</el-button>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('multiple') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.multiple'" label="多选:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.multiple" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && element.multiple && typeContains[element.elementType].indexOf('multipleLimit') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.multipleLimit'" label="多选项目数量限制:"
+                                                  :rules="[{required: false, message: '请输入正整数',validator: validateZNumber, trigger: 'change'}]">
+                                        <el-input v-model="element.multipleLimit" clearable placeholder="0表示不限制">
+                                        </el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('filterable') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.filterable'" label="可搜索:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.filterable" clearable>
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('valueFormat') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.valueFormat'" label="绑定值格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.valueFormat" placeholder="默认Date日期对象" clearable>
+                                            <el-option
+                                                    v-for="(valueFormat,valueFormatIndex) in valueFormats"
+                                                    :key="valueFormat.value"
+                                                    :label="valueFormat.label"
+                                                    :value="valueFormat.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('format') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.format'" label="外显格式:"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select style="width: 100%" v-model="element.format" placeholder="默认yyyy-MM-dd HH:mm:ss" clearable>
+                                            <el-option
+                                                    v-for="(format,formatIndex) in formats"
+                                                    :key="format.value"
+                                                    :label="format.label"
+                                                    :value="format.value">
+                                            </el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('startPlaceholder') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.startPlaceholder'" label="开始日期提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.startPlaceholder" clearable></el-input>
+                                    </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('endPlaceholder') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.endPlaceholder'" label="结束日期提示文本:"
+                                                  :rules="[{required: false, message: '请输入', trigger: 'change'}]">
+                                        <el-input v-model="element.endPlaceholder" clearable></el-input>
+                                    </el-form-item>
+                                </el-collapse-item>
+                            </el-collapse>
+                        </el-card>
+                    </el-card>
+                </el-tab-pane>
+            </el-tabs>
+        </el-form>
+    </el-card>
+
+    <el-dialog title="图标" :visible.sync="dialog.icon.visible" width="60%" :before-close="iconClose">
+        <el-radio size="medium" v-model="dialog.icon.value" v-for="(ic,index) in icons" :label="ic"><i class="icon-style" :class="ic"></i></el-radio>
+        <div style="text-align: right">
+            <el-button @click="iconClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmIcon" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="选项" :visible.sync="dialog.option.visible" width="80%" :before-close="optionClose">
+        <el-row>
+            <el-col :span="12">
+                <el-button type="primary" @click="addOption" size="mini" :disabled="loading">添加选项</el-button>
+            </el-col>
+        </el-row>
+        <el-form :model="dialog.option" ref="dialogOption" :inline="true" size="small">
+            <el-table :data="dialog.option.value"
+                      border size="mini"
+                      style="width: 100%;margin-top: 3px;margin-bottom: 3px;">
+                <el-table-column
+                        label="选项标签名称">
+                    <template slot-scope="props">
+                        <el-form-item :prop="'value.' + props.$index + '.label'"
+                                      :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                            <el-input v-model="props.row.label" clearable/>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        label="选项标签值类型">
+                    <template slot-scope="props">
+                        <el-form-item :prop="'value.' + props.$index + '.type'"
+                                      :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                            <el-select @change="optionTypeChange({'obj':props.row})" style="width: 100%" v-model="props.row.type" clearable>
+                                <el-option key="string" label="字符串类型" value="string"></el-option>
+                                <el-option key="number" label="数字类型" value="number"></el-option>
+                                <el-option key="boolean" label="布尔类型" value="boolean"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        label="选项标签值">
+                    <template slot-scope="props">
+                        <el-form-item v-if="props.row.type=='string'" :prop="'value.'+props.$index+'.value'"
+                                      :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                            <el-input v-model="props.row.value" clearable>
+                        </el-form-item>
+                        <el-form-item v-if="props.row.type=='number'" :prop="'value.'+props.$index+'.value'"
+                                      :rules="[{required: true, message: '请填写正确的数字格式内容',validator: validateAllNumber, trigger: 'change'}]">
+                            <el-input v-model="props.row.value" clearable>
+                        </el-form-item>
+                        <el-form-item v-if="props.row.type=='boolean'" :prop="'value.'+props.$index+'.value'"
+                                      :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                            <el-select style="width: 100%" v-model="props.row.value" clearable>
+                                <el-option :key="true" label="TRUE" :value="true"></el-option>
+                                <el-option :key="false" label="FALSE" :value="false"></el-option>
+                            </el-select>
+                        </el-form-item>
+                    </template>
+                </el-table-column>
+                <el-table-column
+                        label="操作">
+                    <template slot-scope="props">
+                        <el-button-group>
+                            <el-button @click="up(props.$index,dialog.option.value)" :disabled="props.$index == 0"
+                                       size="mini" type="primary" icon="el-icon-top"></el-button>
+                            <el-button @click="down(props.$index,dialog.option.value)" :disabled="props.$index == dialog.option.value.length-1"
+                                       size="mini" type="primary" icon="el-icon-bottom"></el-button>
+                        </el-button-group>
+                        <el-button type="danger" @click="remove({'obj':dialog.option,'key':'value','index':props.$index})" size="mini">移除</el-button>
+                    </template>
+                </el-table-column>
+            </el-table>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="optionClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmOption" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+
+    <el-dialog title="远程下拉选择框配置" :visible.sync="dialog.sql.visible" width="60%" :before-close="sqlClose">
+        <el-form :model="dialog.sql" ref="dialogSql" size="small" :label-width="formLabelWidth">
+            <el-form-item label="查询SQL:" prop="value.sql" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input type="textarea" v-model="dialog.sql.value.sql" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="外显字段:" prop="value.labelColumn" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input v-model="dialog.sql.value.labelColumn" clearable></el-input>
+            </el-form-item>
+            <el-form-item label="值字段:" prop="value.valueColumn" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+                <el-input v-model="dialog.sql.value.valueColumn" clearable></el-input>
+            </el-form-item>
+        </el-form>
+        <div style="text-align: right">
+            <el-button @click="sqlClose" size="mini" :disabled="loading">取 消</el-button>
+            <el-button type="primary" @click="confirmSql" size="mini" :disabled="loading">确 定</el-button>
+        </div>
+    </el-dialog>
+</div>
+<script>
+    window.contextPath = '${contextPath}'
+    function validateSql(rule, value, callback) {
+        if (typeof rule.obj.sql == 'undefined' || rule.obj.sql == null || rule.obj.sql == ''
+            || typeof rule.obj.labelColumn == 'undefined' || rule.obj.labelColumn == null || rule.obj.labelColumn == ''
+            || typeof rule.obj.valueColumn == 'undefined' || rule.obj.valueColumn == null || rule.obj.valueColumn == '') {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    }
+    var vue = new Vue({
+        name: 'table',
+        el: '#app',
+        data() {
+            return {
+                id: ${id},
+                version: null,
+                loading: false,
+                formLabelWidth: '100px',
+                form: {
+                },
+                rules: {
+                },
+                mainDbColumns: [],
+                foes: [],
+                judges: [],
+                elementTypes: [],
+                typeContains: {},
+                elementSizes: [],
+                dialog: {
+                    icon: {
+                        visible: false,
+                        value: null,
+                        e: null
+                    },
+                    option: {
+                        visible: false,
+                        e: null
+                    },
+                    sql: {
+                        visible: false,
+                        value: {},
+                        e: null
+                    }
+                },
+                icons: ['el-icon-platform-eleme','el-icon-eleme','el-icon-delete-solid','el-icon-delete',
+                    'el-icon-s-tools','el-icon-setting','el-icon-user-solid','el-icon-user','el-icon-phone',
+                    'el-icon-phone-outline','el-icon-more','el-icon-more-outline','el-icon-star-on','el-icon-star-off',
+                    'el-icon-s-goods','el-icon-goods','el-icon-warning','el-icon-warning-outline','el-icon-question',
+                    'el-icon-info','el-icon-remove','el-icon-circle-plus','el-icon-success','el-icon-error','el-icon-zoom-in',
+                    'el-icon-zoom-out','el-icon-remove-outline','el-icon-circle-plus-outline','el-icon-circle-check',
+                    'el-icon-circle-close','el-icon-s-help','el-icon-help','el-icon-minus','el-icon-plus','el-icon-check',
+                    'el-icon-close','el-icon-picture','el-icon-picture-outline','el-icon-picture-outline-round','el-icon-upload',
+                    'el-icon-upload2','el-icon-download','el-icon-camera-solid','el-icon-camera','el-icon-video-camera-solid',
+                    'el-icon-video-camera','el-icon-message-solid','el-icon-bell'],
+                valueFormats: [{
+                    label: '字符串 yyyy-MM-dd',
+                    value: 'yyyy-MM-dd'
+                },{
+                    label: '字符串 yyyy年MM月dd日',
+                    value: 'yyyy年MM月dd日'
+                }, {
+                    label: '字符串 yyyy-MM-dd HH:mm:ss',
+                    value: 'yyyy-MM-dd HH:mm:ss'
+                }, {
+                    label: '字符串 yyyy年MM月dd日 HH时mm分ss秒',
+                    value: 'yyyy年MM月dd日 HH时mm分ss秒'
+                }, {
+                    label: '时间戳',
+                    value: 'timestamp'
+                }],
+                formats: [{
+                    label: 'yyyy-MM-dd',
+                    value: 'yyyy-MM-dd'
+                },{
+                    label: 'yyyy年MM月dd日',
+                    value: 'yyyy年MM月dd日'
+                }, {
+                    label: 'yyyy-MM-dd HH:mm:ss',
+                    value: 'yyyy-MM-dd HH:mm:ss'
+                }, {
+                    label: 'yyyy年MM月dd日 HH时mm分ss秒',
+                    value: 'yyyy年MM月dd日 HH时mm分ss秒'
+                }]
+            }
+        },
+        methods: {
+            submit() {
+                this.loading = true;
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        axios.post('${contextPath}/metaSearch/update',{
+                            id: this.id,
+                            config: this.form,
+                            version: this.version
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                                this.loading = false;
+                            }
+                            else {
+                                this.loading = false;
+                                window.location.href = window.contextPath + '/index.html'
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    } else {
+                        this.loading = false;
+                        return false;
+                    }
+                });
+            },
+            up(index, elements) {
+                elements[index] = elements.splice(index - 1, 1, elements[index])[0];
+            },
+            down(index, elements) {
+                elements[index] = elements.splice(index + 1, 1, elements[index])[0];
+            },
+            confirmSql() {
+                this.$refs['dialogSql'].validate((valid) => {
+                    if (valid) {
+                        this.$set(this.dialog.sql.e.obj,'sql',this.dialog.sql.value.sql)
+                        this.$set(this.dialog.sql.e.obj,'labelColumn',this.dialog.sql.value.labelColumn)
+                        this.$set(this.dialog.sql.e.obj,'valueColumn',this.dialog.sql.value.valueColumn)
+                        this.sqlClose()
+                    }
+                });
+            },
+            sqlClose() {
+                if (this.dialog.sql.e.validateKey) {
+                    let key = this.dialog.sql.e.validateKey
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(key)
+                    })
+                }
+                this.dialog.sql = {
+                    visible: false,
+                    value: {},
+                    e: null
+                }
+            },
+            showSql(e) {
+                this.dialog.sql = {
+                    visible: true,
+                    value: {
+                        sql: e.obj['sql'],
+                        labelColumn: e.obj['labelColumn'],
+                        valueColumn: e.obj['valueColumn']
+                    },
+                    e: e
+                }
+            },
+            confirmOption() {
+                this.$refs['dialogOption'].validate((valid) => {
+                    if (valid) {
+                        this.$set(this.dialog.option.e.obj,this.dialog.option.e.key,this.dialog.option.value)
+                        this.optionClose()
+                    }
+                });
+            },
+            optionTypeChange(e) {
+                this.$set(e.obj,'value',null)
+            },
+            addOption() {
+                let v = this.dialog.option.value
+                if (typeof v == 'undefined' || v == null) {
+                    v = []
+                }
+                v.push({})
+                this.$set(this.dialog.option,'value',v)
+            },
+            optionClose() {
+                if (this.dialog.option.e.validateKey) {
+                    let key = this.dialog.option.e.validateKey
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(key)
+                    })
+                }
+                this.dialog.option = {
+                    visible: false,
+                    value: null,
+                    e: null
+                }
+            },
+            showOptions(e) {
+                this.dialog.option = {
+                    visible: true,
+                    value: e.obj[e.key],
+                    e: e
+                }
+            },
+            removeIcon(e) {
+                this.$set(e.obj,e.key,null)
+            },
+            confirmIcon() {
+                this.$set(this.dialog.icon.e.obj,this.dialog.icon.e.key,this.dialog.icon.value)
+                this.iconClose()
+            },
+            iconClose() {
+                this.dialog.icon = {
+                    visible: false,
+                    value: null,
+                    e: null
+                }
+            },
+            showIcon(e) {
+                this.dialog.icon = {
+                    visible: true,
+                    value: e.obj[e.key],
+                    e: e
+                }
+            },
+            elementTypeChange(e) {
+                this.$set(e.obj,'maxlength',null)
+                this.$set(e.obj,'minlength',null)
+                this.$set(e.obj,'showWordLimit',null)
+                this.$set(e.obj,'placeholder',null)
+                this.$set(e.obj,'clearable',null)
+                this.$set(e.obj,'showPassword',null)
+                this.$set(e.obj,'size',null)
+                this.$set(e.obj,'prefixIcon',null)
+                this.$set(e.obj,'suffixIcon',null)
+                this.$set(e.obj,'multiple',null)
+                this.$set(e.obj,'multipleLimit',null)
+                this.$set(e.obj,'filterable',null)
+                this.$set(e.obj,'options',null)
+                this.$set(e.obj,'valueFormat',null)
+                this.$set(e.obj,'format',null)
+                this.$set(e.obj,'startPlaceholder',null)
+                this.$set(e.obj,'endPlaceholder',null)
+                this.$set(e.obj,'sql',null)
+                this.$set(e.obj,'labelColumn',null)
+                this.$set(e.obj,'valueColumn',null)
+            },
+            searchColumnChange(e) {
+
+            },
+            addSearchElement(e) {
+                let value = []
+                if (e.obj[e.key]) {
+                    value = e.obj[e.key]
+                }
+                value.push({})
+                this.$set(e.obj,e.key,value)
+            },
+            remove(e) {
+                e.obj[e.key].splice(e.index, 1)
+                if (e.validateKey) {
+                    this.$nextTick(() => {
+                        this.$refs.form.validateField(e.validateKey)
+                    })
+                }
+            },
+            removeGroup(e) {
+                e.obj[e.key].splice(e.index, 1)
+            },
+            defaultSearchJudgeChange(e) {
+                this.$set(e.obj,'value',null)
+                this.$set(e.obj,'startValue',null)
+                this.$set(e.obj,'endValue',null)
+                this.$set(e.obj,'inValue',null)
+            },
+            defaultSearchColumnChange(e) {
+                this.$set(e.obj,'value',null)
+                this.$set(e.obj,'startValue',null)
+                this.$set(e.obj,'endValue',null)
+                this.$set(e.obj,'inValue',null)
+            },
+            addDefaultSearchColumn(e) {
+                let value = []
+                if (e.obj[e.key]) {
+                    value = e.obj[e.key]
+                }
+                value.push({})
+                this.$set(e.obj,e.key,value)
+                this.$nextTick(() => {
+                    this.$refs.form.validateField(e.validateKey)
+                })
+            },
+            addDefaultSearchGroup(e) {
+                let value = []
+                if (e.obj[e.key]) {
+                    value = e.obj[e.key]
+                }
+                value.push({})
+                this.$set(e.obj,e.key,value)
+            }
+        },
+        mounted() {
+            this.loading = true
+            axios.get('${contextPath}/metaSearch/info',{
+                params: {
+                    id: this.id
+                }
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.version = res.data.content.version
+                    this.$set(this,'form',res.data.content.search)
+                    this.mainDbColumns = res.data.content.mainDbColumns
+                    if (res.data.content.followTableColumns) {
+                        res.data.content.followTableColumns.forEach(f => {
+                            this.foes.push({
+                                dbColumns: f.dbColumns
+                            })
+                        })
+                    }
+                }
+                this.loading = false
+            }).catch(res => {
+                console.error(res)
+                this.loading = false
+            })
+        },
+        created: function () {
+            axios.get('${contextPath}/setting/judge',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.judges = res.data.content.list
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+            axios.get('${contextPath}/setting/searchElementType',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.elementTypes = res.data.content.list
+                    this.typeContains = res.data.content.typeContains
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+            axios.get('${contextPath}/setting/size',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.elementSizes = res.data.content.list
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+        }
+    })
+</script>
+</body>
+</html>
