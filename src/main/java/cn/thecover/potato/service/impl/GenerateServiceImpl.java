@@ -158,7 +158,13 @@ public class GenerateServiceImpl implements IGenerateService {
                 }
                 String followPath = BootConstant.requestPrefix + "page/"
                         + DesUtil.encrypt(param.getId() + "," + config.getBasic().getVersion() + "," + index) + ".html";
-                context.getFrontContext().addFollow(BootConstant.requestPrefix + CommonUtil.getClassNameField(className.getEntityName()) + "/list",
+                String followListRequestPath;
+                if (isBoot) {
+                    followListRequestPath = coreProperties.getPath() + BootConstant.requestPrefix + CommonUtil.getClassNameField(className.getEntityName()) + "/list";
+                } else {
+                    followListRequestPath = BootConstant.requestPrefix + CommonUtil.getClassNameField(className.getEntityName()) + "/list";
+                }
+                context.getFrontContext().addFollow(followListRequestPath,
                         config.getTable().getFollows().get(index), followSearch,
                         followTable.getForeignKey(), followTable.getName(),
                         followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath);

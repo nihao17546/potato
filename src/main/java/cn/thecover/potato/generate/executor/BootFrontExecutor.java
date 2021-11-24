@@ -9,10 +9,7 @@ import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
 import cn.thecover.potato.meta.conf.form.search.element.DateTimeRangeSearchElement;
 import cn.thecover.potato.meta.conf.table.UIColumn;
 import org.springframework.util.CollectionUtils;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 
-import javax.servlet.http.HttpServletRequest;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,13 +26,20 @@ public class BootFrontExecutor extends FrontExecutor {
     @Override
     protected Map<String, Map<String, String>> analysis() {
         Map<String, Map<String, String>> result = new HashMap<>();
-//        HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
         Map<String, String> map = new HashMap<>();
         result.put(context.getPath(), map);
-//        map.put("contextPath", request.getContextPath());
         map.put("title", context.getTitle());
 
+        String formString = null;
+        if (context.getForeignKey() != null) {
+            String foreignKey = context.getPropMap().get(context.getTable() + "_" + context.getForeignKey());
+            formString = "{" + foreignKey + ": this." + foreignKey + "}";
+        } else {
+            formString = "{}";
+        }
+
         StringBuilder searchBuilder = new StringBuilder();
+        StringBuilder addBtnBuilder = new StringBuilder();
         StringBuilder mainColumnsBuilder = new StringBuilder();
         StringBuilder datasBuilder = new StringBuilder();
         StringBuilder methodsBuilder = new StringBuilder();
@@ -182,46 +186,48 @@ public class BootFrontExecutor extends FrontExecutor {
         }
 
         if (context.getOperateContext() != null) {
-            datasBuilder.append("                form: {},\n");
+            datasBuilder.append("                form: ").append(formString).append(",\n");
             datasBuilder.append("                formVisible: false,\n");
             datasBuilder.append("                formTitle: '',\n");
-            optionColumnBuilder.append("                    ")
-                    .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showInfo(props.row,[");
-            int index = 0;
-            for (String pk : context.getOperateContext().getPrimaryKeys()) {
-                if (index ++ > 0) {
-                    optionColumnBuilder.append(",");
+            if (Boolean.TRUE.equals(context.getOperateContext().getUpdate())) {
+                optionColumnBuilder.append("                    ")
+                        .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showInfo(props.row,[");
+                int index = 0;
+                for (String pk : context.getOperateContext().getPrimaryKeys()) {
+                    if (index ++ > 0) {
+                        optionColumnBuilder.append(",");
+                    }
+                    optionColumnBuilder.append("'").append(pk).append("'");
                 }
-                optionColumnBuilder.append("'").append(pk).append("'");
+                optionColumnBuilder.append("])\">编辑")
+                        .append("</el-button>\n");
+                methodsBuilder
+                        .append("            showInfo(row,pks) {\n")
+                        .append("                let param = {}\n")
+                        .append("                for(let i = 0; i < pks.length; i ++) {\n")
+                        .append("                    param[pks[i]] = row[pks[i]]\n")
+                        .append("                }\n")
+                        .append("                axios.get('").append("${contextPath}").append(context.getInfoRequest()).append("',{\n")
+                        .append("                    params: param\n")
+                        .append("                }).then(res => {\n")
+                        .append("                    if (res.data) {\n")
+                        .append("                        this.form = res.data\n")
+                        .append("                        this.formVisible = true\n")
+                        .append("                        this.formTitle = '编辑'\n")
+                        .append("                    } else {\n")
+                        .append("                        this.$message.error('没有查询到数据');\n")
+                        .append("                    }\n")
+                        .append("                }).catch(res => {\n")
+                        .append("                    console.error(res)\n")
+                        .append("                    this.loading = false;\n")
+                        .append("                })\n")
+                        .append("            },\n");
             }
-            optionColumnBuilder.append("])\">编辑")
-                    .append("</el-button>\n");
-            methodsBuilder
-                    .append("            showInfo(row,pks) {\n")
-                    .append("                let param = {}\n")
-                    .append("                for(let i = 0; i < pks.length; i ++) {\n")
-                    .append("                    param[pks[i]] = row[pks[i]]\n")
-                    .append("                }\n")
-                    .append("                axios.get('").append("${contextPath}").append(context.getInfoRequest()).append("',{\n")
-                    .append("                    params: param\n")
-                    .append("                }).then(res => {\n")
-                    .append("                    if (res.data) {\n")
-                    .append("                        this.form = res.data\n")
-                    .append("                        this.formVisible = true\n")
-                    .append("                        this.formTitle = '编辑'\n")
-                    .append("                    } else {\n")
-                    .append("                        this.$message.error('没有查询到数据');\n")
-                    .append("                    }\n")
-                    .append("                }).catch(res => {\n")
-                    .append("                    console.error(res)\n")
-                    .append("                    this.loading = false;\n")
-                    .append("                })\n")
-                    .append("            },\n");
             methodsBuilder
                     .append("            closeInfo() {\n")
                     .append("                this.formVisible = false\n")
                     .append("                this.formTitle = ''\n")
-                    .append("                this.form = {}\n")
+                    .append("                this.form = ").append(formString).append("\n")
                     .append("                this.$refs.form.resetFields()\n")
                     .append("            },\n");
             extraHtmlBuilder
@@ -303,6 +309,18 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                    }\n")
                     .append("                });\n")
                     .append("            },\n");
+
+            if (Boolean.TRUE.equals(context.getOperateContext().getInsert())) {
+                addBtnBuilder.append("        <el-form-item>\n")
+                        .append("            <el-button type=\"primary\" @click=\"showAdd\">新增</el-button>\n")
+                        .append("        </el-form-item>\n");
+                methodsBuilder
+                        .append("            showAdd() {\n")
+                        .append("                this.form = ").append(formString).append("\n")
+                        .append("                this.formVisible = true\n")
+                        .append("                this.formTitle = '新增'\n")
+                        .append("            },\n");
+            }
         }
 
         if (!CollectionUtils.isEmpty(context.getFollows())) {
@@ -463,6 +481,9 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("        <el-form-item>\n")
                     .append("            <el-button type=\"primary\" @click=\"search\">查询</el-button>\n")
                     .append("        </el-form-item>\n");
+        }
+        if (addBtnBuilder.length() > 0) {
+            topBuilder.append(addBtnBuilder.toString());
         }
         topBuilder
                 .append("        </el-form>\n")

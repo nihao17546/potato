@@ -12,4 +12,6 @@ import java.util.List;
 public class FrontOperateContext {
     private List<String> primaryKeys;
     private List<OperateElement> elements;
+    private Boolean insert;
+    private Boolean update;
 }

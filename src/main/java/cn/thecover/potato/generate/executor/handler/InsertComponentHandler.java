@@ -3,10 +3,12 @@ package cn.thecover.potato.generate.executor.handler;
 import cn.thecover.potato.exception.HandlerException;
 import cn.thecover.potato.generate.annotation.AnnotationInfo;
 import cn.thecover.potato.generate.context.ClassField;
+import cn.thecover.potato.generate.context.FrontOperateContext;
 import cn.thecover.potato.generate.executor.ComponentExecutor;
 import cn.thecover.potato.generate.method.MethodInfo;
 import cn.thecover.potato.generate.method.ParamInfo;
 import cn.thecover.potato.meta.conf.db.Column;
+import cn.thecover.potato.meta.conf.db.FollowTable;
 import cn.thecover.potato.meta.conf.db.enums.PrimaryType;
 import cn.thecover.potato.meta.conf.form.operate.Unique;
 import cn.thecover.potato.meta.conf.form.operate.elements.CreateTimeElement;
@@ -27,6 +29,17 @@ import java.util.*;
 public class InsertComponentHandler extends ComponentHandler {
     @Override
     protected List<ComponentExecutor.El> handler(HandlerRequest request) {
+        FrontOperateContext infoContext = request.getFrontContext().getOperateContext();
+        if (infoContext == null) {
+            infoContext = new FrontOperateContext();
+            infoContext.setPrimaryKeys(request.getTable().getPrimaryFields());
+            infoContext.setElements(request.getOperateForm().getElements());
+            infoContext.setInsert(true);
+            request.getFrontContext().setOperateContext(infoContext);
+        } else {
+            infoContext.setInsert(true);
+        }
+
         List<ComponentExecutor.El> elList = new ArrayList<>();
 
         SqlStringBuilder sqlStringBuilder = new SqlStringBuilder();
@@ -39,9 +52,16 @@ public class InsertComponentHandler extends ComponentHandler {
                 sqlStringBuilder.put(key).append(",");
             }
         }
+        String foreignKey = null;
+        if (request.getTable() instanceof FollowTable) {
+            FollowTable tb = (FollowTable) request.getTable();
+            foreignKey = tb.getForeignKey();
+            sqlStringBuilder.put(foreignKey).append(",");
+        }
         for (OperateElement element : request.getOperateForm().getElements()) {
             Column column = element.getColumn();
-            if (!request.getTable().getPrimaryFields().contains(column.getField())) {
+            if (!request.getTable().getPrimaryFields().contains(column.getField())
+                    && !column.getField().equals(foreignKey)) {
                 sqlStringBuilder.put(column.getField()).append(",");
             }
         }
@@ -53,9 +73,13 @@ public class InsertComponentHandler extends ComponentHandler {
                 sqlStringBuilder.append("#{").append(CamelUtil.underlineToCamel(key)).append("},");
             }
         }
+        if (foreignKey != null) {
+            sqlStringBuilder.append("#{").append(CamelUtil.underlineToCamel(foreignKey)).append("},");
+        }
         for (OperateElement element : request.getOperateForm().getElements()) {
             Column column = element.getColumn();
-            if (!request.getTable().getPrimaryFields().contains(column.getField())) {
+            if (!request.getTable().getPrimaryFields().contains(column.getField())
+                    && !column.getField().equals(foreignKey)) {
                 sqlStringBuilder.append("#{").append(CamelUtil.underlineToCamel(column.getField())).append("},");
             }
         }
