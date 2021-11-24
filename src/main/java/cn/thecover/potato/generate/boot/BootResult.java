@@ -18,6 +18,8 @@ public class BootResult implements Serializable {
     private Integer id;
     private Integer version;
 
+    private String basePackage;
+
     private List<Java> po;
     private List<Java> dto;
     private List<Java> vo;

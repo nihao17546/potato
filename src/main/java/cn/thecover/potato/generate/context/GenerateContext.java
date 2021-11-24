@@ -12,6 +12,10 @@ import java.util.Map;
  * @author nihao 2021/07/12
  */
 public class GenerateContext {
+    @Getter
+    @Setter
+    private String packageName;
+
     // 主表pojo类名
     @Getter
     @Setter

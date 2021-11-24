@@ -91,7 +91,8 @@ public class GenerateServiceImpl implements IGenerateService {
 
         GenerateParam param = new GenerateParam();
         param.setId(id);
-        param.setPackageName(GenerateUtil.getWord(BootConstant.bootPackage + ".", id));
+        String basePackage = BootConstant.bootPackage + "." + GenerateUtil.getRandomPackageName();
+        param.setPackageName(basePackage);
         List<GenerateParam.Entity> entityNames = new ArrayList<>();
         param.setEntityNames(entityNames);
 
@@ -127,6 +128,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 Collectors.toMap(GenerateParam.Entity::getTable, GenerateParam.Entity::getClazz));
 
         GenerateContext context = new GenerateContext();
+        context.setPackageName(param.getPackageName());
         context.setColumnMap(getColumnMap(config.getDbConf()));
         context.setMainClassName(new ClassName(param.getPackageName(), entityMap.get(config.getDbConf().getTable().getName())));
         String path = BootConstant.requestPrefix + "page/" + DesUtil.encrypt(param.getId() + "," + config.getBasic().getVersion()) + ".html";
@@ -195,6 +197,7 @@ public class GenerateServiceImpl implements IGenerateService {
         } else {
             result = new BootResult();
             GenerateContext context = getContext(id, config, true);
+            result.setBasePackage(context.getPackageName());
             Map<String,String> map = generate(context, config);
 
             FrontContext frontContext = context.getFrontContext();

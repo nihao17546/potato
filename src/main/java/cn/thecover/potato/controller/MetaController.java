@@ -128,7 +128,7 @@ public class MetaController {
             htmls.addChild(h);
         }
 
-        String basePackage = GenerateUtil.getWord(BootConstant.bootPackage + ".", id);
+        String basePackage = bootResult.getBasePackage();
         BootCodeVo.Label basePackageLabel = new BootCodeVo.Label(basePackage);
         java.addChild(basePackageLabel);
 
