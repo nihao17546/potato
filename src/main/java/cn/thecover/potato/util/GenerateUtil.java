@@ -35,26 +35,32 @@ public class GenerateUtil {
         }).collect(Collectors.toList());
     }
 
+    public static List<MethodInfo> getSetterAndGetterMethod(ClassField classField) {
+        List<MethodInfo> list = new ArrayList<>(2);
+        MethodInfo get = new MethodInfo();
+        get.setDecorate("public");
+        get.addContentClass(classField.getClassName());
+        get.setReturnString(classField.getClassName());
+        get.setMethodName(CamelUtil.get(classField.getName()));
+        get.setContent(new StringBuilder().append("        return ")
+                .append("this.").append(classField.getName()).append(";\n").toString());
+        list.add(get);
+
+        MethodInfo set = new MethodInfo();
+        set.setDecorate("public");
+        set.setMethodName(CamelUtil.set(classField.getName()));
+        ParamInfo paramInfo = new ParamInfo(classField.getClassName(), classField.getName());
+        set.addParam(paramInfo);
+        set.setContent(new StringBuilder().append("        this.").append(classField.getName())
+                .append(" = ").append(classField.getName()).append(";\n").toString());
+        list.add(set);
+        return list;
+    }
+
     public static List<MethodInfo> getSetterAndGetterMethods(List<ClassField> fields) {
         List<MethodInfo> list = new ArrayList<>(fields.size() * 2);
         for (ClassField classField : fields) {
-            MethodInfo get = new MethodInfo();
-            get.setDecorate("public");
-            get.addContentClass(classField.getClassName());
-            get.setReturnString(classField.getClassName());
-            get.setMethodName(CamelUtil.get(classField.getName()));
-            get.setContent(new StringBuilder().append("        return ")
-                    .append("this.").append(classField.getName()).append(";\n").toString());
-            list.add(get);
-
-            MethodInfo set = new MethodInfo();
-            set.setDecorate("public");
-            set.setMethodName(CamelUtil.set(classField.getName()));
-            ParamInfo paramInfo = new ParamInfo(classField.getClassName(), classField.getName());
-            set.addParam(paramInfo);
-            set.setContent(new StringBuilder().append("        this.").append(classField.getName())
-                    .append(" = ").append(classField.getName()).append(";\n").toString());
-            list.add(set);
+            list.addAll(getSetterAndGetterMethod(classField));
         }
         return list;
     }

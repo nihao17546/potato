@@ -19,6 +19,7 @@ import cn.thecover.potato.meta.conf.form.operate.enums.TimeFormatType;
 import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.util.CamelUtil;
 import cn.thecover.potato.util.SqlStringBuilder;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -198,7 +199,9 @@ public class UpdateComponentHandler extends ComponentHandler {
         controllerMethod.addContentClass(Map.class.getName());
         controllerMethod.addContentClass(HashMap.class.getName());
         controllerMethod.setReturnString(Map.class.getName());
-        controllerMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
+        ParamInfo controllerParam = new ParamInfo(className.getPoClassName(), "param");
+        controllerParam.addAnnotation(new AnnotationInfo(RequestBody.class.getName()));
+        controllerMethod.addParam(controllerParam);
         ClassField serviceClassField = null;
         for (ClassField classField : controllerClass.getFields()) {
             if (classField.getClassName().equals(serviceClass.getClassName())) {

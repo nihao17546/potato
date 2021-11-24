@@ -77,6 +77,13 @@ public class ComponentExecutor extends Executor {
             vo.addFields(dto.getFields());
             vo.addMethods(dto.getMethods());
 
+            for (ClassField classField : po.getFields()) {
+                if (!vo.getFields().contains(classField)) {
+                    vo.addField(classField);
+                    vo.addMethods(GenerateUtil.getSetterAndGetterMethod(classField));
+                }
+            }
+
             ClassConstructor constructor = new ClassConstructor("public");
             ParamInfo paramInfo = new ParamInfo(dto.getClassName(), CommonUtil.getClassNameField(dto.getName()));
             constructor.addParam(paramInfo);
