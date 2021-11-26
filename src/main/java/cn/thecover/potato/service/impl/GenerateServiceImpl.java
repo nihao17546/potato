@@ -91,7 +91,8 @@ public class GenerateServiceImpl implements IGenerateService {
 
         GenerateParam param = new GenerateParam();
         param.setId(id);
-        String basePackage = BootConstant.bootPackage + "." + GenerateUtil.getRandomPackageName();
+//        String basePackage = BootConstant.bootPackage + "." + GenerateUtil.getRandomPackageName();
+        String basePackage = GenerateUtil.getWord(BootConstant.bootPackage + ".", id);
         param.setPackageName(basePackage);
         List<GenerateParam.Entity> entityNames = new ArrayList<>();
         param.setEntityNames(entityNames);
@@ -193,9 +194,9 @@ public class GenerateServiceImpl implements IGenerateService {
     }
 
     Pattern pattern = Pattern.compile("namespace=\\\"[a-zA-Z\\.]+\\\"");
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     @Override
-    public void boot(Integer id, Config config) {
+    public void boot(Integer id, Config config) throws Exception {
         Boot boot = bootDao.selectByMetaIdAndVersion(id, config.getBasic().getVersion());
         BootResult result;
         if (boot != null) {

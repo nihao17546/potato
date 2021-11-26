@@ -23,7 +23,6 @@ import java.io.*;
  * @author nihao 2021/11/16
  */
 @Slf4j
-@EnableConfigurationProperties(DbProperties.class)
 public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
     private ApplicationContext applicationContext;
 

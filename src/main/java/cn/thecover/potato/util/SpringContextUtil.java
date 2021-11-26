@@ -44,8 +44,14 @@ public class SpringContextUtil implements ApplicationContextAware {
         registerController(beanId);
     }
 
+    public void registerController(String beanId, Class clazz) {
+        addBean(clazz, beanId);
+        registerController(beanId);
+    }
+
     public void registerController(String controllerBeanName) {
         try {
+            log.info("注册controller:{}", controllerBeanName);
             final RequestMappingHandlerMapping requestMappingHandlerMapping = (RequestMappingHandlerMapping)
                     applicationContext.getBean("requestMappingHandlerMapping");
 
@@ -104,16 +110,17 @@ public class SpringContextUtil implements ApplicationContextAware {
 
     public void addBean(String className, String serviceName) {
         try {
+            log.info("注册bean:{}", serviceName);
             Class<?> clazz = Thread.currentThread().getContextClassLoader().loadClass(className);
             BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(clazz);
             registerBean(serviceName, beanDefinitionBuilder.getRawBeanDefinition());
-            log.info("注册bean:{}", serviceName);
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
     }
 
     public void addBean(Class clazz, String serviceName) {
+        log.info("注册bean:{}", serviceName);
         BeanDefinitionBuilder beanDefinitionBuilder = BeanDefinitionBuilder.genericBeanDefinition(clazz);
         registerBean(serviceName, beanDefinitionBuilder.getRawBeanDefinition());
     }

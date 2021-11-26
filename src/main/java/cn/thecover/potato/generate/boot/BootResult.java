@@ -31,6 +31,8 @@ public class BootResult implements Serializable {
     private Map<String,Html> html;
     private String url;
 
+    private ClassLoader classLoader;
+
     public void clear() {
 //        this.po = null;
 //        this.dto = null;
