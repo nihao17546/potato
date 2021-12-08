@@ -7,7 +7,7 @@ public interface BasicConstant {
     /**
      * 类前缀
      */
-    String beanNamePrefix = "codelss$";
+    String beanNamePrefix = "potato$";
 
     /**
      * 静态路径

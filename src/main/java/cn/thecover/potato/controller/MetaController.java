@@ -2,7 +2,6 @@ package cn.thecover.potato.controller;
 
 import cn.thecover.potato.generate.boot.BootResult;
 import cn.thecover.potato.generate.boot.GenerateBoot;
-import cn.thecover.potato.generate.constant.BootConstant;
 import cn.thecover.potato.meta.conf.Config;
 import cn.thecover.potato.model.param.GenerateParam;
 import cn.thecover.potato.model.param.MetaParam;
@@ -10,7 +9,6 @@ import cn.thecover.potato.model.vo.*;
 import cn.thecover.potato.service.IGenerateService;
 import cn.thecover.potato.service.IMetaService;
 import cn.thecover.potato.util.CommonUtil;
-import cn.thecover.potato.util.GenerateUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,8 +18,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -79,7 +77,7 @@ public class MetaController {
     public String boot(@RequestParam Integer id) {
         Config config = metaService.getConfig(id);
         try {
-            generateService.boot(id, config);
+             generateService.boot(id, config);
         } catch (Exception e) {
             log.error("{}", e);
             return HttpResult.fail(e.getMessage()).json();
@@ -244,12 +242,8 @@ public class MetaController {
     }
 
     private String base64EncodeFileName(String fileName) {
-        try {
-            return "=?UTF-8?B?"
-                    + new String(Base64.encodeBase64String(fileName.getBytes("UTF-8"))) + "?=";
-        } catch (UnsupportedEncodingException e) {
-            throw new RuntimeException(e);
-        }
+        return "=?UTF-8?B?"
+                + new String(Base64.encodeBase64String(fileName.getBytes(StandardCharsets.UTF_8))) + "?=";
     }
 
 }

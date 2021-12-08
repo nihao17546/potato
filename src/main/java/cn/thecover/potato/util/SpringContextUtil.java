@@ -45,7 +45,7 @@ public class SpringContextUtil implements ApplicationContextAware {
     }
 
     public void registerController(String beanId, Class clazz) {
-        addBean(clazz, beanId);
+        registerBean(beanId, clazz);
         registerController(beanId);
     }
 
@@ -108,6 +108,17 @@ public class SpringContextUtil implements ApplicationContextAware {
         beanFactory.registerSingleton(id, bean);
     }
 
+    public void registerBean(String beanId, Class clazz) {
+        log.info("注册bean:{}", beanId);
+        // get the BeanDefinitionBuilder
+        BeanDefinitionBuilder beanDefinitionBuilder =
+                BeanDefinitionBuilder.genericBeanDefinition(clazz);
+        // get the BeanDefinition
+        BeanDefinition beanDefinition=beanDefinitionBuilder.getBeanDefinition();
+        // register the bean
+        beanFactory.registerBeanDefinition(beanId,beanDefinition);
+    }
+
     public void addBean(String className, String serviceName) {
         try {
             log.info("注册bean:{}", serviceName);
@@ -125,8 +136,12 @@ public class SpringContextUtil implements ApplicationContextAware {
         registerBean(serviceName, beanDefinitionBuilder.getRawBeanDefinition());
     }
 
-    public Object getBean(String className) throws ClassNotFoundException {
-        return applicationContext.getBean(Class.forName(className));
+    public <T> T getBean(Class<T> clazz) {
+        return applicationContext.getBean(clazz);
+    }
+
+    public Object getBean(String beanId) {
+        return applicationContext.getBean(beanId);
     }
 
     private void registerBean(String beanName, BeanDefinition beanDefinition) {

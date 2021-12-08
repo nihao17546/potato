@@ -177,26 +177,58 @@ public class GenerateBoot {
                     for (BootResult.Java java : bootResult.getDao()) {
                         aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
                     }
-                    SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
-                    for (BootResult.Mapper mapper : bootResult.getMappers()) {
-                        configuration.addMapper(classLoader.findClass(mapper.getMapperId()));
-                        ByteArrayInputStream is = new ByteArrayInputStream(mapper.getSource().getBytes());
-                        XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(is, configuration, mapper.getMapperId(), configuration.getSqlFragments());
-                        xmlMapperBuilder.parse();
+                    Set<String> daoSet = new HashSet<>();
+                    Set<String> serviceSet = new HashSet<>();
+                    Set<String> controllerSet = new HashSet<>();
+                    try {
+                        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
+                        for (BootResult.Mapper mapper : bootResult.getMappers()) {
+                            daoSet.add(mapper.getMapperId());
+                            configuration.addMapper(classLoader.findClass(mapper.getMapperId()));
+                            ByteArrayInputStream is = new ByteArrayInputStream(mapper.getSource().getBytes());
+                            XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(is, configuration, mapper.getMapperId(), configuration.getSqlFragments());
+                            xmlMapperBuilder.parse();
 
-                        MapperFactoryBean mapperFactoryBean = new MapperFactoryBean();
-                        mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);
-                        mapperFactoryBean.setMapperInterface(classLoader.findClass(mapper.getMapperId()));
-                        Object dao = mapperFactoryBean.getObject();
-                        springContextUtil.registerSingleton(mapper.getMapperId(), dao);
-                    }
+                            MapperFactoryBean mapperFactoryBean = new MapperFactoryBean();
+                            mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);
+                            mapperFactoryBean.setMapperInterface(classLoader.findClass(mapper.getMapperId()));
+                            Object dao = mapperFactoryBean.getObject();
+                            springContextUtil.registerSingleton(mapper.getMapperId(), dao);
+                            log.info("成功注册Mapper:{}", springContextUtil.getBean(mapper.getMapperId()));
+                        }
 
-                    for (BootResult.Java java : bootResult.getServiceImpls()) {
-                        springContextUtil.addBean(classLoader.findClass(java.getClassName()), CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName())));
-                    }
-                    for (BootResult.Java java : bootResult.getControllers()) {
-                        String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
-                        springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
+                        for (BootResult.Java java : bootResult.getServiceImpls()) {
+                            String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                            serviceSet.add(beanId);
+                            springContextUtil.registerBean(beanId, classLoader.findClass(java.getClassName()));
+                            log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
+                        }
+                        for (BootResult.Java java : bootResult.getControllers()) {
+                            String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                            controllerSet.add(beanId);
+                            springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
+                            log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
+                        }
+                    } catch (Exception e) {
+                        for (String beanId : controllerSet) {
+                            try {
+                                springContextUtil.unregisterController(beanId);
+                            } catch (Exception e1) {}
+                            try {
+                                springContextUtil.removeBean(beanId);
+                            } catch (Exception e1) {}
+                        }
+                        for (String beanId : serviceSet) {
+                            try {
+                                springContextUtil.removeBean(beanId);
+                            } catch (Exception e1) {}
+                        }
+                        for (String beanId : daoSet) {
+                            try {
+                                springContextUtil.destroySingleton(beanId);
+                            } catch (Exception e1) {}
+                        }
+                        throw e;
                     }
                     loadMap.put(bootResult.getId(), bootResult);
                 }

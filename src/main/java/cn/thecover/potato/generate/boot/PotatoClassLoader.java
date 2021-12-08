@@ -27,6 +27,10 @@ public class PotatoClassLoader extends ClassLoader {
         this.classMap = new ConcurrentHashMap<>();
     }
 
+    @Override
+    protected void finalize() throws Throwable {
+        log.info("PotatoClassLoader 卸载: {}", path);
+    }
 
     @Override
     protected Class<?> findClass(String className) throws ClassNotFoundException {
