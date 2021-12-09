@@ -3,6 +3,7 @@ package cn.thecover.potato.meta.conf;
 import cn.thecover.potato.meta.conf.db.DbConf;
 import cn.thecover.potato.meta.conf.form.operate.OperateForm;
 import cn.thecover.potato.meta.conf.form.search.SearchForm;
+import cn.thecover.potato.meta.conf.form.storage.Storage;
 import cn.thecover.potato.meta.conf.table.UIMainTable;
 import lombok.Data;
 
@@ -19,4 +20,5 @@ public class Config implements Serializable {
     private UIMainTable table;
     private SearchForm searchForm;
     private OperateForm operateForm;
+    private Storage storage;
 }

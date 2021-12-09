@@ -20,4 +20,6 @@ public class Meta implements Serializable {
     private byte[] table;
     private byte[] search;
     private byte[] operate;
+    // 对象存储配置
+    private String storage;
 }

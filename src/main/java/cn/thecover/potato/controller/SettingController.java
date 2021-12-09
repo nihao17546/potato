@@ -5,6 +5,7 @@ import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
 import cn.thecover.potato.meta.conf.form.operate.enums.OperateElementType;
 import cn.thecover.potato.meta.conf.form.search.enums.JudgeType;
 import cn.thecover.potato.meta.conf.form.search.enums.SearchElementType;
+import cn.thecover.potato.meta.conf.form.storage.enums.StorageType;
 import cn.thecover.potato.model.vo.HttpResult;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -32,6 +33,9 @@ public class SettingController {
     private Set<String> allOperateContains = new HashSet<>();
     private Map<String,Object> operateDefaults = new HashMap<>();
 
+    private List<Map<String,String>> storageElementTypes = new ArrayList<>();
+    private Map<String,List<String>> storageElementContains = new HashMap<>();
+
     @PostConstruct
     public void init() throws IllegalAccessException, InstantiationException {
         for (JudgeType judgeType : JudgeType.values()) {
@@ -46,6 +50,13 @@ public class SettingController {
             map.put("value", elementType.name());
             searchElementContains.put(elementType.name(), elementType.getContains());
             searchElementTypes.add(map);
+        }
+        for (StorageType storageType : StorageType.values()) {
+            Map<String,String> map = new HashMap<>(2);
+            map.put("label", storageType.getDesc());
+            map.put("value", storageType.name());
+            storageElementContains.put(storageType.name(), storageType.getContains());
+            storageElementTypes.add(map);
         }
         for (ElementSize elementSize : ElementSize.values()) {
             Map<String,Object> map = new HashMap<>(2);
@@ -173,5 +184,12 @@ public class SettingController {
     @ResponseBody
     public String java() {
         return HttpResult.success().pull("list", javas).json();
+    }
+
+    @GetMapping("/storageElementType")
+    @ResponseBody
+    public String storageElementType() {
+        return HttpResult.success().pull("list", storageElementTypes)
+                .pull("typeContains", storageElementContains).json();
     }
 }

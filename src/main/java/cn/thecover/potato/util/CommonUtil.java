@@ -2,6 +2,8 @@ package cn.thecover.potato.util;
 
 import cn.thecover.potato.model.vo.HttpResult;
 import com.alibaba.fastjson.JSON;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -303,6 +305,15 @@ public class CommonUtil {
         }
     }
 
+    public static String serializeJson(Object object) {
+        try {
+            ObjectMapper om = new ObjectMapper();
+            return om.writeValueAsString(object);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     public static <T> T unserialize(byte[] bytes, Class<T> clazz) {
         ByteArrayInputStream bais = null;
         ObjectInputStream ois = null;
@@ -324,6 +335,16 @@ public class CommonUtil {
                 e.printStackTrace();
             }
 
+        }
+    }
+
+    public static <T> T unserialize(String data, Class<T> clazz) {
+        try {
+            ObjectMapper om = new ObjectMapper();
+            om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+            return om.readValue(data, clazz);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 

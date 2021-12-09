@@ -105,6 +105,10 @@ public class BeanConfig {
         modify(MetaOperateController.class);
         springContextUtil.addBean(MetaOperateController.class, BasicConstant.beanNamePrefix + "MetaOperateController");
         springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaOperateController");
+
+        modify(MetaStorageController.class);
+        springContextUtil.addBean(MetaStorageController.class, BasicConstant.beanNamePrefix + "MetaStorageController");
+        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaStorageController");
     }
 
     /**

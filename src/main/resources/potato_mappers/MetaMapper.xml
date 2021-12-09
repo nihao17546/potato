@@ -57,10 +57,21 @@
         <if test="operate != null">
             ,`operate`=#{operate}
         </if>
+        <if test="storage != null">
+            ,`storage`=#{storage}
+        </if>
         where id=#{id} and `version`=#{version}
     </update>
 
     <select id="selectById" resultType="cn.thecover.potato.model.po.Meta">
         select * from `meta` where id=#{id}
+    </select>
+
+    <select id="selectColumnsById" resultType="cn.thecover.potato.model.po.Meta">
+        select
+        <foreach collection="columns" item="item" separator=",">
+            ${item}
+        </foreach>
+        from `meta` where id=#{id}
     </select>
 </mapper>

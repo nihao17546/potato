@@ -62,6 +62,7 @@
                         <el-dropdown-menu slot="dropdown">
                             <el-dropdown-item icon="el-icon-setting" :command="{'row':props.row,'t':'basic'}">基础配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-coin" :command="{'row':props.row,'t':'db'}">数据库配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-coin" :command="{'row':props.row,'t':'storage'}">对象存储配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-s-grid" :command="{'row':props.row,'t':'table'}">表格配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-search" :command="{'row':props.row,'t':'search'}">搜索表单配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-tickets" :command="{'row':props.row,'t':'operate'}">操作表单配置</el-dropdown-item>
@@ -522,6 +523,8 @@
                     window.location.href = window.contextPath + '/search.html?id=' + command.row.id
                 } else if (command.t == 'operate') {
                     window.location.href = window.contextPath + '/operate.html?id=' + command.row.id
+                } else if (command.t == 'storage') {
+                    window.location.href = window.contextPath + '/storage.html?id=' + command.row.id
                 }
             }
         },

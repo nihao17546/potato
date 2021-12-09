@@ -22,5 +22,7 @@ public interface MetaDao {
     Integer selectVersionById(@Param("id") Integer id);
     int update(Meta meta);
     Meta selectById(@Param("id") Integer id);
+    Meta selectColumnsById(@Param("id") Integer id,
+                           @Param("columns") List<String> columns);
 
 }

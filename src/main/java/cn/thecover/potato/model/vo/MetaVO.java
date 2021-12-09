@@ -3,6 +3,7 @@ package cn.thecover.potato.model.vo;
 import cn.thecover.potato.meta.conf.db.DbConf;
 import cn.thecover.potato.meta.conf.form.operate.OperateForm;
 import cn.thecover.potato.meta.conf.form.search.SearchForm;
+import cn.thecover.potato.meta.conf.form.storage.Storage;
 import cn.thecover.potato.meta.conf.table.UIMainTable;
 import com.alibaba.fastjson.annotation.JSONField;
 import lombok.Data;
@@ -27,6 +28,7 @@ public class MetaVO implements Serializable {
     private UIMainTable table;
     private SearchForm search;
     private OperateForm operate;
+    private Storage storage;
 
     private String url;
     @JSONField(name = "load_version")

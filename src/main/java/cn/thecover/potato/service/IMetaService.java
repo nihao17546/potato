@@ -19,9 +19,11 @@ public interface IMetaService {
     void updateTable(MetaTableParam param);
     void updateSearch(MetaSearchParam param);
     void updateOperate(MetaOperateParam param);
+    void updateStorage(MetaStorageParam param);
     MetaVO getDb(Integer id);
     MetaVO getDbAndTable(Integer id);
     MetaVO getDbAndSearch(Integer id);
     MetaVO getDbAndOperate(Integer id);
+    MetaVO getDbAnStorage(Integer id);
     Config getConfig(Integer id);
 }

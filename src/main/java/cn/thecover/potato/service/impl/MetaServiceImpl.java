@@ -9,6 +9,9 @@ import cn.thecover.potato.meta.conf.Config;
 import cn.thecover.potato.meta.conf.db.DbConf;
 import cn.thecover.potato.meta.conf.form.operate.OperateForm;
 import cn.thecover.potato.meta.conf.form.search.SearchForm;
+import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
+import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
+import cn.thecover.potato.meta.conf.form.storage.Storage;
 import cn.thecover.potato.meta.conf.table.UIMainTable;
 import cn.thecover.potato.model.param.*;
 import cn.thecover.potato.model.po.Meta;
@@ -19,11 +22,13 @@ import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.service.IGenerateService;
 import cn.thecover.potato.service.IMetaService;
 import cn.thecover.potato.util.CommonUtil;
+import cn.thecover.potato.util.DesUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -114,6 +119,22 @@ public class MetaServiceImpl implements IMetaService {
         } else if (param instanceof MetaOperateParam) {
             MetaOperateParam metaOperateParam = (MetaOperateParam) param;
             meta.setOperate(CommonUtil.serialize(metaOperateParam.getConfig()));
+        } else if (param instanceof MetaStorageParam) {
+            MetaStorageParam metaStorageParam = (MetaStorageParam) param;
+            if (metaStorageParam.getConfig() == null) {
+                meta.setStorage("");
+            } else {
+                if (metaStorageParam.getConfig() instanceof HuaweiStorage) {
+                    HuaweiStorage huaweiStorage = (HuaweiStorage) metaStorageParam.getConfig();
+                    huaweiStorage.setAk(DesUtil.encrypt(huaweiStorage.getAk(), "storage"));
+                    huaweiStorage.setSk(DesUtil.encrypt(huaweiStorage.getSk(), "storage"));
+                } else if (metaStorageParam.getConfig() instanceof QiniuStorage) {
+                    QiniuStorage qiniuStorage = (QiniuStorage) metaStorageParam.getConfig();
+                    qiniuStorage.setAk(DesUtil.encrypt(qiniuStorage.getAk(), "storage"));
+                    qiniuStorage.setSk(DesUtil.encrypt(qiniuStorage.getSk(), "storage"));
+                }
+                meta.setStorage(CommonUtil.serializeJson(metaStorageParam.getConfig()));
+            }
         }
         Integer version = metaDao.selectVersionById(param.getId());
         if (version == null) {
@@ -154,8 +175,13 @@ public class MetaServiceImpl implements IMetaService {
     }
 
     @Override
+    public void updateStorage(MetaStorageParam param) {
+        update(param);
+    }
+
+    @Override
     public MetaVO getDb(Integer id) {
-        Meta po = metaDao.selectById(id);
+        Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","version"));
         if (po == null) {
             throw new HandlerException(HttpStatus.NOT_FOUND);
         }
@@ -164,7 +190,7 @@ public class MetaServiceImpl implements IMetaService {
 
     @Override
     public MetaVO getDbAndTable(Integer id) {
-        Meta po = metaDao.selectById(id);
+        Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`table`","version"));
         if (po == null) {
             throw new HandlerException(HttpStatus.NOT_FOUND);
         }
@@ -173,7 +199,7 @@ public class MetaServiceImpl implements IMetaService {
 
     @Override
     public MetaVO getDbAndSearch(Integer id) {
-        Meta po = metaDao.selectById(id);
+        Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`search`","version"));
         if (po == null) {
             throw new HandlerException(HttpStatus.NOT_FOUND);
         }
@@ -182,7 +208,16 @@ public class MetaServiceImpl implements IMetaService {
 
     @Override
     public MetaVO getDbAndOperate(Integer id) {
-        Meta po = metaDao.selectById(id);
+        Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`operate`","version"));
+        if (po == null) {
+            throw new HandlerException(HttpStatus.NOT_FOUND);
+        }
+        return transfer(po);
+    }
+
+    @Override
+    public MetaVO getDbAnStorage(Integer id) {
+        Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`storage`","version"));
         if (po == null) {
             throw new HandlerException(HttpStatus.NOT_FOUND);
         }
@@ -213,6 +248,19 @@ public class MetaServiceImpl implements IMetaService {
         if (po.getOperate() != null) {
             config.setOperateForm(CommonUtil.unserialize(po.getOperate(), OperateForm.class));
         }
+        if (po.getStorage() != null && !po.getStorage().isEmpty()) {
+            Storage storage = CommonUtil.unserialize(po.getStorage(), Storage.class);
+            if (storage instanceof HuaweiStorage) {
+                HuaweiStorage huaweiStorage = (HuaweiStorage) storage;
+                huaweiStorage.setAk(DesUtil.decrypt(huaweiStorage.getAk(), "storage"));
+                huaweiStorage.setSk(DesUtil.decrypt(huaweiStorage.getSk(), "storage"));
+            } else if (storage instanceof QiniuStorage) {
+                QiniuStorage qiniuStorage = (QiniuStorage) storage;
+                qiniuStorage.setAk(DesUtil.decrypt(qiniuStorage.getAk(), "storage"));
+                qiniuStorage.setSk(DesUtil.decrypt(qiniuStorage.getSk(), "storage"));
+            }
+            config.setStorage(storage);
+        }
         return config;
     }
 
@@ -235,6 +283,19 @@ public class MetaServiceImpl implements IMetaService {
         }
         if (meta.getOperate() != null) {
             metaVO.setOperate(CommonUtil.unserialize(meta.getOperate(), OperateForm.class));
+        }
+        if (meta.getStorage() != null && !meta.getStorage().isEmpty()) {
+            Storage storage = CommonUtil.unserialize(meta.getStorage(), Storage.class);
+            if (storage instanceof HuaweiStorage) {
+                HuaweiStorage huaweiStorage = (HuaweiStorage) storage;
+                huaweiStorage.setAk(DesUtil.decrypt(huaweiStorage.getAk(), "storage"));
+                huaweiStorage.setSk(DesUtil.decrypt(huaweiStorage.getSk(), "storage"));
+            } else if (storage instanceof QiniuStorage) {
+                QiniuStorage qiniuStorage = (QiniuStorage) storage;
+                qiniuStorage.setAk(DesUtil.decrypt(qiniuStorage.getAk(), "storage"));
+                qiniuStorage.setSk(DesUtil.decrypt(qiniuStorage.getSk(), "storage"));
+            }
+            metaVO.setStorage(storage);
         }
         return metaVO;
     }
