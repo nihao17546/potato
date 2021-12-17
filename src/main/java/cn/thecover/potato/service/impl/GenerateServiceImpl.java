@@ -17,16 +17,16 @@ import cn.thecover.potato.meta.conf.db.DbConf;
 import cn.thecover.potato.meta.conf.db.FollowTable;
 import cn.thecover.potato.meta.conf.db.Table;
 import cn.thecover.potato.meta.conf.form.search.SearchForm;
+import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
+import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
 import cn.thecover.potato.model.param.GenerateParam;
 import cn.thecover.potato.model.po.Boot;
 import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.service.IGenerateService;
-import cn.thecover.potato.util.CamelUtil;
-import cn.thecover.potato.util.CommonUtil;
-import cn.thecover.potato.util.DesUtil;
-import cn.thecover.potato.util.GenerateUtil;
+import cn.thecover.potato.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.text.StringSubstitutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.CollectionUtils;
@@ -189,6 +189,81 @@ public class GenerateServiceImpl implements IGenerateService {
         Map<String,String> classMap = new ClassExecutor(context).compile();
         if (classMap != null) {
             map.putAll(classMap);
+        }
+        // 对象存储
+        if (config.getStorage() != null) {
+            // TokenResultVo.java
+            String simpleClassName = "TokenResultVo";
+            String path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
+                    (context.getPackageName() + ".pojo.vo").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+            String content = CommonUtil.readFromResource("codeless/backend/storage/TokenResultVo.java");
+            Map<String,String> datas = new HashMap<>();
+            datas.put("basePackageName", context.getPackageName());
+            datas.put("version", config.getBasic().getVersion().toString());
+            datas.put("now", SimpleDateUtil.format(new Date()));
+            String bytes = new StringSubstitutor(datas).replace(content);
+            map.put(path, bytes);
+
+            // IUploadService.java
+            simpleClassName = "IUploadService";
+            path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
+                    (context.getPackageName() + ".service").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+            content = CommonUtil.readFromResource("codeless/backend/storage/IUploadService.java");
+            datas.clear();
+            datas.put("basePackageName", context.getPackageName());
+            datas.put("version", config.getBasic().getVersion().toString());
+            datas.put("now", SimpleDateUtil.format(new Date()));
+            bytes = new StringSubstitutor(datas).replace(content);
+            map.put(path, bytes);
+
+            if (config.getStorage() instanceof QiniuStorage) {
+                QiniuStorage qiniuStorage = (QiniuStorage) config.getStorage();
+                // QiniuUploadServiceImpl.java
+                simpleClassName = "QiniuUploadServiceImpl";
+                path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
+                        (context.getPackageName() + ".service.impl").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                content = CommonUtil.readFromResource("codeless/backend/storage/QiniuUploadServiceImpl.java");
+                datas.clear();
+                datas.put("basePackageName", context.getPackageName());
+                datas.put("version", config.getBasic().getVersion().toString());
+                datas.put("now", SimpleDateUtil.format(new Date()));
+                datas.put("ak", qiniuStorage.getAk());
+                datas.put("sk", qiniuStorage.getSk());
+                datas.put("bucket", qiniuStorage.getBucket());
+                datas.put("host", qiniuStorage.getHost());
+                bytes = new StringSubstitutor(datas).replace(content);
+                map.put(path, bytes);
+            } else if (config.getStorage() instanceof HuaweiStorage) {
+                HuaweiStorage huaweiStorage = (HuaweiStorage) config.getStorage();
+                // HuaweiUploadServiceImpl.java
+                simpleClassName = "HuaweiUploadServiceImpl";
+                path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
+                        (context.getPackageName() + ".service.impl").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                content = CommonUtil.readFromResource("codeless/backend/storage/HuaweiUploadServiceImpl.java");
+                datas.clear();
+                datas.put("basePackageName", context.getPackageName());
+                datas.put("version", config.getBasic().getVersion().toString());
+                datas.put("now", SimpleDateUtil.format(new Date()));
+                datas.put("region", huaweiStorage.getRegion());
+                datas.put("ak", huaweiStorage.getAk());
+                datas.put("sk", huaweiStorage.getSk());
+                datas.put("bucket", huaweiStorage.getBucket());
+                datas.put("host", huaweiStorage.getHost());
+                bytes = new StringSubstitutor(datas).replace(content);
+                map.put(path, bytes);
+            }
+
+            // StorageController.java
+            simpleClassName = "StorageController";
+            path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
+                    (context.getPackageName() + ".controller").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+            content = CommonUtil.readFromResource("codeless/backend/storage/StorageController.java");
+            datas.clear();
+            datas.put("basePackageName", context.getPackageName());
+            datas.put("version", config.getBasic().getVersion().toString());
+            datas.put("now", SimpleDateUtil.format(new Date()));
+            bytes = new StringSubstitutor(datas).replace(content);
+            map.put(path, bytes);
         }
         return map;
     }
