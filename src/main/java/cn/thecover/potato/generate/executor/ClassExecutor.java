@@ -13,6 +13,7 @@ import org.springframework.util.CollectionUtils;
 
 import java.io.File;
 import java.util.*;
+import java.util.regex.Matcher;
 
 /**
  * @author nihao 2021/07/12
@@ -228,6 +229,6 @@ public class ClassExecutor extends Executor {
 
     private String getJavaPath(JavaClassContext context) {
         return "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
-                context.getPackageName().replaceAll("\\.", File.separator) + File.separator + context.getName() + ".java";
+                context.getPackageName().replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + context.getName() + ".java";
     }
 }

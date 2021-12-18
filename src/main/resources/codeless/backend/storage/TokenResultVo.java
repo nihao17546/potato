@@ -10,10 +10,11 @@ public class TokenResultVo implements Serializable {
     private String token;
     private String host;
     private String key;
+    private String bucket;
 
     private String endpoint;
     private String secret;
-    private String bucket;
+    private String access;
 
     public String getToken() {
         return token;
@@ -61,5 +62,13 @@ public class TokenResultVo implements Serializable {
 
     public void setBucket(String bucket) {
         this.bucket = bucket;
+    }
+
+    public String getAccess() {
+        return access;
+    }
+
+    public void setAccess(String access) {
+        this.access = access;
     }
 }

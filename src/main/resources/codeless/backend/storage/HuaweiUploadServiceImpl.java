@@ -54,7 +54,7 @@ public class HuaweiUploadServiceImpl extends IUploadService {
             "}";
 
     static {
-        HuaweiUploadService.defaultHeaders.put("Content-Type","application/json")
+        HuaweiUploadServiceImpl.defaultHeaders.put("Content-Type","application/json");
     }
 
     @Override
@@ -99,6 +99,7 @@ public class HuaweiUploadServiceImpl extends IUploadService {
             JSONObject re = JSON.parseObject(resultStr);
             JSONObject credential = re.getJSONObject("credential");
             TokenResultVo result = new TokenResultVo();
+            result.setAccess(credential.getString("access"));
             result.setSecret(credential.getString("secret"));
             result.setEndpoint("https://obs." + region + ".myhuaweicloud.com");
             result.setBucket(bucket);

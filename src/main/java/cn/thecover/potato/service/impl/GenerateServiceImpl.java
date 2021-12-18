@@ -195,7 +195,7 @@ public class GenerateServiceImpl implements IGenerateService {
             // TokenResultVo.java
             String simpleClassName = "TokenResultVo";
             String path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
-                    (context.getPackageName() + ".pojo.vo").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                    (context.getPackageName() + ".pojo.vo").replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + simpleClassName + ".java";
             String content = CommonUtil.readFromResource("codeless/backend/storage/TokenResultVo.java");
             Map<String,String> datas = new HashMap<>();
             datas.put("basePackageName", context.getPackageName());
@@ -207,7 +207,7 @@ public class GenerateServiceImpl implements IGenerateService {
             // IUploadService.java
             simpleClassName = "IUploadService";
             path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
-                    (context.getPackageName() + ".service").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                    (context.getPackageName() + ".service").replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + simpleClassName + ".java";
             content = CommonUtil.readFromResource("codeless/backend/storage/IUploadService.java");
             datas.clear();
             datas.put("basePackageName", context.getPackageName());
@@ -221,7 +221,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 // QiniuUploadServiceImpl.java
                 simpleClassName = "QiniuUploadServiceImpl";
                 path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
-                        (context.getPackageName() + ".service.impl").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                        (context.getPackageName() + ".service.impl").replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + simpleClassName + ".java";
                 content = CommonUtil.readFromResource("codeless/backend/storage/QiniuUploadServiceImpl.java");
                 datas.clear();
                 datas.put("basePackageName", context.getPackageName());
@@ -238,7 +238,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 // HuaweiUploadServiceImpl.java
                 simpleClassName = "HuaweiUploadServiceImpl";
                 path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
-                        (context.getPackageName() + ".service.impl").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                        (context.getPackageName() + ".service.impl").replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + simpleClassName + ".java";
                 content = CommonUtil.readFromResource("codeless/backend/storage/HuaweiUploadServiceImpl.java");
                 datas.clear();
                 datas.put("basePackageName", context.getPackageName());
@@ -256,7 +256,7 @@ public class GenerateServiceImpl implements IGenerateService {
             // StorageController.java
             simpleClassName = "StorageController";
             path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
-                    (context.getPackageName() + ".controller").replaceAll("\\.", File.separator) + File.separator + simpleClassName + ".java";
+                    (context.getPackageName() + ".controller").replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + simpleClassName + ".java";
             content = CommonUtil.readFromResource("codeless/backend/storage/StorageController.java");
             datas.clear();
             datas.put("basePackageName", context.getPackageName());
@@ -305,7 +305,7 @@ public class GenerateServiceImpl implements IGenerateService {
             for (String key : map.keySet()) {
                 if (key.startsWith(javaSrc) && key.endsWith(".java")) {
                     BootResult.Java java = new BootResult.Java();
-                    String classFullName = key.replaceFirst(javaSrc, "").replaceAll("/", ".");
+                    String classFullName = key.replace(javaSrc, "").replaceAll(Matcher.quoteReplacement(File.separator), ".");
                     classFullName = classFullName.substring(0, classFullName.length() - ".java".length());
                     java.setClassName(classFullName);
                     java.setSource(map.get(key));
