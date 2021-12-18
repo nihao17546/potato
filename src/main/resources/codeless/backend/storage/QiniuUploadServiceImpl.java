@@ -37,7 +37,6 @@ public class QiniuUploadServiceImpl extends IUploadService {
         result.setToken(token);
         result.setHost(host);
         result.setKey(saveKey);
-        result.setProvider("QI_NIU");
         return result;
     }
 }

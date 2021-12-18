@@ -2,6 +2,7 @@ package cn.thecover.potato.generate.context;
 
 import cn.thecover.potato.meta.conf.form.search.SearchForm;
 import cn.thecover.potato.meta.conf.form.search.element.SearchElement;
+import cn.thecover.potato.meta.conf.form.storage.Storage;
 import cn.thecover.potato.meta.conf.table.UIColumn;
 import cn.thecover.potato.meta.conf.table.UIFollowTable;
 import cn.thecover.potato.meta.conf.table.UITable;
@@ -22,6 +23,7 @@ public class FrontContext {
     private String saveRequest;
     private String updateRequest;
     private String deleteRequest;
+    private String tokenRequest;
     private UITable uiTable;
     private List<FrontSearchElementContext> searchElements;
     private Map<String,String> propMap;
@@ -38,6 +40,7 @@ public class FrontContext {
 
     private FrontOperateContext operateContext;
     private Set<RemoteContext> remoteContexts;
+    private Storage storage;
 
     public void addRemoteContext(RemoteContext remoteContext) {
         if (remoteContexts == null) {
@@ -46,16 +49,18 @@ public class FrontContext {
         remoteContexts.add(remoteContext);
     }
 
-    public FrontContext(String title, String listRequest, UITable uiTable, SearchForm searchForm, String path) {
+    public FrontContext(String title, String listRequest, UITable uiTable, SearchForm searchForm, String path, Storage storage) {
         this.title = title;
         this.listRequest = listRequest;
         this.infoRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/getInfo";
         this.saveRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/save";
         this.updateRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/update";
         this.deleteRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/delete";
+        this.tokenRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/token";
         this.uiTable = uiTable;
         this.propMap = new HashMap<>();
         this.path = path;
+        this.storage = storage;
         if (searchForm != null && !CollectionUtils.isEmpty(searchForm.getElements())) {
             this.searchElements = new ArrayList<>();
             for (SearchElement element : searchForm.getElements()) {
@@ -67,11 +72,11 @@ public class FrontContext {
     }
 
     public void addFollow(String listRequest, UIFollowTable uiTable, SearchForm searchForm, String foreignKey, String table,
-                          String parentKey, String parentTable, String path) {
+                          String parentKey, String parentTable, String path , Storage storage) {
         if (follows == null) {
             follows = new ArrayList<>();
         }
-        FrontContext frontContext = new FrontContext(uiTable.getBottom(), listRequest, uiTable, searchForm, path);
+        FrontContext frontContext = new FrontContext(uiTable.getBottom(), listRequest, uiTable, searchForm, path, storage);
         frontContext.setForeignKey(foreignKey);
         frontContext.setParentKey(parentKey);
         frontContext.setParentTable(parentTable);

@@ -17,7 +17,8 @@ public enum OperateElementType {
     RADIO("单选框", Arrays.asList("label", "border", "size", "options", "canEdit", "rule")),
     DATE_TIME("日期时间选择器", Arrays.asList("label","format", "placeholder", "valueFormat", "size", "canEdit", "clearable", "rule")),
     CREATE_TIME("创建时间", Arrays.asList("timeFormatType")),
-    UPDATE_TIME("更新时间", Arrays.asList("timeFormatType"));
+    UPDATE_TIME("更新时间", Arrays.asList("timeFormatType")),
+    IMAGE("图片上传", Arrays.asList("label", "placeholder", "canEdit", "rule", "acceptType", "limitSize", "cut"));
 
     private final String desc;
     private final List<String> contains;

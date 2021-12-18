@@ -10,7 +10,6 @@ public class TokenResultVo implements Serializable {
     private String token;
     private String host;
     private String key;
-    private String provider;
 
     private String endpoint;
     private String secret;
@@ -38,14 +37,6 @@ public class TokenResultVo implements Serializable {
 
     public void setKey(String key) {
         this.key = key;
-    }
-
-    public String getProvider() {
-        return provider;
-    }
-
-    public void setProvider(String provider) {
-        this.provider = provider;
     }
 
     public String getEndpoint() {

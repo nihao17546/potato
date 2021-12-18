@@ -140,7 +140,7 @@ public class GenerateServiceImpl implements IGenerateService {
             listRequestPath = BootConstant.requestPrefix + CommonUtil.getClassNameField(context.getMainClassName().getEntityName()) + "/list";
         }
         FrontContext frontContext = new FrontContext(config.getBasic().getTitle(), listRequestPath,
-                config.getTable(), config.getSearchForm(), path);
+                config.getTable(), config.getSearchForm(), path, config.getStorage());
         context.setFrontContext(frontContext);
         if (config.getDbConf().getAssociationTables() != null) {
             for (FollowTable followTable : config.getDbConf().getAssociationTables()) {
@@ -168,7 +168,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 context.getFrontContext().addFollow(followListRequestPath,
                         config.getTable().getFollows().get(index), followSearch,
                         followTable.getForeignKey(), followTable.getName(),
-                        followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath);
+                        followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath, config.getStorage());
                 index ++;
             }
         }
@@ -262,6 +262,7 @@ public class GenerateServiceImpl implements IGenerateService {
             datas.put("basePackageName", context.getPackageName());
             datas.put("version", config.getBasic().getVersion().toString());
             datas.put("now", SimpleDateUtil.format(new Date()));
+            datas.put("requestMapping", context.getFrontContext().getTokenRequest());
             bytes = new StringSubstitutor(datas).replace(content);
             map.put(path, bytes);
         }

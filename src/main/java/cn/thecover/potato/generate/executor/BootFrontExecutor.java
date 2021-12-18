@@ -1,13 +1,18 @@
 package cn.thecover.potato.generate.executor;
 
+import cn.thecover.potato.exception.HandlerException;
 import cn.thecover.potato.generate.constant.BootConstant;
 import cn.thecover.potato.generate.context.FrontContext;
 import cn.thecover.potato.generate.context.FrontSearchElementContext;
 import cn.thecover.potato.generate.context.RemoteContext;
 import cn.thecover.potato.meta.conf.form.operate.Rule;
+import cn.thecover.potato.meta.conf.form.operate.elements.ImageElement;
 import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
 import cn.thecover.potato.meta.conf.form.search.element.DateTimeRangeSearchElement;
+import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
+import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
 import cn.thecover.potato.meta.conf.table.UIColumn;
+import cn.thecover.potato.model.vo.HttpStatus;
 import org.springframework.util.CollectionUtils;
 
 import java.util.HashMap;
@@ -47,8 +52,13 @@ public class BootFrontExecutor extends FrontExecutor {
         StringBuilder optionColumnBuilder = new StringBuilder();
         StringBuilder createBuilder = new StringBuilder();
         StringBuilder extraHtmlBuilder = new StringBuilder();
+        StringBuilder cssBuilder = new StringBuilder();
+        StringBuilder jsBuilder = new StringBuilder();
 
         StringBuilder searchParamsBuilder = new StringBuilder();
+
+        boolean hasUploadImage = false;
+        boolean hasCutImage = false;
 
         if (context.getForeignKeyProp() != null) {
             // 是从表页面，需获取外键请求参数
@@ -236,6 +246,13 @@ public class BootFrontExecutor extends FrontExecutor {
             StringBuilder formBuilder = new StringBuilder();
             StringBuilder ruleBuilder = new StringBuilder();
             for (OperateElement element : context.getOperateContext().getElements()) {
+                if (element instanceof ImageElement) {
+                    hasUploadImage = true;
+                    ImageElement imageElement = (ImageElement) element;
+                    if (Boolean.TRUE.equals(imageElement.getCut())) {
+                        hasCutImage = true;
+                    }
+                }
                 formBuilder.append(element.getHtml());
                 Rule rule = element.getRule();
                 if (rule != null) {
@@ -464,6 +481,184 @@ public class BootFrontExecutor extends FrontExecutor {
                 .append("            },\n");
 
         createBuilder.append("            this.getList();\n");
+
+        if (context.getStorage() != null) {
+            if (context.getStorage() instanceof QiniuStorage) {
+                jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/qiniu.min.js\"></script>\n");
+            } else if (context.getStorage() instanceof HuaweiStorage) {
+                jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/esdk-obs-browserjs-without-polyfill-3.19.9.min.js\"></script>\n");
+            }
+        }
+
+        if (hasUploadImage) {
+            if (context.getStorage() == null) {
+                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "图片上传未配置对象存储");
+            }
+            if (hasCutImage) {
+                cssBuilder.append("    <link rel=\"stylesheet\" href=\"${contextPath}${potatoPath}/static/cropper/cropper.css\">\n");
+                jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/jquery.min.js\"></script>\n");
+                jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/cropper/cropper.js\"></script>\n");
+
+                datasBuilder
+                        .append("                jcrop: {\n")
+                        .append("                    visible: false\n")
+                        .append("                },\n");
+
+                extraHtmlBuilder
+                        .append("    <el-dialog class=\"jcrop_dialog\" :close-on-press-escape=\"false\" :close-on-click-modal=\"false\" title=\"图片裁剪\" width=\"70%\" :visible.sync=\"jcrop.visible\" class=\"group-dialog\" :before-close=\"closeJcrop\">\n")
+                        .append("        <div v-loading=\"loading\">\n")
+                        .append("            <div>\n")
+                        .append("                <img id=\"jcrop_img\" width=\"80%\" :src=\"jcrop.img\"/>\n")
+                        .append("            </div>\n")
+                        .append("            <el-row :gutter=\"24\" style=\"margin-top: 8px;\">\n")
+                        .append("                <el-col :span=\"6\">\n")
+                        .append("                    <el-input size=\"mini\" readonly=\"true\" v-model=\"jcrop.width\">\n")
+                        .append("                        <template slot=\"prepend\">宽</template>\n")
+                        .append("                        <template slot=\"append\">px</template>\n")
+                        .append("                    </el-input>\n")
+                        .append("                </el-col>\n")
+                        .append("                <el-col :span=\"6\">\n")
+                        .append("                    <el-input size=\"mini\" readonly=\"true\" v-model=\"jcrop.height\">\n")
+                        .append("                        <template slot=\"prepend\">高</template>\n")
+                        .append("                        <template slot=\"append\">px</template>\n")
+                        .append("                    </el-input>\n")
+                        .append("                </el-col>\n")
+                        .append("                <el-col :span=\"12\" style=\"text-align: right;\">\n")
+                        .append("                    <el-button @click=\"closeJcrop\" size=\"small\">取 消</el-button>\n")
+                        .append("                    <el-button type=\"primary\" @click=\"confirmJcrop\" size=\"small\">确 定</el-button>\n")
+                        .append("                </el-col>\n")
+                        .append("            </el-row>\n")
+                        .append("        </div>\n")
+                        .append("    </el-dialog>\n");
+
+                methodsBuilder
+                        .append("            closeJcrop() {\n")
+                        .append("                this.jcrop = {\n")
+                        .append("                    visible: false\n")
+                        .append("                }\n")
+                        .append("            },\n");
+                methodsBuilder
+                        .append("            confirmJcrop() {\n")
+                        .append("                try {\n")
+                        .append("                    $(\"#jcrop_img\").cropper('getCroppedCanvas').toBlob((blob) => {\n")
+                        .append("                        let file = new File([blob], this.jcrop.filename, {type: this.jcrop.imageType, lastModified: Date.now()});\n")
+                        .append("                        let key = this.jcrop.key\n")
+                        .append("                        this.closeJcrop()\n")
+                        .append("                        // 上传\n")
+                        .append("                        this.uploadImage(file, key)\n")
+                        .append("                    })\n")
+                        .append("                } catch (e) {\n")
+                        .append("                    console.log(e)\n")
+                        .append("                    this.$message.error('图片裁剪上传异常');\n")
+                        .append("                    this.closeJcrop()\n")
+                        .append("                }\n")
+                        .append("            },\n");
+
+                methodsBuilder
+                        .append("            uploadChange(file, fileList, key) {\n")
+                        .append("                this.$refs[key].clearFiles()\n")
+                        .append("                this.$confirm('裁剪图片?', '提示', {\n")
+                        .append("                    confirmButtonText: '裁剪',\n")
+                        .append("                    cancelButtonText: '使用原图',\n")
+                        .append("                    showClose: false,\n")
+                        .append("                    type: 'warning'\n")
+                        .append("                }).then(() => {\n")
+                        .append("                    try {\n")
+                        .append("                        window.URL = window.URL || window.webkitURL;\n")
+                        .append("                        let blobURL = window.URL.createObjectURL(file.raw);\n")
+                        .append("                        this.jcrop = {\n")
+                        .append("                            visible: true,\n")
+                        .append("                            img: blobURL,\n")
+                        .append("                            filename: file.raw.name,\n")
+                        .append("                            imageType: file.raw.type,\n")
+                        .append("                            key: key\n")
+                        .append("                        }\n")
+                        .append("                        this.$nextTick(() => {\n")
+                        .append("                            $('#jcrop_img').cropper('destroy')\n")
+                        .append("                                .cropper({\n")
+                        .append("                                    viewMode: 2,        //全屏铺满，再缩小都没有空隙\n")
+                        .append("                                    dragMode: 'move',   //制动拖动方式\n")
+                        .append("                                    crop: (data) => {\n")
+                        .append("                                        this.jcrop.width = Math.round(data.width)\n")
+                        .append("                                        this.jcrop.height = Math.round(data.height)\n")
+                        .append("                                        this.jcrop = JSON.parse(JSON.stringify(this.jcrop))\n")
+                        .append("                                    }\n")
+                        .append("                                });\n")
+                        .append("                        })\n")
+                        .append("                    } catch (e) {\n")
+                        .append("                        console.log(e)\n")
+                        .append("                        this.$message.error('裁剪预览异常');\n")
+                        .append("                        this.closeJcrop()\n")
+                        .append("                    }\n")
+                        .append("                }).catch((e) => {\n")
+                        .append("                    // 直接上传\n")
+                        .append("                    this.uploadImage(file.raw, key)\n")
+                        .append("                });\n")
+                        .append("            },\n");
+            } else {
+                methodsBuilder
+                        .append("            uploadChange(file, fileList, key) {\n")
+                        .append("                this.$refs[key].clearFiles()\n")
+                        .append("                this.uploadImage(file.raw, key)\n")
+                        .append("            },\n");
+            }
+            datasBuilder
+                    .append("                uploadImageProgress: {},\n");
+            methodsBuilder
+                    .append("            removeImage(key) {\n")
+                    .append("                this.$set(this.form, key, null)\n")
+                    .append("            },\n");
+            methodsBuilder
+                    .append("            uploadImage(file, key) {\n")
+                    .append("                console.log(file)\n")
+                    .append("                this.uploadImageProgress[key] = 0\n")
+                    .append("                this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                    .append("                    params: {\n")
+                    .append("                        file_name: file.name\n")
+                    .append("                    }\n")
+                    .append("                }).then(res => {\n")
+                    .append("                    if (typeof res.data.token != 'undefined') {\n")
+                    .append("                        let observable = qiniu.upload(file, res.data.key, res.data.token, {}, {\n")
+                    .append("                            useCdnDomain: true\n")
+                    .append("                        });\n")
+                    .append("                        observable.subscribe({\n")
+                    .append("                            next: (result) => {\n")
+                    .append("                                this.uploadImageProgress[key] = Math.floor(result.total.percent * 100) / 100\n")
+                    .append("                                this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                            },\n")
+                    .append("                            error: () => {\n")
+                    .append("                                this.$message.error('上传图片失败');\n")
+                    .append("                                delete this.uploadImageProgress[key];\n")
+                    .append("                                this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                            },\n")
+                    .append("                            complete: (successRes) => {\n")
+                    .append("                                this.uploadImageProgress[key] = 100;\n")
+                    .append("                                this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                                setTimeout(() => {\n")
+                    .append("                                    this.$set(this.form, key, res.data.host + '/' + successRes.key)\n")
+                    .append("                                    delete this.uploadImageProgress[key]\n")
+                    .append("                                    this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                                }, 500)\n")
+                    .append("                            }\n")
+                    .append("                        })\n")
+                    .append("                    } else {\n")
+                    .append("                        console.error(res)\n")
+                    .append("                        delete this.uploadImageProgress[key]\n")
+                    .append("                        this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                        this.$message.error('获取token失败');\n")
+                    .append("                    }\n")
+                    .append("                }).catch(res => {\n")
+                    .append("                    console.error(res)\n")
+                    .append("                    delete this.uploadImageProgress[key]\n")
+                    .append("                    this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
+                    .append("                    this.$message.error('获取token失败');\n")
+                    .append("                })\n")
+                    .append("            },\n");
+        }
+
+        map.put("css", cssBuilder.toString());
+        map.put("js", jsBuilder.toString());
 
         map.put("mainTableColumns", mainColumnsBuilder.toString());
         map.put("datas", datasBuilder.toString());

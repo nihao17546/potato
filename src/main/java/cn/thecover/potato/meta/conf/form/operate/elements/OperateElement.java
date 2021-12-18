@@ -21,7 +21,8 @@ import lombok.Data;
         @JsonSubTypes.Type(value = RadioOperateElement.class, name = "RADIO"),
         @JsonSubTypes.Type(value = DateTimeOperateElement.class, name = "DATE_TIME"),
         @JsonSubTypes.Type(value = CreateTimeElement.class, name = "CREATE_TIME"),
-        @JsonSubTypes.Type(value = UpdateTimeElement.class, name = "UPDATE_TIME")
+        @JsonSubTypes.Type(value = UpdateTimeElement.class, name = "UPDATE_TIME"),
+        @JsonSubTypes.Type(value = ImageElement.class, name = "IMAGE")
 })
 public abstract class OperateElement extends Element {
     // 是否可更新

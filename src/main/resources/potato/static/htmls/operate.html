@@ -245,6 +245,26 @@
                                         </el-button>
                                         <el-button v-if="element.suffixIcon" type="text" @click="removeIcon({'obj':element,'key':'suffixIcon'})">移除</el-button>
                                     </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('cut') > -1"
+                                                  :prop="'elements.'+indexElement+'.cut'"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]"
+                                                  label="支持裁剪:">
+                                        <el-select style="width: 100px;" v-model="element.cut" placeholder="请选择">
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="图片上传类型:"
+                                                  v-if="element.elementType && typeContains[element.elementType].indexOf('acceptType') > -1"
+                                                  :prop="'elements.'+indexElement+'.acceptType'"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select size="small" v-model="element.acceptType" multiple placeholder="请选择图片类型"
+                                                   style="width: 100%;">
+                                            <el-option :key="'.jpg'" label="jpg" :value="'.jpg'"></el-option>
+                                            <el-option :key="'.png'" label="png" :value="'.png'"></el-option>
+                                            <el-option :key="'.jpeg'" label="jpeg" :value="'.jpeg'"></el-option>
+                                        </el-select>
+                                    </el-form-item>
                                     <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('rule') > -1"
                                                   :prop="'elements.'+indexElement+'.rule'" label="校验规则:">
                                         <el-button type="text" @click="showRule({'obj':element,'validateKey':'elements.'+indexElement+'.rule'})">点击设置</el-button>
@@ -520,6 +540,26 @@
                                         </el-button>
                                         <el-button v-if="element.suffixIcon" type="text" @click="removeIcon({'obj':element,'key':'suffixIcon'})">移除</el-button>
                                     </el-form-item>
+                                    <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('cut') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.cut'"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]"
+                                                  label="支持裁剪:">
+                                        <el-select style="width: 100px;" v-model="element.cut" placeholder="请选择">
+                                            <el-option :key="true" label="是" :value="true"></el-option>
+                                            <el-option :key="false" label="否" :value="false"></el-option>
+                                        </el-select>
+                                    </el-form-item>
+                                    <el-form-item label="图片上传类型:"
+                                                  v-if="element.elementType && typeContains[element.elementType].indexOf('acceptType') > -1"
+                                                  :prop="'follows.'+index+'.elements.'+indexElement+'.acceptType'"
+                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                        <el-select size="small" v-model="element.acceptType" multiple placeholder="请选择图片类型"
+                                                   style="width: 100%;">
+                                            <el-option :key="'.jpg'" label="jpg" :value="'.jpg'"></el-option>
+                                            <el-option :key="'.png'" label="png" :value="'.png'"></el-option>
+                                            <el-option :key="'.jpeg'" label="jpeg" :value="'.jpeg'"></el-option>
+                                        </el-select>
+                                    </el-form-item>
                                     <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('rule') > -1"
                                                   :prop="'follows.'+index+'.elements.'+indexElement+'.rule'" label="校验规则:">
                                         <el-button type="text" @click="showRule({'obj':element,'validateKey':'follows.'+index+'.elements.'+indexElement+'.rule'})">点击设置</el-button>
@@ -635,11 +675,11 @@
                     <template slot-scope="props">
                         <el-form-item v-if="props.row.type=='string'" :prop="'value.'+props.$index+'.value'"
                                       :rules="[{required: true, message: '请填写', trigger: 'change'}]">
-                            <el-input v-model="props.row.value" clearable>
+                            <el-input v-model="props.row.value" clearable/>
                         </el-form-item>
                         <el-form-item v-if="props.row.type=='number'" :prop="'value.'+props.$index+'.value'"
                                       :rules="[{required: true, message: '请填写正确的数字格式内容',validator: validateAllNumber, trigger: 'change'}]">
-                            <el-input v-model="props.row.value" clearable>
+                            <el-input v-model="props.row.value" clearable/>
                         </el-form-item>
                         <el-form-item v-if="props.row.type=='boolean'" :prop="'value.'+props.$index+'.value'"
                                       :rules="[{required: true, message: '请选择', trigger: 'change'}]">

@@ -105,7 +105,6 @@ public class HuaweiUploadServiceImpl extends IUploadService {
             result.setHost(host);
             result.setToken(credential.getString("securitytoken"));
             result.setKey(saveKey);
-            result.setProvider(StorageType.HUA_WEI.name());
             return result;
         } catch (Exception e) {
             throw  new RuntimeException(e);
