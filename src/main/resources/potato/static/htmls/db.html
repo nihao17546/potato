@@ -299,7 +299,6 @@
                 disabled: false,
                 formLabelWidth: '100px',
                 dbs: [],
-                schemas: [],
                 tables: [],
                 active: 'main',
                 primaryTypes: [{
@@ -556,20 +555,6 @@
                     if (res.data.content.dbConf) {
                         this.loading = false
                         this.form = res.data.content.dbConf
-                        axios.get('${contextPath}/db/schemas',{
-                            params: {
-                                db: this.form.db
-                            }
-                        }).then(res => {
-                            if (res.data.status != 0) {
-                                this.$message.error(res.data.msg);
-                            }
-                            else {
-                                this.schemas = res.data.content.list
-                            }
-                        }).catch(res => {
-                            console.error(res)
-                        })
                         axios.get('${contextPath}/db/tables',{
                             params: {
                                 schema: this.form.schema,
