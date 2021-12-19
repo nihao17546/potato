@@ -199,20 +199,23 @@ public class BootFrontExecutor extends FrontExecutor {
             datasBuilder.append("                form: ").append(formString).append(",\n");
             datasBuilder.append("                formVisible: false,\n");
             datasBuilder.append("                formTitle: '',\n");
+
+            StringBuilder pks = new StringBuilder();
+            for (String pk : context.getOperateContext().getPrimaryKeys()) {
+                if (pks.length() > 0) {
+                    pks.append(",");
+                }
+                pks.append("'").append(pk).append("'");
+            }
+
             if (Boolean.TRUE.equals(context.getOperateContext().getUpdate())) {
                 optionColumnBuilder.append("                    ")
                         .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showInfo(props.row,[");
-                int index = 0;
-                for (String pk : context.getOperateContext().getPrimaryKeys()) {
-                    if (index ++ > 0) {
-                        optionColumnBuilder.append(",");
-                    }
-                    optionColumnBuilder.append("'").append(pk).append("'");
-                }
+                optionColumnBuilder.append(pks.toString());
                 optionColumnBuilder.append("])\">编辑")
                         .append("</el-button>\n");
                 methodsBuilder
-                        .append("            showInfo(row,pks) {\n")
+                        .append("            showInfo(row, pks) {\n")
                         .append("                let param = {}\n")
                         .append("                for(let i = 0; i < pks.length; i ++) {\n")
                         .append("                    param[pks[i]] = row[pks[i]]\n")
@@ -230,7 +233,45 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("                }).catch(res => {\n")
                         .append("                    console.error(res)\n")
                         .append("                    this.loading = false;\n")
+                        .append("                    this.$message.error('操作异常');\n")
                         .append("                })\n")
+                        .append("            },\n");
+            }
+            if (Boolean.TRUE.equals(context.getOperateContext().getDelete())) {
+                optionColumnBuilder.append("                    ")
+                        .append("<el-button type=\"danger\" size=\"mini\" :disabled=\"loading\" @click=\"del(props.row,[");
+                optionColumnBuilder.append(pks.toString());
+                optionColumnBuilder.append("])\">删除")
+                        .append("</el-button>\n");
+                methodsBuilder
+                        .append("            del(row, pks) {\n")
+                        .append("                this.$confirm('确定要删除?', '提示', {\n")
+                        .append("                    confirmButtonText: '确定',\n")
+                        .append("                    cancelButtonText: '取消',\n")
+                        .append("                    type: 'warning'\n")
+                        .append("                }).then(() => {\n")
+                        .append("                    this.loading = true;\n")
+                        .append("                    let param = {}\n")
+                        .append("                    for(let i = 0; i < pks.length; i ++) {\n")
+                        .append("                        param[pks[i]] = row[pks[i]]\n")
+                        .append("                    }\n")
+                        .append("                    axios.get('").append("${contextPath}").append(context.getDeleteRequest()).append("',{\n")
+                        .append("                        params: param\n")
+                        .append("                    }).then(res => {\n")
+                        .append("                        this.loading = false;\n")
+                        .append("                        if (res.data.code != 0) {\n")
+                        .append("                            this.$message.error(res.data.message);\n")
+                        .append("                        } else {\n")
+                        .append("                            this.$message.success('删除成功');")
+                        .append("                            this.getList()\n")
+                        .append("                        }\n")
+                        .append("                    }).catch(res => {\n")
+                        .append("                        console.error(res)\n")
+                        .append("                        this.loading = false;\n")
+                        .append("                        this.$message.error('删除异常');\n")
+                        .append("                    })\n")
+                        .append("                }).catch(() => {\n")
+                        .append("                });\n")
                         .append("            },\n");
             }
             methodsBuilder
@@ -313,6 +354,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                            if (res.data.code != 0) {\n")
                     .append("                                this.$message.error(res.data.message);\n")
                     .append("                            } else {\n")
+                    .append("                                this.$message.success('操作成功');")
                     .append("                                this.closeInfo()\n")
                     .append("                                this.getList()\n")
                     .append("                            }\n")
