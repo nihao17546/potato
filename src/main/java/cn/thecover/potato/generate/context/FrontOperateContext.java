@@ -14,4 +14,5 @@ public class FrontOperateContext {
     private List<OperateElement> elements;
     private Boolean insert;
     private Boolean update;
+    private Boolean delete;
 }

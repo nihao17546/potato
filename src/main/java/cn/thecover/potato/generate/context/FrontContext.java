@@ -27,6 +27,7 @@ public class FrontContext {
     private UITable uiTable;
     private List<FrontSearchElementContext> searchElements;
     private Map<String,String> propMap;
+    private String parentPath;
     private String path;
 
     // 当前表外键
@@ -81,6 +82,7 @@ public class FrontContext {
         frontContext.setParentKey(parentKey);
         frontContext.setParentTable(parentTable);
         frontContext.setTable(table);
+        frontContext.setParentPath(this.path);
         follows.add(frontContext);
     }
 

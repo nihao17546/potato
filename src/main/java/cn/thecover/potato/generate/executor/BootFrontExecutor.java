@@ -43,25 +43,26 @@ public class BootFrontExecutor extends FrontExecutor {
             formString = "{}";
         }
 
-        StringBuilder searchBuilder = new StringBuilder();
-        StringBuilder addBtnBuilder = new StringBuilder();
-        StringBuilder mainColumnsBuilder = new StringBuilder();
-        StringBuilder datasBuilder = new StringBuilder();
-        StringBuilder methodsBuilder = new StringBuilder();
-        StringBuilder paginationBuilder = new StringBuilder();
-        StringBuilder optionColumnBuilder = new StringBuilder();
-        StringBuilder createBuilder = new StringBuilder();
-        StringBuilder extraHtmlBuilder = new StringBuilder();
+
         StringBuilder cssBuilder = new StringBuilder();
         StringBuilder jsBuilder = new StringBuilder();
-
+        StringBuilder datasBuilder = new StringBuilder();
+        StringBuilder createBuilder = new StringBuilder();
+        StringBuilder methodsBuilder = new StringBuilder();
+        StringBuilder searchHtmlBuilder = new StringBuilder();
+        StringBuilder tableHtmlBuilder = new StringBuilder();
+        StringBuilder paginationHtmlBuilder = new StringBuilder();
+        StringBuilder extraHtmlBuilder = new StringBuilder();
         StringBuilder searchParamsBuilder = new StringBuilder();
+        StringBuilder optionButtonHtmlBuilder = new StringBuilder();
+        StringBuilder backHtmlBuidler = new StringBuilder();
 
         boolean hasUploadImage = false;
         boolean hasCutImage = false;
 
+
         if (context.getForeignKeyProp() != null) {
-            // 是从表页面，需获取外键请求参数
+            // 是从主表页面，需获取外键请求参数
             datasBuilder.append("                ").append(context.getForeignKeyProp()).append(": null,\n");
             searchParamsBuilder.append("                        ")
                     .append(context.getForeignKeyProp()).append(": this.").append(context.getForeignKeyProp()).append(",\n");
@@ -70,25 +71,13 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("            if (").append(context.getForeignKeyProp()).append(" != '' && ").append(context.getForeignKeyProp()).append(" != null && typeof (").append(context.getForeignKeyProp()).append(") != 'undefined') {\n")
                     .append("                this.").append(context.getForeignKeyProp()).append(" = ").append(context.getForeignKeyProp()).append(";\n")
                     .append("            } else {\n")
+                    .append("                this.loading = true;\n")
                     .append("                alert('链接错误');\n")
                     .append("                return;\n")
                     .append("            }\n");
-            createBuilder
-                    .append("            window.setInterval(function () {\n")
-                    .append("                let height = document.body.scrollHeight;\n")
-                    .append("                let dialogs = document.getElementsByClassName('el-dialog')\n")
-                    .append("                if (dialogs && dialogs.length > 0) {\n")
-                    .append("                    for (let i = 0; i < dialogs.length; i++) {\n")
-                    .append("                        if (dialogs[i].getAttribute('role') == 'dialog') {\n")
-                    .append("                            let h = dialogs[i].parentElement.scrollHeight\n")
-                    .append("                            if (height < h) {\n")
-                    .append("                                height = h;\n")
-                    .append("                            }\n")
-                    .append("                        }\n")
-                    .append("                    }\n")
-                    .append("                }\n")
-                    .append("                window.parent.document.getElementById(\"ifa\").height = height;\n")
-                    .append("            }, 100)\n");
+            backHtmlBuidler
+                    .append("            <el-link href=\"").append("${contextPath}").append("${potatoPath}").append(context.getParentPath()).append("\"><i class=\"el-icon-back\"></i></el-link>\n")
+                    .append("            <el-divider direction=\"vertical\"></el-divider>");
         }
 
         if (context.getRemoteContexts() != null) {
@@ -114,12 +103,17 @@ public class BootFrontExecutor extends FrontExecutor {
         }
 
         if (context.getSearchElements() != null) {
+            searchHtmlBuilder
+                    .append("                <div slot=\"header\">\n")
+                    .append("                    <span>检索条件</span>\n")
+                    .append("                </div>\n");
+            searchHtmlBuilder.append("                <el-form @submit.native.prevent :inline=\"true\">\n");
             for (FrontSearchElementContext searchElement : context.getSearchElements()) {
                 if (context.getForeignKeyProp() != null && context.getForeignKeyProp().equals(searchElement.getField())) {
                     // 与外键冲突，忽略
                     continue;
                 }
-                searchBuilder.append(searchElement.getElement().getOptions(searchElement.getField()));
+                searchHtmlBuilder.append(searchElement.getElement().getOptions(searchElement.getField()));
                 if (searchElement.getField() != null) {
                     if (searchElement.getStartField() == null && searchElement.getEndField() == null) {
                         searchParamsBuilder.append("                        ")
@@ -156,6 +150,11 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append("            },\n");
                 }
             }
+            searchHtmlBuilder
+                    .append("                    <el-form-item>\n")
+                    .append("                        <el-button type=\"text\" @click=\"search\">查询</el-button>\n")
+                    .append("                    </el-form-item>\n")
+                    .append("                </el-form>\n");
             methodsBuilder
                     .append("            search() {\n")
                     .append("                if (typeof this.curPage != 'undefined') {\n")
@@ -165,50 +164,59 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("            },\n");
         }
 
+        tableHtmlBuilder.append("                <el-table\n")
+                .append("                        :data=\"list\"\n")
+                .append("                        border\n")
+                .append("                        @sort-change=\"sortChange\"\n")
+                .append("                        style=\"width: 100%; margin-top: 3px;\">\n");
         for (UIColumn uiColumn : context.getUiTable().getColumns()) {
             String prop = context.getProp(uiColumn);
             String label = uiColumn.getLabel();
             Integer width = uiColumn.getWidth();
             Boolean sortable = uiColumn.getSortable();
-            mainColumnsBuilder
+            tableHtmlBuilder
                     .append("        <el-table-column\n")
                     .append("                label=\"").append(label).append("\"\n");
             if (width != null) {
-                mainColumnsBuilder.append("                width=\"").append(width).append("\"\n");
+                tableHtmlBuilder.append("                width=\"").append(width).append("\"\n");
             }
             if (sortable != null) {
-                mainColumnsBuilder.append("                sortable\n");
+                tableHtmlBuilder.append("                sortable\n");
             }
-            mainColumnsBuilder.append("                prop=\"").append(prop).append("\">\n");
+            tableHtmlBuilder.append("                prop=\"").append(prop).append("\">\n");
             if (uiColumn.getFormatter() != null && !uiColumn.getFormatter().isEmpty()) {
                 String formatterMethodName = prop + "Formatter";
 
-                mainColumnsBuilder.append("            <template slot-scope=\"props\">\n");
-                mainColumnsBuilder.append("                <span v-html=\"").append(formatterMethodName).append("(props.row, '").append(prop).append("')\"></span>\n");
-                mainColumnsBuilder.append("            </template>\n");
+                tableHtmlBuilder.append("            <template slot-scope=\"props\">\n");
+                tableHtmlBuilder.append("                <span v-html=\"").append(formatterMethodName).append("(props.row, '").append(prop).append("')\"></span>\n");
+                tableHtmlBuilder.append("            </template>\n");
 
                 methodsBuilder
                         .append("            ").append(formatterMethodName).append("(row, prop) {\n")
                         .append("                ").append(uiColumn.getFormatter()).append("\n")
                         .append("            },\n");
             }
-            mainColumnsBuilder.append("        </el-table-column>\n");
+            tableHtmlBuilder.append("        </el-table-column>\n");
         }
 
+        StringBuilder optionColumnBuilder = new StringBuilder();
         if (context.getOperateContext() != null) {
             datasBuilder.append("                form: ").append(formString).append(",\n");
             datasBuilder.append("                formVisible: false,\n");
             datasBuilder.append("                formTitle: '',\n");
+
+            StringBuilder pks = new StringBuilder();
+            for (String pk : context.getOperateContext().getPrimaryKeys()) {
+                if (pks.length() > 0) {
+                    pks.append(",");
+                }
+                pks.append("'").append(pk).append("'");
+            }
+
             if (Boolean.TRUE.equals(context.getOperateContext().getUpdate())) {
                 optionColumnBuilder.append("                    ")
                         .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showInfo(props.row,[");
-                int index = 0;
-                for (String pk : context.getOperateContext().getPrimaryKeys()) {
-                    if (index ++ > 0) {
-                        optionColumnBuilder.append(",");
-                    }
-                    optionColumnBuilder.append("'").append(pk).append("'");
-                }
+                optionColumnBuilder.append(pks.toString());
                 optionColumnBuilder.append("])\">编辑")
                         .append("</el-button>\n");
                 methodsBuilder
@@ -233,6 +241,45 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("                })\n")
                         .append("            },\n");
             }
+
+            if (Boolean.TRUE.equals(context.getOperateContext().getDelete())) {
+                optionColumnBuilder.append("                    ")
+                        .append("<el-button type=\"danger\" size=\"mini\" :disabled=\"loading\" @click=\"del(props.row,[");
+                optionColumnBuilder.append(pks.toString());
+                optionColumnBuilder.append("])\">删除")
+                        .append("</el-button>\n");
+                methodsBuilder
+                        .append("            del(row,pks) {\n")
+                        .append("                this.$confirm('确定要删除?', '提示', {\n")
+                        .append("                    confirmButtonText: '确定',\n")
+                        .append("                    cancelButtonText: '取消',\n")
+                        .append("                    type: 'warning'\n")
+                        .append("                }).then(() => {\n")
+                        .append("                    let param = {}\n")
+                        .append("                    for(let i = 0; i < pks.length; i ++) {\n")
+                        .append("                        param[pks[i]] = row[pks[i]]\n")
+                        .append("                    }\n")
+                        .append("                    this.loading = true;\n")
+                        .append("                    axios.get('").append("${contextPath}").append(context.getDeleteRequest()).append("',{\n")
+                        .append("                        params: param\n")
+                        .append("                    }).then(res => {\n")
+                        .append("                        this.loading = false;\n")
+                        .append("                        if (res.data.code != 0) {\n")
+                        .append("                            this.$message.error(res.data.message);\n")
+                        .append("                        } else {\n")
+                        .append("                            this.$message.success('删除成功');\n")
+                        .append("                            this.getList()\n")
+                        .append("                        }\n")
+                        .append("                    }).catch(res => {\n")
+                        .append("                        console.error(res)\n")
+                        .append("                        this.loading = false;\n")
+                        .append("                        this.$message.error('操作异常');\n")
+                        .append("                    })\n")
+                        .append("                }).catch(() => {\n")
+                        .append("                });\n")
+                        .append("            },\n");
+            }
+
             methodsBuilder
                     .append("            closeInfo() {\n")
                     .append("                this.formVisible = false\n")
@@ -313,6 +360,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                            if (res.data.code != 0) {\n")
                     .append("                                this.$message.error(res.data.message);\n")
                     .append("                            } else {\n")
+                    .append("                                this.$message.success('操作成功');\n")
                     .append("                                this.closeInfo()\n")
                     .append("                                this.getList()\n")
                     .append("                            }\n")
@@ -328,9 +376,10 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("            },\n");
 
             if (Boolean.TRUE.equals(context.getOperateContext().getInsert())) {
-                addBtnBuilder.append("        <el-form-item>\n")
-                        .append("            <el-button type=\"primary\" @click=\"showAdd\">新增</el-button>\n")
-                        .append("        </el-form-item>\n");
+                optionButtonHtmlBuilder
+                        .append("                <div slot=\"header\">\n")
+                        .append("                    <el-button size=\"medium\" type=\"primary\" @click=\"showAdd\">新增</el-button>\n")
+                        .append("                </div>\n");
                 methodsBuilder
                         .append("            showAdd() {\n")
                         .append("                this.form = ").append(formString).append("\n")
@@ -346,49 +395,32 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showFollow(props.row, ")
                         .append("'").append(follow.getForeignKeyProp()).append("'").append(", '")
                         .append(follow.getParentKeyProp(context.getPropMap())).append("', '")
-                        .append("${potatoPath}").append(follow.getPath()).append("', '").append(follow.getTitle()).append("')\">")
+                        .append("${potatoPath}").append(follow.getPath()).append("')\">")
                         .append(follow.getTitle())
                         .append("</el-button>\n");
             }
-            datasBuilder.append("                followTitle: null,\n");
-            datasBuilder.append("                followVisible: false,\n");
-            datasBuilder.append("                followPath: null,\n");
             methodsBuilder
-                    .append("            showFollow(row, fk, pk, path, title) {\n")
+                    .append("            showFollow(row, fk, pk, path) {\n")
                     .append("                let v = row[pk];\n")
-                    .append("                this.followVisible = true;\n")
-                    .append("                this.followTitle = title;\n")
-                    .append("                this.followPath = '" + "${contextPath}" + "' + path + '?' + fk + '=' + v;\n")
+                    .append("                window.location.href = '" + "${contextPath}" + "' + path + '?' + fk + '=' + v;\n")
                     .append("            },\n");
-            methodsBuilder
-                    .append("            followClose() {\n")
-                    .append("                this.followVisible = false;\n")
-                    .append("                this.followTitle = null;\n")
-                    .append("                this.followPath = null;\n")
-                    .append("            },\n");
-            extraHtmlBuilder
-                    .append("    <el-dialog\n")
-                    .append("            :before-close=\"followClose\"\n")
-                    .append("            :title=\"followTitle\"\n")
-                    .append("            :visible.sync=\"followVisible\"\n")
-                    .append("            :fullscreen=\"true\">\n")
-                    .append("        <iframe id=\"ifa\" :src=\"followPath\" style=\"width: 100%;\" frameborder=\"0\" scrolling=\"no\"></iframe>\n")
-                    .append("    </el-dialog>");
         }
+
         if (optionColumnBuilder.length() > 0) {
-            mainColumnsBuilder
+            tableHtmlBuilder
                     .append("        <el-table-column\n");
             if (context.getUiTable().getOptionColumnWidth() != null) {
-                mainColumnsBuilder.append("                width=\"").append(context.getUiTable().getOptionColumnWidth()).append("\"\n");
+                tableHtmlBuilder.append("                width=\"").append(context.getUiTable().getOptionColumnWidth()).append("\"\n");
             }
-            mainColumnsBuilder.append("                label=\"").append("操作").append("\">\n");
-            mainColumnsBuilder.append("            <template slot-scope=\"props\">\n");
-            mainColumnsBuilder.append("                <el-button-group>\n");
-            mainColumnsBuilder.append(optionColumnBuilder.toString());
-            mainColumnsBuilder.append("                </el-button-group>\n");
-            mainColumnsBuilder.append("            </template>\n");
-            mainColumnsBuilder.append("        </el-table-column>\n");
+            tableHtmlBuilder.append("                label=\"").append("操作").append("\">\n");
+            tableHtmlBuilder.append("            <template slot-scope=\"props\">\n");
+            tableHtmlBuilder.append("                <el-button-group>\n");
+            tableHtmlBuilder.append(optionColumnBuilder.toString());
+            tableHtmlBuilder.append("                </el-button-group>\n");
+            tableHtmlBuilder.append("            </template>\n");
+            tableHtmlBuilder.append("        </el-table-column>\n");
         }
+        tableHtmlBuilder.append("                </el-table>\n");
 
 
         String getListUrl = "${contextPath}" + context.getListRequest();
@@ -433,7 +465,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("            },\n");
 
 
-            paginationBuilder
+            paginationHtmlBuilder
                     .append("    <div style=\"text-align: right;\">\n")
                     .append("        <el-pagination\n")
                     .append("                small\n")
@@ -699,31 +731,14 @@ public class BootFrontExecutor extends FrontExecutor {
 
         map.put("css", cssBuilder.toString());
         map.put("js", jsBuilder.toString());
-
-        map.put("mainTableColumns", mainColumnsBuilder.toString());
+        map.put("backHtml", backHtmlBuidler.toString());
+        map.put("searchHtml", searchHtmlBuilder.toString());
+        map.put("optionButtonHtml", optionButtonHtmlBuilder.toString());
+        map.put("tableHtml", tableHtmlBuilder.toString());
+        map.put("paginationHtml", paginationHtmlBuilder.toString());
+        map.put("extraHtml", extraHtmlBuilder.toString());
         map.put("datas", datasBuilder.toString());
         map.put("methods", methodsBuilder.toString());
-        map.put("mainPagination", paginationBuilder.toString());
-        map.put("extraHtml", extraHtmlBuilder.toString());
-
-        StringBuilder topBuilder = new StringBuilder();
-        topBuilder
-                .append("    <div style=\"padding-left: 5px;\">\n")
-                .append("        <el-form @submit.native.prevent :inline=\"true\">\n")
-                .append(searchBuilder.toString());
-        if (searchBuilder.length() > 0) {
-            topBuilder
-                    .append("        <el-form-item>\n")
-                    .append("            <el-button type=\"primary\" @click=\"search\">查询</el-button>\n")
-                    .append("        </el-form-item>\n");
-        }
-        if (addBtnBuilder.length() > 0) {
-            topBuilder.append(addBtnBuilder.toString());
-        }
-        topBuilder
-                .append("        </el-form>\n")
-                .append("    </div>\n");
-        map.put("top", topBuilder.toString());
         map.put("created", createBuilder.toString());
 
         return result;

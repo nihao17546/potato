@@ -17,7 +17,7 @@ public class StorageController {
     @Autowired
     private IUploadService uploadService;
 
-    @RequestMapping(value = "${requestMapping}", produces = "application/json;charset=UTF-8")
+    @RequestMapping(value = ${requestMapping}, produces = "application/json;charset=UTF-8")
     @ResponseBody
     public TokenResultVo token(@RequestParam(value = "file_name") String fileName) {
         return uploadService.getToken(fileName);

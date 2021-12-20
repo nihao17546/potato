@@ -1,10 +1,7 @@
 package cn.thecover.potato.generate.executor.handler;
 
 import cn.thecover.potato.generate.annotation.AnnotationInfo;
-import cn.thecover.potato.generate.context.ClassField;
-import cn.thecover.potato.generate.context.ClassName;
-import cn.thecover.potato.generate.context.FrontContext;
-import cn.thecover.potato.generate.context.JavaClassContext;
+import cn.thecover.potato.generate.context.*;
 import cn.thecover.potato.generate.executor.ComponentExecutor;
 import cn.thecover.potato.generate.method.MethodInfo;
 import cn.thecover.potato.generate.method.ParamInfo;
@@ -25,6 +22,16 @@ import java.util.Map;
 public class DelComponentHandler extends ComponentHandler {
     @Override
     protected List<ComponentExecutor.El> handler(HandlerRequest request) {
+        FrontOperateContext infoContext = request.getFrontContext().getOperateContext();
+        if (infoContext == null) {
+            infoContext = new FrontOperateContext();
+            infoContext.setPrimaryKeys(request.getTable().getPrimaryFields());
+            infoContext.setDelete(true);
+            request.getFrontContext().setOperateContext(infoContext);
+        } else {
+            infoContext.setDelete(true);
+        }
+
         List<ComponentExecutor.El> elList = new ArrayList<>();
         Table dbTable = request.getTable();
         ClassName className = request.getClassName();
