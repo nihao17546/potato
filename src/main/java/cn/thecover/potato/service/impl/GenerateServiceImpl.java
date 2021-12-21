@@ -262,7 +262,17 @@ public class GenerateServiceImpl implements IGenerateService {
             datas.put("basePackageName", context.getPackageName());
             datas.put("version", config.getBasic().getVersion().toString());
             datas.put("now", SimpleDateUtil.format(new Date()));
-            datas.put("requestMapping", context.getFrontContext().getTokenRequest());
+
+            StringBuilder requestMappingBuilder = new StringBuilder();
+            requestMappingBuilder.append("{")
+                    .append("\"").append(context.getFrontContext().getTokenRequest()).append("\"");
+            if (context.getFrontContext().getFollows() != null && !context.getFrontContext().getFollows().isEmpty()) {
+                for (FrontContext follow : context.getFrontContext().getFollows()) {
+                    requestMappingBuilder.append(",").append("\"").append(follow.getTokenRequest()).append("\"");
+                }
+            }
+            requestMappingBuilder.append("}");
+            datas.put("requestMapping", requestMappingBuilder.toString());
             bytes = new StringSubstitutor(datas).replace(content);
             map.put(path, bytes);
         }

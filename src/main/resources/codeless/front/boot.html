@@ -11,19 +11,47 @@ ${css}
     <script src="${contextPath}${potatoPath}/static/qs.js"></script>
 ${js}
     <style>
+        .c-card {
+            border-top-color: #dd4b39;
+            border-top-width: 3px;
+            margin-top: 10px;
+        }
+        .c-card .el-form-item {
+            margin-bottom: 0px;
+        }
+        .c-card .el-card__header {
+            padding: 12px 20px;
+        }
+        .c-card .el-card__header {
+            padding: 12px 20px;
+        }
+        .c-card .el-card__body {
+            padding: 12px 20px;
+        }
     </style>
 </head>
 <body>
 <div id="app" v-loading="loading">
-${top}
-    <el-table
-            :data="list"
-            border
-            @sort-change="sortChange"
-            style="width: 100%; margin-top: 3px;">
-${mainTableColumns}
-    </el-table>
-${mainPagination}
+    <el-card shadow="never">
+        <div slot="header">
+${backHtml}
+            <span>${title}</span>
+        </div>
+        <el-row :gutter="24" style="margin-left: -5px; margin-right: -5px;">
+            <el-col :span="24">
+                <el-card shadow="never" class="c-card">
+${searchHtml}
+                </el-card>
+            </el-col>
+            <el-col :span="24">
+                <el-card shadow="never" class="c-card">
+${optionButtonHtml}
+${tableHtml}
+${paginationHtml}
+                </el-card>
+            </el-col>
+        </el-row>
+    </el-card>
 ${extraHtml}
 </div>
 <script>
