@@ -35,8 +35,11 @@ public class GenerateBoot {
     private HtmlServlet htmlServlet;
     @Autowired
     private CoreProperties coreProperties;
-    @Autowired
     private DataSource dataSource;
+
+    public GenerateBoot(DataSource dataSource) {
+        this.dataSource = dataSource;
+    }
 
     private final Map<Integer,BootResult> loadMap = new ConcurrentHashMap<>();
 

@@ -18,9 +18,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.annotation.PostConstruct;
+import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -38,8 +40,13 @@ public class BeanConfig {
     private SpringContextUtil springContextUtil;
 
     @Bean(BasicConstant.beanNamePrefix + "GenerateBoot")
-    public GenerateBoot generateBoot() {
-        return new GenerateBoot();
+    public GenerateBoot generateBoot(@Autowired DataSource dataSource) {
+        return new GenerateBoot(dataSource);
+    }
+
+    @Bean(BasicConstant.beanNamePrefix + "DataSourceTransactionManager")
+    public DataSourceTransactionManager dataSourceTransactionManager(@Autowired DataSource dataSource) {
+        return new DataSourceTransactionManager(dataSource);
     }
 
     @Bean(BasicConstant.beanNamePrefix + "resourceServletRegistrationBean")

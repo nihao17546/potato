@@ -32,6 +32,13 @@ public class MethodInfo implements Serializable {
         }
     }
 
+    public void addAnnotationToTop(AnnotationInfo annotation) {
+        if (annotations == null) {
+            annotations = new ArrayList<>();
+        }
+        annotations.add(0, annotation);
+    }
+
     public void addContentClass(String className) {
         if (contentClass == null) {
             contentClass = new HashSet<>();

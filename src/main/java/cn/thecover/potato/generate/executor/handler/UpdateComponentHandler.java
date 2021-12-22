@@ -223,7 +223,7 @@ public class UpdateComponentHandler extends ComponentHandler {
                 .append("            this.").append(serviceClassField.getName()).append(".update(param);\n")
                 .append("            result.put(\"code\", 0);\n")
                 .append("            result.put(\"message\", \"OK\");\n")
-                .append("        } catch (IllegalArgumentException e) {\n")
+                .append("        } catch (Exception e) {\n")
                 .append("            result.put(\"code\", 1);\n")
                 .append("            result.put(\"message\", e.getMessage());\n")
                 .append("        }\n")

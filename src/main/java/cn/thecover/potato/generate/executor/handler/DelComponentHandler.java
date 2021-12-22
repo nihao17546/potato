@@ -205,7 +205,7 @@ public class DelComponentHandler extends ComponentHandler {
                             .append(CamelUtil.get(((FollowTable) followHandlerRequest.getTable()).getParentKey())).append("()")
                             .append(");\n");
                     serviceImplMethod.setContent(contentBuilder.toString());
-//                    serviceImplMethod.addAnnotation(new AnnotationInfo(Transactional.class.getName()));
+                    serviceImplMethod.addAnnotationToTop(new AnnotationInfo(Transactional.class.getName()));
                 }
             }
         }
