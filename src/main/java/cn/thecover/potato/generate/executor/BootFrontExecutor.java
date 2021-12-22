@@ -104,6 +104,9 @@ public class BootFrontExecutor extends FrontExecutor {
 
         if (context.getSearchElements() != null) {
             searchHtmlBuilder
+                    .append("            <el-col :span=\"24\">\n")
+                    .append("                <el-card shadow=\"never\" class=\"c-card\">\n");
+            searchHtmlBuilder
                     .append("                <div slot=\"header\">\n")
                     .append("                    <span>检索条件</span>\n")
                     .append("                </div>\n");
@@ -155,6 +158,9 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                        <el-button type=\"text\" @click=\"search\">查询</el-button>\n")
                     .append("                    </el-form-item>\n")
                     .append("                </el-form>\n");
+            searchHtmlBuilder
+                    .append("                </el-card>\n")
+                    .append("            </el-col>\n");
             methodsBuilder
                     .append("            search() {\n")
                     .append("                if (typeof this.curPage != 'undefined') {\n")

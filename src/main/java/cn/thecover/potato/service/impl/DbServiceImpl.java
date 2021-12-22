@@ -21,7 +21,10 @@ public class DbServiceImpl implements IDbService {
 
     @Override
     public List<String> getAllTables() {
-        return dbDao.selectTables();
+        List<String> list = dbDao.selectTables();
+        list.remove("meta");
+        list.remove("boot");
+        return list;
     }
 
     @Override
