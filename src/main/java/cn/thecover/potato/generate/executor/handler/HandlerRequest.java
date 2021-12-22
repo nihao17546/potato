@@ -5,6 +5,7 @@ import cn.thecover.potato.generate.context.FrontContext;
 import cn.thecover.potato.generate.context.GenerateContext;
 import cn.thecover.potato.generate.context.JavaClassContext;
 import cn.thecover.potato.generate.executor.ComponentExecutor;
+import cn.thecover.potato.meta.conf.db.Column;
 import cn.thecover.potato.meta.conf.db.FollowTable;
 import cn.thecover.potato.meta.conf.db.Table;
 import cn.thecover.potato.meta.conf.form.operate.OperateForm;
@@ -12,6 +13,7 @@ import cn.thecover.potato.meta.conf.form.search.SearchForm;
 import cn.thecover.potato.meta.conf.table.UITable;
 import lombok.Data;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -46,4 +48,25 @@ public class HandlerRequest {
     private List<ComponentExecutor.El> els;
 
     private OperateForm operateForm;
+
+    private List<HandlerRequest> followHandlerRequests;
+
+    /**
+     * 从表关联的父表的字段对应的java类
+     */
+    private Class parentKeyClass;
+
+    public void addFollow(HandlerRequest handlerRequest) {
+        if (this.followHandlerRequests == null) {
+            this.followHandlerRequests = new ArrayList<>();
+        }
+        this.followHandlerRequests.add(handlerRequest);
+        String key = ((FollowTable) handlerRequest.getTable()).getParentKey();
+        for (Column column : table.getColumns()) {
+            if (column.getField().equals(key)) {
+                handlerRequest.setParentKeyClass(column.getJavaType());
+                break;
+            }
+        }
+    }
 }

@@ -7,6 +7,7 @@ import cn.thecover.potato.generate.executor.ComponentExecutor;
 import cn.thecover.potato.generate.method.MethodInfo;
 import cn.thecover.potato.generate.method.ParamInfo;
 import cn.thecover.potato.meta.conf.db.Column;
+import cn.thecover.potato.meta.conf.db.FollowTable;
 import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
 import cn.thecover.potato.util.CamelUtil;
 import cn.thecover.potato.util.SqlStringBuilder;
@@ -57,6 +58,18 @@ public class InfoComponentHandler extends ComponentHandler {
                         .append(" AS ")
                         .append(field);
                 fields.add(field);
+            }
+        }
+
+        if (request.getFollowTables() != null) {
+            for (FollowTable followTable : request.getFollowTables()) {
+                if (!fields.contains(followTable.getParentKey())) {
+                    String field = CamelUtil.underlineToCamel(followTable.getParentKey());
+                    sqlStringBuilder.append(",").put(followTable.getParentKey())
+                            .append(" AS ")
+                            .append(field);
+                    fields.add(field);
+                }
             }
         }
 

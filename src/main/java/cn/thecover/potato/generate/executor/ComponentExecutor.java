@@ -21,6 +21,7 @@ import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.GenerateUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -145,12 +146,7 @@ public class ComponentExecutor extends Executor {
         handlerRequest.setControllerClass(controllerClass);
     }
 
-    @Override
-    protected Map<String,Map<String, String>> analysis() {
-        Map<String,Map<String, String>> result = new HashMap<>();
-
-        Set<RemoteContext> remoteContextSet = new HashSet<>();
-
+    private Pair<HandlerRequest,List<HandlerRequest>> handlerRequest() {
         // 主表
         HandlerRequest handlerRequest = new HandlerRequest();
         handlerRequest.setVersion(config.getBasic().getVersion());
@@ -165,15 +161,64 @@ public class ComponentExecutor extends Executor {
         handlerRequest.setUiTable(config.getTable());
         handlerRequest.setSearchForm(config.getSearchForm());
         handlerRequest.setOperateForm(config.getOperateForm());
-
         // pojo
         pojo(context.getMainClassName(), config.getDbConf().getTable(), config.getDbConf().getAssociationTables(),
                 config.getTable(), handlerRequest);
         // component
         componentClass(context.getMainClassName(), handlerRequest);
 
-        ComponentHandler handler = new ListComponentHandler();
+        // 从表
+        List<HandlerRequest> follows = new ArrayList<>();
+        if (!CollectionUtils.isEmpty(config.getDbConf().getFollowTables())) {
+            int index = 0;
+            for (FollowTable table : config.getDbConf().getFollowTables()) {
+                UITable uiTable = config.getTable().getFollows().get(index);
+                ClassName className = context.getFollowClassNames().get(index);
+                SearchForm searchForm = null;
+                FrontContext frontContext = context.getFrontContext().getFollows().get(index);
+                if (config.getSearchForm() != null && config.getSearchForm().getFollows() != null
+                        && config.getSearchForm().getFollows().size() == config.getDbConf().getFollowTables().size()) {
+                    searchForm = config.getSearchForm().getFollows().get(index);
+                }
+                OperateForm operateForm = null;
+                if (config.getOperateForm() != null && config.getOperateForm().getFollows() != null
+                        && config.getOperateForm().getFollows().size() > index) {
+                    operateForm = config.getOperateForm().getFollows().get(index);
+                }
 
+                HandlerRequest request = new HandlerRequest();
+                request.setVersion(config.getBasic().getVersion());
+                request.setContext(context);
+                request.setColumnMap(getFieldMap(table, null));
+                request.setClassName(className);
+                request.setFrontContext(frontContext);
+                request.setTable(table);
+                request.setUiTable(uiTable);
+                request.setSearchForm(searchForm);
+                request.setOperateForm(operateForm);
+                handlerRequest.addFollow(request);
+                // pojo
+                pojo(className, table, null, uiTable, request);
+                // component
+                componentClass(className, request);
+
+                follows.add(request);
+            }
+            index ++;
+        }
+
+        return Pair.of(handlerRequest, follows);
+    }
+
+    @Override
+    protected Map<String,Map<String, String>> analysis() {
+        Map<String,Map<String, String>> result = new HashMap<>();
+
+        Set<RemoteContext> remoteContextSet = new HashSet<>();
+
+        Pair<HandlerRequest,List<HandlerRequest>> pair = handlerRequest();
+
+        ComponentHandler handler = new ListComponentHandler();
         if (config.getOperateForm() != null) {
             if (config.getOperateForm().getElements() != null && !config.getOperateForm().getElements().isEmpty()) {
                 if (Boolean.TRUE.equals(config.getOperateForm().getInsert())) {
@@ -203,7 +248,6 @@ public class ComponentExecutor extends Executor {
                 handler.setNext(delHandler);
             }
         }
-
         if (config.getSearchForm() != null && config.getSearchForm().getElements() != null) {
             for (SearchElement element : config.getSearchForm().getElements()) {
                 if (element instanceof RemoteSelectSearchElement) {
@@ -214,49 +258,31 @@ public class ComponentExecutor extends Executor {
                 }
             }
         }
+        HandlerRequest mainHandlerRequest = pair.getLeft();
+        handler.execute(mainHandlerRequest);
 
-        handler.execute(handlerRequest);
-
-        if (!CollectionUtils.isEmpty(handlerRequest.getEls())) {
+        if (!CollectionUtils.isEmpty(mainHandlerRequest.getEls())) {
             Map<String, String> map = new HashMap<>();
-            map.put("namespace", handlerRequest.getClassName().getDaoClassName());
-            map.put("elements", compileEls(handlerRequest.getEls()));
+            map.put("namespace", mainHandlerRequest.getClassName().getDaoClassName());
+            map.put("elements", compileEls(mainHandlerRequest.getEls()));
             result.put(getMapperPath(context.getMainClassName().getEntityName()), map);
         }
 
-        if (!CollectionUtils.isEmpty(config.getDbConf().getFollowTables())) {
-            int index = 0;
-            for (FollowTable table : config.getDbConf().getFollowTables()) {
-                UITable uiTable = config.getTable().getFollows().get(index);
-                ClassName className = context.getFollowClassNames().get(index);
-                SearchForm searchForm = null;
-                FrontContext frontContext = context.getFrontContext().getFollows().get(index);
-                if (config.getSearchForm() != null && config.getSearchForm().getFollows() != null
-                        && config.getSearchForm().getFollows().size() == config.getDbConf().getFollowTables().size()) {
-                    searchForm = config.getSearchForm().getFollows().get(index);
-                }
+        if (pair.getRight() != null && !pair.getRight().isEmpty()) {
+            List<HandlerRequest> followHandlerRequests = pair.getRight();
+            for (int index = 0; index < followHandlerRequests.size(); index ++) {
                 OperateForm operateForm = null;
                 if (config.getOperateForm() != null && config.getOperateForm().getFollows() != null
                         && config.getOperateForm().getFollows().size() > index) {
                     operateForm = config.getOperateForm().getFollows().get(index);
                 }
-
-                // 从表
-                HandlerRequest request = new HandlerRequest();
-                request.setVersion(config.getBasic().getVersion());
-                request.setContext(context);
-                request.setColumnMap(getFieldMap(table, null));
-                request.setClassName(className);
-                request.setFrontContext(frontContext);
-                request.setTable(table);
-                request.setUiTable(uiTable);
-                request.setSearchForm(searchForm);
-                request.setOperateForm(operateForm);
-
-                // pojo
-                pojo(className, table, null, uiTable, request);
-                // component
-                componentClass(className, request);
+                FrontContext frontContext = context.getFrontContext().getFollows().get(index);
+                SearchForm searchForm = null;
+                if (config.getSearchForm() != null && config.getSearchForm().getFollows() != null
+                        && config.getSearchForm().getFollows().size() == config.getDbConf().getFollowTables().size()) {
+                    searchForm = config.getSearchForm().getFollows().get(index);
+                }
+                ClassName className = context.getFollowClassNames().get(index);
 
                 ComponentHandler followHandler = new ListComponentHandler();
                 if (operateForm != null) {
@@ -300,6 +326,7 @@ public class ComponentExecutor extends Executor {
                     }
                 }
 
+                HandlerRequest request = followHandlerRequests.get(index);
                 followHandler.execute(request);
 
                 if (!CollectionUtils.isEmpty(request.getEls())) {
@@ -308,8 +335,6 @@ public class ComponentExecutor extends Executor {
                     map.put("elements", compileEls(request.getEls()));
                     result.put(getMapperPath(className.getEntityName()), map);
                 }
-
-                index ++;
             }
         }
 

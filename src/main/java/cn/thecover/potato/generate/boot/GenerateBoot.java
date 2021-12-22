@@ -1,5 +1,7 @@
 package cn.thecover.potato.generate.boot;
 
+import cn.thecover.potato.exception.HandlerException;
+import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.SpringContextUtil;
@@ -198,16 +200,26 @@ public class GenerateBoot {
                         }
 
                         for (BootResult.Java java : bootResult.getServiceImpls()) {
-                            String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
-                            serviceSet.add(beanId);
-                            springContextUtil.registerBean(beanId, classLoader.findClass(java.getClassName()));
-                            log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
+                            try {
+                                String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                                serviceSet.add(beanId);
+                                springContextUtil.registerBean(beanId, classLoader.findClass(java.getClassName()));
+                                log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
+                            } catch (Exception e) {
+                                log.error("注册Service异常:\n{}", java.getSource(), e);
+                                throw new HandlerException(HttpStatus.SYSTEM_ERROR);
+                            }
                         }
                         for (BootResult.Java java : bootResult.getControllers()) {
-                            String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
-                            controllerSet.add(beanId);
-                            springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
-                            log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
+                            try {
+                                String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                                controllerSet.add(beanId);
+                                springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
+                                log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
+                            } catch (Exception e) {
+                                log.error("注册Controller异常:\n{}", java.getSource(), e);
+                                throw new HandlerException(HttpStatus.SYSTEM_ERROR);
+                            }
                         }
                     } catch (Exception e) {
                         for (String beanId : controllerSet) {

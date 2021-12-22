@@ -5,9 +5,15 @@ import cn.thecover.potato.generate.context.*;
 import cn.thecover.potato.generate.executor.ComponentExecutor;
 import cn.thecover.potato.generate.method.MethodInfo;
 import cn.thecover.potato.generate.method.ParamInfo;
+import cn.thecover.potato.meta.conf.db.Column;
+import cn.thecover.potato.meta.conf.db.FollowTable;
 import cn.thecover.potato.meta.conf.db.Table;
+import cn.thecover.potato.meta.conf.form.operate.OperateForm;
 import cn.thecover.potato.util.CamelUtil;
 import cn.thecover.potato.util.SqlStringBuilder;
+import org.apache.ibatis.annotations.Param;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -127,6 +133,81 @@ public class DelComponentHandler extends ComponentHandler {
         el.setType("delete");
         el.setSql(sqlStringBuilder.toString());
         elList.add(el);
+
+        cascadingDelete(request, elList, serviceImplMethod);
+
         return elList;
+    }
+
+    /**
+     * 处理级联删除
+     */
+    private void cascadingDelete(HandlerRequest request, List<ComponentExecutor.El> elList, MethodInfo serviceImplMethod) {
+        if (Boolean.TRUE.equals(request.getOperateForm().getCascadingDelete())) {
+            FollowTable table = (FollowTable) request.getTable();
+            SqlStringBuilder sqlStringBuilder = new SqlStringBuilder();
+            String paramName = CamelUtil.underlineToCamel(table.getForeignKey());
+            sqlStringBuilder.append("DELETE FROM ").put(request.getTable().getName())
+                    .append(" WHERE ").put(table.getForeignKey()).append("=#{")
+                    .append(paramName).append("}");
+
+            Class paramType = null;
+            Class foreignJavaType = null;
+            for (Column column : request.getTable().getColumns()) {
+                if (column.getField().equals(table.getForeignKey())) {
+                    foreignJavaType = column.getJavaType();
+                    break;
+                }
+            }
+            Class parentJavaType = request.getParentKeyClass();
+            if (foreignJavaType.equals(parentJavaType)) {
+                paramType = foreignJavaType;
+            } else {
+                paramType = Object.class;
+            }
+
+
+            JavaClassContext daoClass = request.getDaoClass();
+            MethodInfo daoMethod = new MethodInfo();
+            daoMethod.setHasContent(false);
+            daoMethod.addContentClass(Integer.class.getName());
+            daoMethod.setReturnString(Integer.class.getName());
+            daoMethod.setMethodName("deleteCascading");
+            ParamInfo paramInfo = new ParamInfo(paramType.getName(), CamelUtil.underlineToCamel(table.getForeignKey()));
+            AnnotationInfo annotationInfo = new AnnotationInfo(Param.class.getName());
+            annotationInfo.addField("value", paramName);
+            paramInfo.addAnnotation(annotationInfo);
+            daoMethod.addParam(paramInfo);
+            daoClass.addMethod(daoMethod);
+
+            ComponentExecutor.El el = new ComponentExecutor.El();
+            el.setId("deleteCascading");
+            el.setType("delete");
+            el.setSql(sqlStringBuilder.toString());
+            elList.add(el);
+        }
+        if (request.getOperateForm().getFollows() != null) {
+            for (int i = 0; i < request.getOperateForm().getFollows().size(); i ++) {
+                OperateForm followOperateForm = request.getOperateForm().getFollows().get(i);
+                if (Boolean.TRUE.equals(followOperateForm.getCascadingDelete())) {
+                    HandlerRequest followHandlerRequest = request.getFollowHandlerRequests().get(i);
+                    ClassName followClassName = followHandlerRequest.getClassName();
+                    AnnotationInfo annotationInfo = new AnnotationInfo(Autowired.class.getName());
+                    ClassField classField = new ClassField("private", followClassName.getDaoClassName(), annotationInfo);
+                    if (!request.getServiceImplClass().getFields().contains(classField)) {
+                        request.getServiceImplClass().addField(classField);
+                    }
+
+                    StringBuilder contentBuilder = new StringBuilder();
+                    contentBuilder.append(serviceImplMethod.getContent());
+                    contentBuilder.append("        this.").append(classField.getName())
+                            .append(".deleteCascading(param.")
+                            .append(CamelUtil.get(((FollowTable) followHandlerRequest.getTable()).getParentKey())).append("()")
+                            .append(");\n");
+                    serviceImplMethod.setContent(contentBuilder.toString());
+//                    serviceImplMethod.addAnnotation(new AnnotationInfo(Transactional.class.getName()));
+                }
+            }
+        }
     }
 }
