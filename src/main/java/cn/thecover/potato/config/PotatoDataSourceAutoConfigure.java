@@ -5,16 +5,20 @@ import cn.thecover.potato.dao.DbDao;
 import cn.thecover.potato.dao.MetaDao;
 import cn.thecover.potato.generate.boot.MapperBoot;
 import cn.thecover.potato.model.constant.BasicConstant;
+import cn.thecover.potato.properties.DbProperties;
+import com.alibaba.druid.pool.DruidDataSource;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
 
+import javax.sql.DataSource;
 import java.io.*;
 
 /**
@@ -23,6 +27,54 @@ import java.io.*;
 @Slf4j
 public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
     private ApplicationContext applicationContext;
+    @Autowired
+    private DbProperties dbProperties;
+
+    @Bean(BasicConstant.beanNamePrefix + "DataSource")
+    @ConditionalOnProperty("spring.potato.db.url")
+    public DataSource dataSource() {
+        DruidDataSource druidDataSource = new DruidDataSource();
+        druidDataSource.setUrl(dbProperties.getUrl());
+        druidDataSource.setUsername(dbProperties.getUsername());
+        druidDataSource.setPassword(dbProperties.getPassword());
+        if (dbProperties.getInitialSize() != null) {
+            druidDataSource.setInitialSize(dbProperties.getInitialSize());
+        }
+        if (dbProperties.getMinIdle() != null) {
+            druidDataSource.setMinIdle(dbProperties.getMinIdle());
+        }
+        if (dbProperties.getMaxActive() != null) {
+            druidDataSource.setMaxActive(dbProperties.getMaxActive());
+        }
+        if (dbProperties.getMaxWait() != null) {
+            druidDataSource.setMaxWait(dbProperties.getMaxWait());
+        }
+        if (dbProperties.getTimeBetweenEvictionRunsMillis() != null) {
+            druidDataSource.setTimeBetweenEvictionRunsMillis(dbProperties.getTimeBetweenEvictionRunsMillis());
+        }
+        if (dbProperties.getMinEvictableIdleTimeMillis() != null) {
+            druidDataSource.setMinEvictableIdleTimeMillis(dbProperties.getMinEvictableIdleTimeMillis());
+        }
+        if (dbProperties.getValidationQuery() != null) {
+            druidDataSource.setValidationQuery(dbProperties.getValidationQuery());
+        }
+        if (dbProperties.getTestWhileIdle() != null) {
+            druidDataSource.setTestWhileIdle(dbProperties.getTestWhileIdle());
+        }
+        if (dbProperties.getTestOnBorrow() != null) {
+            druidDataSource.setTestOnBorrow(dbProperties.getTestOnBorrow());
+        }
+        if (dbProperties.getTestOnReturn() != null) {
+            druidDataSource.setTestOnReturn(dbProperties.getTestOnReturn());
+        }
+        if (dbProperties.getPoolPreparedStatements() != null) {
+            druidDataSource.setPoolPreparedStatements(dbProperties.getPoolPreparedStatements());
+        }
+        if (dbProperties.getMaxPoolPreparedStatementPerConnectionSize() != null) {
+            druidDataSource.setMaxPoolPreparedStatementPerConnectionSize(dbProperties.getMaxPoolPreparedStatementPerConnectionSize());
+        }
+        return druidDataSource;
+    }
 
 
     @Bean(name = BasicConstant.beanNamePrefix + "MapperBoot")

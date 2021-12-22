@@ -38,14 +38,15 @@ public class BeanConfig {
     private CoreProperties properties;
     @Autowired
     private SpringContextUtil springContextUtil;
+    private DataSource dataSource;
 
     @Bean(BasicConstant.beanNamePrefix + "GenerateBoot")
-    public GenerateBoot generateBoot(@Autowired DataSource dataSource) {
+    public GenerateBoot generateBoot() {
         return new GenerateBoot(dataSource);
     }
 
     @Bean(BasicConstant.beanNamePrefix + "DataSourceTransactionManager")
-    public DataSourceTransactionManager dataSourceTransactionManager(@Autowired DataSource dataSource) {
+    public DataSourceTransactionManager dataSourceTransactionManager() {
         return new DataSourceTransactionManager(dataSource);
     }
 
@@ -81,6 +82,25 @@ public class BeanConfig {
 
     @PostConstruct
     public void init() throws Exception {
+        // 数据源
+        try {
+            Object dataSourceObj = springContextUtil.getBean(BasicConstant.beanNamePrefix + "DataSource");
+            this.dataSource = (DataSource) dataSourceObj;
+            log.info("使用自定义数据源");
+        } catch (Exception e) {
+            try {
+                DataSource ds = springContextUtil.getBean(DataSource.class);
+                this.dataSource = ds;
+                log.info("使用系统自带数据源");
+            } catch (Exception ex) {
+                throw new RuntimeException("未找到系统自带数据源");
+            }
+        }
+        if (this.dataSource.getClass().getSimpleName().equalsIgnoreCase("ShardingDataSource")) {
+            throw new RuntimeException("数据源不支持ShardingDataSource");
+        }
+
+
         modify(HtmlController.class);
         springContextUtil.addBean(HtmlController.class, BasicConstant.beanNamePrefix + "HtmlController");
         springContextUtil.registerController(BasicConstant.beanNamePrefix + "HtmlController");
