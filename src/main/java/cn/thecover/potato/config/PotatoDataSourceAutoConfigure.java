@@ -3,21 +3,22 @@ package cn.thecover.potato.config;
 import cn.thecover.potato.dao.BootDao;
 import cn.thecover.potato.dao.DbDao;
 import cn.thecover.potato.dao.MetaDao;
+import cn.thecover.potato.generate.boot.GenerateBoot;
 import cn.thecover.potato.generate.boot.MapperBoot;
 import cn.thecover.potato.model.constant.BasicConstant;
 import cn.thecover.potato.properties.DbProperties;
 import com.alibaba.druid.pool.DruidDataSource;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.ibatis.session.SqlSessionFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.Bean;
+import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 
+import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 import java.io.*;
 
@@ -29,10 +30,9 @@ public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
     private ApplicationContext applicationContext;
     @Autowired
     private DbProperties dbProperties;
+    private DataSource dataSource;
 
-    @Bean(BasicConstant.beanNamePrefix + "DataSource")
-    @ConditionalOnProperty("spring.potato.db.url")
-    public DataSource dataSource() {
+    private DataSource createDataSource() {
         DruidDataSource druidDataSource = new DruidDataSource();
         druidDataSource.setUrl(dbProperties.getUrl());
         druidDataSource.setUsername(dbProperties.getUsername());
@@ -76,16 +76,40 @@ public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
         return druidDataSource;
     }
 
+    @PostConstruct
+    public void init() {
+        // 数据源
+        if (dbProperties.getUrl() != null) {
+            this.dataSource = createDataSource();
+            log.info("使用自定义数据源");
+        } else {
+            try {
+                DataSource ds = applicationContext.getBean(DataSource.class);
+                this.dataSource = ds;
+                log.info("使用系统自带数据源");
+            } catch (Exception ex) {
+                throw new RuntimeException("未找到系统自带数据源");
+            }
+            if (this.dataSource.getClass().getSimpleName().equalsIgnoreCase("ShardingDataSource")) {
+                throw new RuntimeException("数据源不支持ShardingDataSource");
+            }
+        }
+    }
+
+    @Bean(BasicConstant.beanNamePrefix + "DataSourceTransactionManager")
+    public DataSourceTransactionManager dataSourceTransactionManager() {
+        return new DataSourceTransactionManager(dataSource);
+    }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MapperBoot")
     public MapperBoot mapperBoot() {
-        SqlSessionFactory sqlSessionFactory = null;
-        try {
-            sqlSessionFactory = applicationContext.getBean(SqlSessionFactory.class);
-        } catch (Exception e) {
-            throw new RuntimeException("SqlSessionFactory 未找到");
-        }
-        return new MapperBoot((DefaultListableBeanFactory)((ConfigurableApplicationContext) applicationContext).getBeanFactory(), sqlSessionFactory);
+        return new MapperBoot((DefaultListableBeanFactory)((ConfigurableApplicationContext) applicationContext).getBeanFactory(),
+                this.dataSource);
+    }
+
+    @Bean(BasicConstant.beanNamePrefix + "GenerateBoot")
+    public GenerateBoot generateBoot() {
+        return new GenerateBoot(dataSource);
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaDao")

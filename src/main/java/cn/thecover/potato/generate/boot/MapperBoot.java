@@ -2,11 +2,15 @@ package cn.thecover.potato.generate.boot;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
+import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
 import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.mybatis.spring.mapper.MapperFactoryBean;
+import org.mybatis.spring.transaction.SpringManagedTransactionFactory;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 
+import javax.sql.DataSource;
 import java.io.ByteArrayInputStream;
 
 /**
@@ -17,9 +21,11 @@ public class MapperBoot {
     private SqlSessionFactory sqlSessionFactory;
     private DefaultListableBeanFactory beanFactory;
 
-    public MapperBoot(DefaultListableBeanFactory beanFactory, SqlSessionFactory sqlSessionFactory) {
+    public MapperBoot(DefaultListableBeanFactory beanFactory, DataSource dataSource) {
         this.beanFactory = beanFactory;
-        this.sqlSessionFactory = sqlSessionFactory;
+        Environment environment = new Environment ("development", new SpringManagedTransactionFactory(), dataSource);
+        Configuration configuration = new Configuration(environment);
+        this.sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
     }
 
     public void addMapper(String mapperId, String mapper) {

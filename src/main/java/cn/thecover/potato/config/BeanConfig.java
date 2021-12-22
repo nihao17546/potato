@@ -1,7 +1,6 @@
 package cn.thecover.potato.config;
 
 import cn.thecover.potato.controller.*;
-import cn.thecover.potato.generate.boot.GenerateBoot;
 import cn.thecover.potato.generate.boot.HtmlServlet;
 import cn.thecover.potato.model.constant.BasicConstant;
 import cn.thecover.potato.properties.CoreProperties;
@@ -18,11 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import javax.annotation.PostConstruct;
-import javax.sql.DataSource;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -38,17 +35,6 @@ public class BeanConfig {
     private CoreProperties properties;
     @Autowired
     private SpringContextUtil springContextUtil;
-    private DataSource dataSource;
-
-    @Bean(BasicConstant.beanNamePrefix + "GenerateBoot")
-    public GenerateBoot generateBoot() {
-        return new GenerateBoot(dataSource);
-    }
-
-    @Bean(BasicConstant.beanNamePrefix + "DataSourceTransactionManager")
-    public DataSourceTransactionManager dataSourceTransactionManager() {
-        return new DataSourceTransactionManager(dataSource);
-    }
 
     @Bean(BasicConstant.beanNamePrefix + "resourceServletRegistrationBean")
     public ServletRegistrationBean resourceServletRegistrationBean() {
@@ -82,25 +68,6 @@ public class BeanConfig {
 
     @PostConstruct
     public void init() throws Exception {
-        // 数据源
-        try {
-            Object dataSourceObj = springContextUtil.getBean(BasicConstant.beanNamePrefix + "DataSource");
-            this.dataSource = (DataSource) dataSourceObj;
-            log.info("使用自定义数据源");
-        } catch (Exception e) {
-            try {
-                DataSource ds = springContextUtil.getBean(DataSource.class);
-                this.dataSource = ds;
-                log.info("使用系统自带数据源");
-            } catch (Exception ex) {
-                throw new RuntimeException("未找到系统自带数据源");
-            }
-        }
-        if (this.dataSource.getClass().getSimpleName().equalsIgnoreCase("ShardingDataSource")) {
-            throw new RuntimeException("数据源不支持ShardingDataSource");
-        }
-
-
         modify(HtmlController.class);
         springContextUtil.addBean(HtmlController.class, BasicConstant.beanNamePrefix + "HtmlController");
         springContextUtil.registerController(BasicConstant.beanNamePrefix + "HtmlController");
