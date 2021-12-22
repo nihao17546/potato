@@ -220,7 +220,7 @@ public class BootFrontExecutor extends FrontExecutor {
                 optionColumnBuilder.append("])\">编辑")
                         .append("</el-button>\n");
                 methodsBuilder
-                        .append("            showInfo(row,pks) {\n")
+                        .append("            showInfo(row, pks) {\n")
                         .append("                let param = {}\n")
                         .append("                for(let i = 0; i < pks.length; i ++) {\n")
                         .append("                    param[pks[i]] = row[pks[i]]\n")
@@ -238,6 +238,7 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("                }).catch(res => {\n")
                         .append("                    console.error(res)\n")
                         .append("                    this.loading = false;\n")
+                        .append("                    this.$message.error('操作异常');\n")
                         .append("                })\n")
                         .append("            },\n");
             }
