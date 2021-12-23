@@ -68,6 +68,15 @@ public class BeanConfig {
 
     @PostConstruct
     public void init() throws Exception {
+        System.out.println(
+                "\n" +
+                "██████╗  ██████╗ ████████╗ █████╗ ████████╗ ██████╗ \n" +
+                "██╔══██╗██╔═══██╗╚══██╔══╝██╔══██╗╚══██╔══╝██╔═══██╗\n" +
+                "██████╔╝██║   ██║   ██║   ███████║   ██║   ██║   ██║\n" +
+                "██╔═══╝ ██║   ██║   ██║   ██╔══██║   ██║   ██║   ██║\n" +
+                "██║     ╚██████╔╝   ██║   ██║  ██║   ██║   ╚██████╔╝\n" +
+                "╚═╝      ╚═════╝    ╚═╝   ╚═╝  ╚═╝   ╚═╝    ╚═════╝\n" +
+                " v1.0.0                      https://www.appcnd.com\n");
         modify(HtmlController.class);
         springContextUtil.addBean(HtmlController.class, BasicConstant.beanNamePrefix + "HtmlController");
         springContextUtil.registerController(BasicConstant.beanNamePrefix + "HtmlController");
