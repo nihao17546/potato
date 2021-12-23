@@ -52,16 +52,19 @@ public class GenerateBoot {
             synchronized(metaId.toString().intern()) {
                 if (loadMap.containsKey(metaId)) {
                     BootResult bootResult = loadMap.get(metaId);
+                    String springBeanNamePrefix = bootResult.getId().toString() + "@";
                     for (BootResult.Java java : bootResult.getControllers()) {
-                        String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                        String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
                         springContextUtil.unregisterController(beanId);
                         springContextUtil.removeBean(beanId);
                     }
                     for (BootResult.Java java : bootResult.getServiceImpls()) {
-                        springContextUtil.removeBean(CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName())));
+                        String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                        springContextUtil.removeBean(beanId);
                     }
                     for (BootResult.Mapper mapper : bootResult.getMappers()) {
-                        springContextUtil.destroySingleton(mapper.getMapperId());
+                        String beanId = springBeanNamePrefix + mapper.getMapperId();
+                        springContextUtil.destroySingleton(beanId);
                     }
                     loadMap.remove(metaId);
                     for (String html : htmls) {
