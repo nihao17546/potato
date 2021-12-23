@@ -185,26 +185,28 @@ public class GenerateBoot {
                     Set<String> daoSet = new HashSet<>();
                     Set<String> serviceSet = new HashSet<>();
                     Set<String> controllerSet = new HashSet<>();
+                    String springBeanNamePrefix = bootResult.getId().toString() + "@";
                     try {
                         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
                         for (BootResult.Mapper mapper : bootResult.getMappers()) {
-                            daoSet.add(mapper.getMapperId());
+                            String beanId = springBeanNamePrefix + mapper.getMapperId();
+                            daoSet.add(beanId);
                             configuration.addMapper(classLoader.findClass(mapper.getMapperId()));
                             ByteArrayInputStream is = new ByteArrayInputStream(mapper.getSource().getBytes());
-                            XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(is, configuration, mapper.getMapperId(), configuration.getSqlFragments());
+                            XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(is, configuration, beanId, configuration.getSqlFragments());
                             xmlMapperBuilder.parse();
 
                             MapperFactoryBean mapperFactoryBean = new MapperFactoryBean();
                             mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);
                             mapperFactoryBean.setMapperInterface(classLoader.findClass(mapper.getMapperId()));
                             Object dao = mapperFactoryBean.getObject();
-                            springContextUtil.registerSingleton(mapper.getMapperId(), dao);
-                            log.info("成功注册Mapper:{}", springContextUtil.getBean(mapper.getMapperId()));
+                            springContextUtil.registerSingleton(beanId, dao);
+                            log.info("成功注册Mapper:{}", springContextUtil.getBean(beanId));
                         }
 
                         for (BootResult.Java java : bootResult.getServiceImpls()) {
                             try {
-                                String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                                String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
                                 serviceSet.add(beanId);
                                 springContextUtil.registerBean(beanId, classLoader.findClass(java.getClassName()));
                                 log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
@@ -215,7 +217,7 @@ public class GenerateBoot {
                         }
                         for (BootResult.Java java : bootResult.getControllers()) {
                             try {
-                                String beanId = CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                                String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
                                 controllerSet.add(beanId);
                                 springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
                                 log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
