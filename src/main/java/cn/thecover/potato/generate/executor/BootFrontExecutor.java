@@ -7,7 +7,9 @@ import cn.thecover.potato.generate.context.FrontSearchElementContext;
 import cn.thecover.potato.generate.context.RemoteContext;
 import cn.thecover.potato.meta.conf.form.operate.Rule;
 import cn.thecover.potato.meta.conf.form.operate.elements.ImageElement;
+import cn.thecover.potato.meta.conf.form.operate.elements.MarkdownElement;
 import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
+import cn.thecover.potato.meta.conf.form.operate.enums.MarkdownImageModel;
 import cn.thecover.potato.meta.conf.form.search.element.DateTimeRangeSearchElement;
 import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
 import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
@@ -44,6 +46,7 @@ public class BootFrontExecutor extends FrontExecutor {
         }
 
 
+        StringBuilder vueUseBuilder = new StringBuilder();
         StringBuilder cssBuilder = new StringBuilder();
         StringBuilder jsBuilder = new StringBuilder();
         StringBuilder datasBuilder = new StringBuilder();
@@ -59,6 +62,8 @@ public class BootFrontExecutor extends FrontExecutor {
 
         boolean hasUploadImage = false;
         boolean hasCutImage = false;
+        boolean hasMarkdown = false;
+        boolean hasMarkdownUseStorage = false;
 
 
         if (context.getForeignKeyProp() != null) {
@@ -306,6 +311,15 @@ public class BootFrontExecutor extends FrontExecutor {
                     if (Boolean.TRUE.equals(imageElement.getCut())) {
                         hasCutImage = true;
                     }
+                } else if (element instanceof MarkdownElement) {
+                    hasMarkdown = true;
+                    MarkdownElement markdownElement = (MarkdownElement) element;
+                    if (markdownElement.getImageModel() == MarkdownImageModel.STORAGE) {
+                        if (context.getStorage() == null) {
+                            throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "Markdown图片上传未配置对象存储");
+                        }
+                        hasMarkdownUseStorage = true;
+                    }
                 }
                 formBuilder.append(element.getHtml());
                 Rule rule = element.getRule();
@@ -529,6 +543,77 @@ public class BootFrontExecutor extends FrontExecutor {
             }
         }
 
+        if (hasMarkdown) {
+            cssBuilder.append("    <link rel=\"stylesheet\" href=\"${contextPath}${potatoPath}/static/mavon-editor/css/index.css\">\n");
+            jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/mavon-editor/mavon-editor.js\"></script>\n");
+            vueUseBuilder.append("    Vue.use(MavonEditor)\n");
+            if (hasMarkdownUseStorage) {
+                methodsBuilder
+                        .append("            mdImgAdd(pos, $file){\n")
+                        .append("                axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                        .append("                    params: {\n")
+                        .append("                        file_name: file.name\n")
+                        .append("                    }\n")
+                        .append("                }).then(res => {\n")
+                        .append("                    if (typeof res.data.token != 'undefined') {\n");
+                if (context.getStorage() instanceof QiniuStorage) {
+                    methodsBuilder
+                            .append("                        let observable = qiniu.upload(file, res.data.key, res.data.token, {}, {\n")
+                            .append("                            useCdnDomain: true\n")
+                            .append("                        });\n")
+                            .append("                        observable.subscribe({\n")
+                            .append("                            next: (result) => {\n")
+                            .append("                                console.log(result);\n")
+                            .append("                            },\n")
+                            .append("                            error: () => {\n")
+                            .append("                                this.$message.error('上传图片失败');\n")
+                            .append("                            },\n")
+                            .append("                            complete: (successRes) => {\n")
+                            .append("                                let url = res.data.host + '/' + successRes.key;\n")
+                            .append("                                $vm.$img2Url(pos, url);\n")
+                            .append("                            }\n")
+                            .append("                        })\n");
+                } else if (context.getStorage() instanceof HuaweiStorage) {
+                    methodsBuilder
+                            .append("                        let obsClient = new ObsClient({\n")
+                            .append("                            access_key_id: res.data.access,\n")
+                            .append("                            secret_access_key: res.data.secret,\n")
+                            .append("                            server : res.data.endpoint,\n")
+                            .append("                            security_token: res.data.token,\n")
+                            .append("                            timeout: 24 * 60 * 60\n")
+                            .append("                        });\n")
+                            .append("                        obsClient.putObject({\n")
+                            .append("                            Bucket: res.data.bucket,\n")
+                            .append("                            Key: res.data.key,\n")
+                            .append("                            SourceFile: file,\n")
+                            .append("                            ProgressCallback: (transferredAmount, totalAmount, totalSeconds) => {\n")
+                            .append("                                console.log('上传速度: ' + transferredAmount * 1.0 / totalSeconds / 1024 + ' KB/S');\n")
+                            .append("                                console.log(transferredAmount * 100.0 / totalAmount);\n")
+                            .append("                            }\n")
+                            .append("                        }, (err, result) => {\n")
+                            .append("                            console.log(result)\n")
+                            .append("                            if (result && result.CommonMsg && result.CommonMsg.Status == 200) {\n")
+                            .append("                                let url = res.data.host + '/' + res.data.key;\n")
+                            .append("                                $vm.$img2Url(pos, url);\n")
+                            .append("                            } else {\n")
+                            .append("                                this.$message.error('上传图片失败');\n")
+                            .append("                                console.error(err);\n")
+                            .append("                            }\n")
+                            .append("                        });\n");
+                }
+                methodsBuilder
+                        .append("                    } else {\n")
+                        .append("                        console.error(res)\n")
+                        .append("                        this.$message.error('获取token失败');\n")
+                        .append("                    }\n")
+                        .append("                }).catch(res => {\n")
+                        .append("                    console.error(res)\n")
+                        .append("                    this.$message.error('获取token失败');\n")
+                        .append("                })\n")
+                        .append("            },\n");
+            }
+        }
+
         if (hasUploadImage) {
             if (context.getStorage() == null) {
                 throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "图片上传未配置对象存储");
@@ -738,6 +823,7 @@ public class BootFrontExecutor extends FrontExecutor {
 
         map.put("css", cssBuilder.toString());
         map.put("js", jsBuilder.toString());
+        map.put("vueUse", vueUseBuilder.toString());
         map.put("backHtml", backHtmlBuidler.toString());
         map.put("searchHtml", searchHtmlBuilder.toString());
         map.put("optionButtonHtml", optionButtonHtmlBuilder.toString());

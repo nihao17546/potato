@@ -3,6 +3,7 @@ package cn.thecover.potato.meta.conf.form.operate.elements;
 import cn.thecover.potato.meta.conf.form.operate.enums.OperateElementType;
 import lombok.Data;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -15,7 +16,7 @@ public class ImageElement extends OperateElement {
     /**
      * 支出上传的类型（文件名后缀）
      */
-    private List<String> acceptType;
+    private List<String> acceptType = Arrays.asList(".jpg",".png",".jpeg",".gif",".bmp");
     /**
      * 限制上传文件大小（单位：byte）
      */
