@@ -8,6 +8,7 @@ import cn.thecover.potato.generate.constant.BootConstant;
 import cn.thecover.potato.generate.context.ClassName;
 import cn.thecover.potato.generate.context.FrontContext;
 import cn.thecover.potato.generate.context.GenerateContext;
+import cn.thecover.potato.generate.executor.BootClassExecutor;
 import cn.thecover.potato.generate.executor.BootFrontExecutor;
 import cn.thecover.potato.generate.executor.ClassExecutor;
 import cn.thecover.potato.generate.executor.ComponentExecutor;
@@ -177,16 +178,21 @@ public class GenerateServiceImpl implements IGenerateService {
 
     @Override
     public Map<String, String> generate(GenerateParam param, Config config) {
-        return generate(getContext(param, config, false), config);
+        return generate(getContext(param, config, false), config, false);
     }
 
-    private Map<String, String> generate(GenerateContext context, Config config) {
+    private Map<String, String> generate(GenerateContext context, Config config, boolean isBoot) {
         Map<String,String> map = new HashMap<>();
         Map<String,String> fileMap = new ComponentExecutor(config, context).compile();
         if (fileMap != null) {
             map.putAll(fileMap);
         }
-        Map<String,String> classMap = new ClassExecutor(context).compile();
+        Map<String,String> classMap;
+        if (isBoot) {
+            classMap = new BootClassExecutor(context).compile();
+        } else {
+            classMap = new ClassExecutor(context).compile();
+        }
         if (classMap != null) {
             map.putAll(classMap);
         }
@@ -291,7 +297,7 @@ public class GenerateServiceImpl implements IGenerateService {
             result = new BootResult();
             GenerateContext context = getContext(id, config, true);
             result.setBasePackage(context.getPackageName());
-            Map<String,String> map = generate(context, config);
+            Map<String,String> map = generate(context, config, true);
 
             FrontContext frontContext = context.getFrontContext();
             Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();

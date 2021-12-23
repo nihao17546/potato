@@ -27,75 +27,23 @@ import java.util.regex.Matcher;
  */
 public class ClassExecutor extends Executor {
     private final String FILE_PATH = "codeless/backend/Class.java";
-    private GenerateContext generateContext;
+    protected GenerateContext generateContext;
 
     public ClassExecutor(GenerateContext generateContext) {
         Assert.notNull(generateContext, "generateContext can not be null");
         this.generateContext = generateContext;
     }
 
-    /**
-     * 处理Transactional注解事务
-     * Spring @Transactional 注解事务，cglib代理创建子类的时候，使用的classloader不是自定义PotatoClassLoader，
-     * 加载不到Class，所以使用手动事务方式
-     * @param context
-     */
-    private void handleTransactional(JavaClassContext context) {
-        if (!CollectionUtils.isEmpty(context.getMethods())) {
-            List<MethodInfo> methodInfos = new ArrayList<>();
-            for (MethodInfo methodInfo : context.getMethods()) {
-                if (!CollectionUtils.isEmpty(methodInfo.getAnnotations())) {
-                    AnnotationInfo annotationInfo = new AnnotationInfo(Transactional.class.getName());
-                    if (methodInfo.getAnnotations().contains(annotationInfo)) {
-                        methodInfo.getAnnotations().remove(annotationInfo);
-                        methodInfos.add(methodInfo);
-                    }
-                }
-            }
-            if (!methodInfos.isEmpty()) {
-                AnnotationInfo autowired = new AnnotationInfo(Autowired.class.getName());
-                AnnotationInfo qualifier = new AnnotationInfo(Qualifier.class.getName());
-                qualifier.addField("value", BasicConstant.beanNamePrefix + "DataSourceTransactionManager");
-                ClassField classField = new ClassField("private", DataSourceTransactionManager.class.getName(),
-                        "transactionManager",
-                        autowired, qualifier);
-                context.addField(classField);
-                for (MethodInfo methodInfo : methodInfos) {
-                    if (Boolean.TRUE.equals(methodInfo.getHasContent()) &&
-                            methodInfo.getContent() != null && !methodInfo.getContent().isEmpty()) {
-                        String[] strings = methodInfo.getContent().split("\\n");
-                        StringBuilder sb = new StringBuilder();
-
-                        methodInfo.addContentClass(TransactionStatus.class.getName());
-                        methodInfo.addContentClass(DefaultTransactionDefinition.class.getName());
-                        sb.append("        ").append(TransactionStatus.class.getName())
-                                .append(" transactionStatus = transactionManager.getTransaction(new ")
-                                .append(DefaultTransactionDefinition.class.getName()).append("());\n");
-                        sb.append("            try {\n");
-                        for (String str : strings) {
-                            sb.append("        ").append(str).append("\n");
-                        }
-                        sb.append("                ").append("transactionManager.commit(transactionStatus);\n");
-                        sb.append("            } catch (Exception e) {\n");
-                        sb.append("                transactionManager.rollback(transactionStatus);\n");
-                        sb.append("                throw new RuntimeException(e);\n");
-                        sb.append("            }\n");
-                        methodInfo.setContent(sb.toString());
-                    }
-                }
-            }
-        }
-    }
+    protected void handleBefore() {}
 
     @Override
     protected Map<String, Map<String, String>> analysis() {
+        handleBefore();
         if (CollectionUtils.isEmpty(generateContext.getJavaClassContexts())) {
             return new HashMap<>(0);
         }
         Map<String,Map<String,String>> result = new HashMap<>(generateContext.getJavaClassContexts().size());
         for (JavaClassContext context : generateContext.getJavaClassContexts()) {
-            handleTransactional(context);
-
             Map<String,String> map = new HashMap<>();
             map.put("packageName", context.getPackageName());
             map.put("version", context.getVersion().toString());
