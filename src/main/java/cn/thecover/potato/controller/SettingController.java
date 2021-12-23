@@ -35,9 +35,31 @@ public class SettingController {
 
     private List<Map<String,String>> storageElementTypes = new ArrayList<>();
     private Map<String,List<String>> storageElementContains = new HashMap<>();
+    private List<Map<String,Object>> tableColumnFormatterData = new ArrayList<>();
+
+    private void fillTableColumnFormatterData() {
+        Map<String,Object> a = new HashMap<>(3);
+        a.put("id", 1);
+        a.put("name", "日期时间格式化");
+        a.put("value", "if (row[prop]) {return new Date(row[prop]).format(\"yyyy-MM-dd hh:mm:ss\")}");
+        tableColumnFormatterData.add(a);
+
+        Map<String,Object> b = new HashMap<>(3);
+        b.put("id", 2);
+        b.put("name", "日期格式化");
+        b.put("value", "if (row[prop]) {return new Date(row[prop]).format(\"yyyy-MM-dd\")}");
+        tableColumnFormatterData.add(b);
+
+        Map<String,Object> c = new HashMap<>(3);
+        c.put("id", 3);
+        c.put("name", "图片格式化");
+        c.put("value", "if (row[prop]) {return \"<img width ='50' height='50' src=\"+row[prop]+\">\"}");
+        tableColumnFormatterData.add(c);
+    }
 
     @PostConstruct
     public void init() throws IllegalAccessException, InstantiationException {
+        fillTableColumnFormatterData();
         for (JudgeType judgeType : JudgeType.values()) {
             Map<String,String> map = new HashMap<>(2);
             map.put("value", judgeType.name());
@@ -191,5 +213,11 @@ public class SettingController {
     public String storageElementType() {
         return HttpResult.success().pull("list", storageElementTypes)
                 .pull("typeContains", storageElementContains).json();
+    }
+
+    @GetMapping("/tableColumnFormatterData")
+    @ResponseBody
+    public String tableColumnFormatterData() {
+        return HttpResult.success().pull("list", tableColumnFormatterData).json();
     }
 }

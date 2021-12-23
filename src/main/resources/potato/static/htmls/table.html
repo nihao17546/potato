@@ -419,19 +419,7 @@
                         value: null
                     }
                 },
-                formatterData: [{
-                    id: 1,
-                    name: '日期时间格式化',
-                    value: 'if (row[prop]) {return new Date(row[prop]).format("yyyy-MM-dd hh:mm:ss")}'
-                }, {
-                    id: 2,
-                    name: '日期格式化',
-                    value: 'if (row[prop]) {return new Date(row[prop]).format("yyyy-MM-dd")}'
-                }, {
-                    id: 3,
-                    name: '图片格式化',
-                    value: 'if (row[prop]) {return "<img width=\"+50+\" height=\"+50+\" src=\"+row[prop]+\">"}'
-                }]
+                formatterData: []
             }
         },
         methods: {
@@ -627,7 +615,18 @@
             })
         },
         created: function () {
-
+            axios.get('${contextPath}/setting/tableColumnFormatterData',{
+                params: {}
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.formatterData = res.data.content.list
+                }
+            }).catch(res => {
+                console.error(res)
+            })
         }
     })
 </script>
