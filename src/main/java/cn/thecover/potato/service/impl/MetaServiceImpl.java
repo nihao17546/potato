@@ -133,7 +133,7 @@ public class MetaServiceImpl implements IMetaService {
                     qiniuStorage.setAk(DesUtil.encrypt(qiniuStorage.getAk(), "storage"));
                     qiniuStorage.setSk(DesUtil.encrypt(qiniuStorage.getSk(), "storage"));
                 }
-                meta.setStorage(CommonUtil.serializeJson(metaStorageParam.getConfig()));
+                meta.setStorage(CommonUtil.serialize(metaStorageParam.getConfig()));
             }
         }
         Integer version = metaDao.selectVersionById(param.getId());

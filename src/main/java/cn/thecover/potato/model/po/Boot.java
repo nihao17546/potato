@@ -12,5 +12,5 @@ public class Boot implements Serializable {
     private Integer id;
     private Integer metaId;
     private Integer version;
-    private byte[] data;
+    private String data;
 }

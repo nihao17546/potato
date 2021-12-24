@@ -16,10 +16,10 @@ public class Meta implements Serializable {
     private Integer version;
     private Date createTime;
     private Date updateTime;
-    private byte[] db;
-    private byte[] table;
-    private byte[] search;
-    private byte[] operate;
+    private String db;
+    private String table;
+    private String search;
+    private String operate;
     // 对象存储配置
     private String storage;
 }
