@@ -1,7 +1,6 @@
 package cn.thecover.potato.meta.conf.form.operate.elements;
 
 import cn.thecover.potato.meta.conf.form.annotition.HtmlField;
-import cn.thecover.potato.meta.conf.form.operate.enums.MarkdownImageModel;
 import cn.thecover.potato.meta.conf.form.operate.enums.OperateElementType;
 import com.alibaba.fastjson.JSON;
 import lombok.Data;
@@ -14,7 +13,7 @@ public class MarkdownElement extends OperateElement {
     private final OperateElementType elementType = OperateElementType.MARKDOWN;
     @HtmlField
     private String placeholder;
-    private MarkdownImageModel imageModel = MarkdownImageModel.NONE;
+    private Boolean uploadImage;
 
     @Override
     public String getHtml() {
@@ -22,22 +21,33 @@ public class MarkdownElement extends OperateElement {
         StringBuilder sb = new StringBuilder();
         sb
                 .append("            <el-form-item label=\"").append(getLabel()).append(":\" prop=\"").append(field).append("\" label-width=\"100px\">\n")
-                .append("                <mavon-editor v-model=\"form.").append(field).append("\" ref=\"MD").append(field).append("\"");
+                .append("                <mavon-editor :ishljs=\"false\" v-model=\"form.").append(field).append("\" ref=\"MD").append(field).append("\"");
         Toolbar toolbar = new Toolbar();
-        if (imageModel == MarkdownImageModel.NONE) {
-            toolbar.setImagelink(false);
-        } else if (imageModel == MarkdownImageModel.STORAGE) {
-            sb.append(" @imgAdd=\"mdImgAdd\"");
-        }
         if (getCanEdit() != null) {
-            sb.append(" :editable=\"").append(getCanEdit()).append("\"");
+            sb.append(" :editable=\"").append(getCanEdit()).append(" || formTitle == '新增'\"");
         }
         String toolbarStr = JSON.toJSONString(toolbar);
         toolbarStr = toolbarStr.replaceAll("\"","'");
         sb.append(" :toolbars=\"").append(toolbarStr).append("\"");
         sb
-                .append(getFieldHtml()).append("></mavon-editor>\n")
-                .append("            </el-form-item>\n");
+                .append(getFieldHtml()).append(">");
+        if (Boolean.TRUE.equals(uploadImage)) {
+            sb
+                    .append("                    <template slot=\"left-toolbar-after\">\n")
+                    .append("                        <button\n")
+                    .append("                                type=\"button\"\n")
+                    .append("                                @click=\"mdUploadImage('").append(field).append("')\"\n")
+                    .append("                                class=\"op-icon fa fa-mavon-picture-o\"\n")
+                    .append("                                aria-hidden=\"true\"\n")
+                    .append("                                title=\"自定义\"\n")
+                    .append("                        ></button>\n")
+                    .append("                    </template>\n");
+        }
+        sb.append("                </mavon-editor>\n");
+        if (Boolean.TRUE.equals(uploadImage)) {
+            sb.append("                <input id=\"mdImage").append(field).append("\" ref=\"mdImage").append(field).append("\" style=\"display: none\" type=\"file\" @change=\"mdUploadImgChange\" accept=\"image/jpg,image/png,image/jpeg,image/gif,image/bmp\">\n");
+        }
+        sb.append("            </el-form-item>\n");
         return sb.toString();
     }
 
@@ -55,7 +65,7 @@ public class MarkdownElement extends OperateElement {
         private Boolean ol = true;// 有序列表
         private Boolean ul = true;// 无序列表
         private Boolean link = true;// 链接
-        private Boolean imagelink = true;// 图片链接
+        private Boolean imagelink = false;// 图片链接
         private Boolean code = true;// code
         private Boolean table = true;// 表格
         private Boolean fullscreen = true;// 全屏编辑

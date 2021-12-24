@@ -9,7 +9,6 @@ import cn.thecover.potato.meta.conf.form.operate.Rule;
 import cn.thecover.potato.meta.conf.form.operate.elements.ImageElement;
 import cn.thecover.potato.meta.conf.form.operate.elements.MarkdownElement;
 import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
-import cn.thecover.potato.meta.conf.form.operate.enums.MarkdownImageModel;
 import cn.thecover.potato.meta.conf.form.search.element.DateTimeRangeSearchElement;
 import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
 import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
@@ -314,7 +313,7 @@ public class BootFrontExecutor extends FrontExecutor {
                 } else if (element instanceof MarkdownElement) {
                     hasMarkdown = true;
                     MarkdownElement markdownElement = (MarkdownElement) element;
-                    if (markdownElement.getImageModel() == MarkdownImageModel.STORAGE) {
+                    if (Boolean.TRUE.equals(markdownElement.getUploadImage())) {
                         if (context.getStorage() == null) {
                             throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "Markdown图片上传未配置对象存储");
                         }
@@ -549,7 +548,30 @@ public class BootFrontExecutor extends FrontExecutor {
             vueUseBuilder.append("    Vue.use(MavonEditor)\n");
             if (hasMarkdownUseStorage) {
                 methodsBuilder
-                        .append("            mdImgAdd(pos, $file){\n")
+                        .append("            mdUploadImage(prop) {\n")
+                        .append("                const $vm = this.$refs['MD'+prop];\n")
+                        .append("                if ($vm.editable == true) {\n")
+                        .append("                    this.$refs['mdImage'+prop].click();\n")
+                        .append("                }\n")
+                        .append("            },\n");
+                methodsBuilder
+                        .append("            mdUploadImgChange(e) {\n")
+                        .append("                let target = e.target;\n")
+                        .append("                try {\n")
+                        .append("                    let key = target.id;\n")
+                        .append("                    key = key.replace('mdImage', '')\n")
+                        .append("                    const file = e.target.files[0];\n")
+                        .append("                    this.mdUploadFile(file, key);\n")
+                        .append("                } catch (e) {\n")
+                        .append("                    console.log(e)\n")
+                        .append("                    this.$message.error('图片上传异常');\n")
+                        .append("                } finally {\n")
+                        .append("                    target.value = '';\n")
+                        .append("                }\n")
+                        .append("            },\n");
+                methodsBuilder
+                        .append("            mdUploadFile(file, prop){\n")
+                        .append("                const $vm = this.$refs['MD'+prop];\n")
                         .append("                axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
                         .append("                    params: {\n")
                         .append("                        file_name: file.name\n")
@@ -570,7 +592,11 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append("                            },\n")
                             .append("                            complete: (successRes) => {\n")
                             .append("                                let url = res.data.host + '/' + successRes.key;\n")
-                            .append("                                $vm.$img2Url(pos, url);\n")
+                            .append("                                $vm.insertText($vm.getTextareaDom(),{\n")
+                            .append("                                    prefix: `![${file.name}](${url})`,\n")
+                            .append("                                    subfix: '',\n")
+                            .append("                                    str: ''\n")
+                            .append("                                })\n")
                             .append("                            }\n")
                             .append("                        })\n");
                 } else if (context.getStorage() instanceof HuaweiStorage) {
@@ -594,7 +620,11 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append("                            console.log(result)\n")
                             .append("                            if (result && result.CommonMsg && result.CommonMsg.Status == 200) {\n")
                             .append("                                let url = res.data.host + '/' + res.data.key;\n")
-                            .append("                                $vm.$img2Url(pos, url);\n")
+                            .append("                                $vm.insertText($vm.getTextareaDom(),{\n")
+                            .append("                                    prefix: `![${file.name}](${url})`,\n")
+                            .append("                                    subfix: '',\n")
+                            .append("                                    str: ''\n")
+                            .append("                                })\n")
                             .append("                            } else {\n")
                             .append("                                this.$message.error('上传图片失败');\n")
                             .append("                                console.error(err);\n")

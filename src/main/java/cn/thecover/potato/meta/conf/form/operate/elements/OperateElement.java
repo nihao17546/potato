@@ -43,7 +43,7 @@ public abstract class OperateElement extends Element {
     protected String getFieldHtml() {
         String s = super.getFieldHtml();
         if (Boolean.FALSE.equals(canEdit)) {
-            s = s + " disabled ";
+            s = s + " :disabled=\"formTitle == '编辑'\" ";
         }
         return s;
     }

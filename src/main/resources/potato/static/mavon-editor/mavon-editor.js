@@ -7491,6 +7491,9 @@
             var t = [this].concat(Array.prototype.slice.call(arguments, 1));
             return e.apply(e, t), this
         }, a.prototype.parse = function (e, t) {
+            if (e == null) {
+                e = ''
+            }
             if ("string" != typeof e) throw new Error("Input data should be a String");
             var n = new this.core.State(e, this, t);
             return this.core.process(n), n.tokens
