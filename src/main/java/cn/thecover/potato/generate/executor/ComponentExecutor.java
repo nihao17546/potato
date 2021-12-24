@@ -466,6 +466,6 @@ public class ComponentExecutor extends Executor {
 
     private String getMapperPath(String entityName) {
         return "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "resources" + File.separator +
-                "potato_mappers" + File.separator + entityName + "Mapper.xml";
+                "mappers" + File.separator + entityName + "Mapper.xml";
     }
 }

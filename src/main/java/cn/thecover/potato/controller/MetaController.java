@@ -112,11 +112,13 @@ public class MetaController {
         main.addChild(java);
         BootCodeVo.Label resources = new BootCodeVo.Label("resources");
         main.addChild(resources);
+        BootCodeVo.Label mappers = new BootCodeVo.Label("mappers");
+        resources.addChild(mappers);
 
         for (BootResult.Mapper mapper : bootResult.getMappers()) {
             String simpleName = CommonUtil.getSimpleClassName(mapper.getMapperId());
             BootCodeVo.Label la = new BootCodeVo.Label(simpleName + "Mapper.xml", mapper.getSource());
-            resources.addChild(la);
+            mappers.addChild(la);
         }
 
         BootCodeVo.Label front = new BootCodeVo.Label("front");
