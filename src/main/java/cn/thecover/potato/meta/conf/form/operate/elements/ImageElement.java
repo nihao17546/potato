@@ -50,7 +50,12 @@ public class ImageElement extends OperateElement {
                 .append("                        :multiple=\"false\"\n")
                 .append("                        :on-change=\"(file, fileList) => {uploadChange(file, fileList, '").append(field).append("')}\"\n")
                 .append("                        :auto-upload=\"false\">\n")
-                .append("                    <el-button type=\"primary\" icon=\"el-icon-plus\" circle></el-button>\n")
+                .append("                    <el-button type=\"primary\" icon=\"el-icon-plus\" circle");
+        if (Boolean.FALSE.equals(getCanEdit())) {
+            sb.append(" :disabled=\"formTitle == '编辑'\"");
+        }
+        sb
+                .append("></el-button>\n")
                 .append("                </el-upload>\n")
                 .append("                <el-progress type=\"circle\" v-if=\"uploadImageProgress['").append(field).append("'] >= -1\" :percentage=\"uploadImageProgress['").append(field).append("']\"\n")
                 .append("                             :status=\"uploadImageProgress['").append(field).append("'] === -1 ? 'exception' : uploadImageProgress['").append(field).append("'] === 100 ? 'success' : ''\"></el-progress>\n")
@@ -59,7 +64,11 @@ public class ImageElement extends OperateElement {
                 .append("                          :src=\"form.").append(field).append("\"\n")
                 .append("                          :preview-src-list=\"[form.").append(field).append("]\">\n")
                 .append("                </el-image>\n")
-                .append("                <el-button v-if=\"form.").append(field).append(" && typeof uploadImageProgress['").append(field).append("'] == 'undefined'\" type=\"danger\" icon=\"el-icon-delete\" @click=\"removeImage('").append(field).append("')\" circle></el-button>\n")
+                .append("                <el-button v-if=\"form.").append(field).append(" && typeof uploadImageProgress['").append(field).append("'] == 'undefined'\" type=\"danger\" icon=\"el-icon-delete\" @click=\"removeImage('").append(field).append("')\" circle");
+        if (Boolean.FALSE.equals(getCanEdit())) {
+            sb.append(" :disabled=\"formTitle == '编辑'\"");
+        }
+        sb.append("></el-button>\n")
                 .append("            </el-form-item>\n");
         return sb.toString();
     }
