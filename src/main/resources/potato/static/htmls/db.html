@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>数据库配置</title>
+    <link rel="shortcut icon" href="${contextPath}/static/img/logo.png">
     <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
     <script src="${contextPath}/static/vue.min.js"></script>
     <script src="${contextPath}/static/element-ui/index.js"></script>
@@ -547,7 +548,6 @@
                 }
             }).then(res => {
                 if (res.data.status != 0) {
-                    this.loading = false
                     this.$message.error(res.data.msg);
                 }
                 else {
@@ -575,7 +575,6 @@
                 }
             }).catch(res => {
                 console.error(res)
-                this.loading = false
             })
             this.$nextTick(() => {
                 this.$refs.form.clearValidate()

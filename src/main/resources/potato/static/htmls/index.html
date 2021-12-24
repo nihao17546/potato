@@ -2,6 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <title>POTATO</title>
+    <link rel="shortcut icon" href="${contextPath}/static/img/logo.png">
     <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
     <script src="${contextPath}/static/vue.min.js"></script>
     <script src="${contextPath}/static/element-ui/index.js"></script>
@@ -12,16 +14,29 @@
             cursor: pointer;
             color: #409eff;
         }
+        * {
+            margin:0;
+            padding:0;
+        }
+        #app {
+            position:absolute;
+            top:0;
+            bottom:0;
+            left:0;
+            right: 0;
+            background-color: #d3d4d6;
+        }
     </style>
 </head>
 <body>
-<div id="app" v-loading="loading">
-    <div style="margin-bottom: 4px;">
-        <el-button icon="el-icon-plus" type="primary" size="medium" @click="showAdd">新增</el-button>
+<div id="app">
+    <el-card style="position: absolute; left: 5%; top: 23%;width: 90%;" v-loading="loading">
+        <el-button icon="el-icon-plus" type="primary" plain size="medium" @click="showAdd">新增</el-button>
         <el-table
                 :data="list"
                 border
-                style="width: 100%;margin-top: 10px;">
+                :height="height"
+                style="width: 100%;">
             <el-table-column
                     prop="name"
                     label="名称">
@@ -37,10 +52,12 @@
             </el-table-column>
             <el-table-column
                     prop="create_time"
+                    width="180"
                     label="创建时间">
             </el-table-column>
             <el-table-column
                     prop="update_time"
+                    width="180"
                     label="最近修改时间">
             </el-table-column>
             <el-table-column
@@ -84,6 +101,11 @@
                     @size-change="sizeChange">
             </el-pagination>
         </div>
+    </el-card>
+
+    <iframe src="${contextPath}/static/background/${random}.html" style="border: 0;margin: 0px;padding: 0px;width: 100%;height: 30%;"></iframe>
+    <div style="position: absolute; left: 2%; top: 1%;width: 90%;text-align: left; color: white; font-weight: bolder; font-size: 45px;font-family: Arial,Helvetica,sans-serif">
+        <img src="${contextPath}/static/img/logo3.png" style="width: 200px;">
     </div>
 
     <el-dialog
@@ -215,6 +237,7 @@
             return {
                 loading: false,
                 formLabelWidth: '80px',
+                height: window.innerHeight * 0.6,
                 active: 'meta',
                 list: [],
                 totalCount: 0,

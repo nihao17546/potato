@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>搜索表单配置</title>
+    <link rel="shortcut icon" href="${contextPath}/static/img/logo.png">
     <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
     <script src="${contextPath}/static/vue.min.js"></script>
     <script src="${contextPath}/static/element-ui/index.js"></script>
@@ -1005,11 +1006,10 @@
                             })
                         })
                     }
+                    this.loading = false
                 }
-                this.loading = false
             }).catch(res => {
                 console.error(res)
-                this.loading = false
             })
         },
         created: function () {

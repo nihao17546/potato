@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>操作表单配置</title>
+    <link rel="shortcut icon" href="${contextPath}/static/img/logo.png">
     <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
     <script src="${contextPath}/static/vue.min.js"></script>
     <script src="${contextPath}/static/element-ui/index.js"></script>
@@ -1174,11 +1175,10 @@
                     this.version = res.data.content.version
                     this.$set(this,'form',res.data.content.operate)
                     this.$set(this,'db',res.data.content.db)
+                    this.loading = false
                 }
-                this.loading = false
             }).catch(res => {
                 console.error(res)
-                this.loading = false
             })
         },
         created: function () {

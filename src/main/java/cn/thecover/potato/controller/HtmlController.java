@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 /**
  * @author nihao 2021/11/14
@@ -34,6 +35,7 @@ public class HtmlController {
             String v = request.getParameter(k);
             params.put(k, v);
         }
+        params.put("random", (new Random().nextInt(10) + 1) + "");
         String text = PageUtil.getPage(request, properties.getPath(), key, params);
         response.getWriter().write(text);
     }
