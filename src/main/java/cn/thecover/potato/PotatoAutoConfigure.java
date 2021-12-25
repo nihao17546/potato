@@ -19,4 +19,12 @@ import org.springframework.context.annotation.Import;
 @EnableConfigurationProperties({CoreProperties.class, DbProperties.class})
 @Import({PotatoDataSourceAutoConfigure.class, BeanConfig.class, SpringContextUtil.class, ExceptionHandlerAop.class})
 public class PotatoAutoConfigure {
+    public PotatoAutoConfigure() {
+        System.out.println(" ____  ____  _____  ____  _____  ____ \n" +
+                        "/  __\\/  _ \\/__ __\\/  _ \\/__ __\\/  _ \\\n" +
+                        "|  \\/|| / \\|  / \\  | / \\|  / \\  | / \\|\n" +
+                        "|  __/| \\_/|  | |  | |-||  | |  | \\_/|\n" +
+                        "\\_/   \\____/  \\_/  \\_/ \\|  \\_/  \\____/\n" +
+                        " v1.0.0        https://www.appcnd.com\n");
+    }
 }

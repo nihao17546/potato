@@ -70,6 +70,10 @@ public class GenerateBoot {
                     for (String html : htmls) {
                         htmlServlet.removeCache(html);
                     }
+                    File file = new File(coreProperties.getClassPath() + File.separator + metaId);
+                    if (file.exists()) {
+                        file.delete();
+                    }
                     System.gc();
                 }
             }
