@@ -78,6 +78,13 @@ public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
 
     @PostConstruct
     public void init() {
+        System.out.println(
+                " ____  ____  _____  ____  _____  ____ \n" +
+                        "/  __\\/  _ \\/__ __\\/  _ \\/__ __\\/  _ \\\n" +
+                        "|  \\/|| / \\|  / \\  | / \\|  / \\  | / \\|\n" +
+                        "|  __/| \\_/|  | |  | |-||  | |  | \\_/|\n" +
+                        "\\_/   \\____/  \\_/  \\_/ \\|  \\_/  \\____/\n" +
+                        " v1.0.0        https://www.appcnd.com\n");
         // 数据源
         if (dbProperties.getUrl() != null) {
             this.dataSource = createDataSource();

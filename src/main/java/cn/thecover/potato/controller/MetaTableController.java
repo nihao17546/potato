@@ -23,7 +23,7 @@ import java.util.Map;
  * @author nihao 2021/07/02
  */
 @RequestMapping("/metaTable")
-public class MetaTableController {
+public class MetaTableController extends BaseController {
     @Autowired
     private IMetaService metaService;
 

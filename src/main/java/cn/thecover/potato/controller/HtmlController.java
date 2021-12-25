@@ -18,7 +18,7 @@ import java.util.Random;
  * @author nihao 2021/11/14
  */
 @RequestMapping("/")
-public class HtmlController {
+public class HtmlController extends BaseController {
     @Autowired
     private CoreProperties properties;
 

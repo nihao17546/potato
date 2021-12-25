@@ -21,7 +21,7 @@ import java.util.*;
  * @author nihao 2021/11/14
  */
 @RequestMapping("/setting")
-public class SettingController {
+public class SettingController extends BaseController {
     private List<Map<String,String>> judges = new ArrayList<>();
     private List<Map<String,String>> searchElementTypes = new ArrayList<>();
     private Map<String,List<String>> searchElementContains = new HashMap<>();

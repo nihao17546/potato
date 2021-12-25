@@ -11,7 +11,6 @@ import cn.thecover.potato.service.impl.DbServiceImpl;
 import cn.thecover.potato.service.impl.GenerateServiceImpl;
 import cn.thecover.potato.service.impl.MetaServiceImpl;
 import cn.thecover.potato.servlet.ResourceServlet;
-import cn.thecover.potato.util.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
@@ -19,7 +18,6 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
 
-import javax.annotation.PostConstruct;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -33,8 +31,6 @@ import java.util.Map;
 public class BeanConfig {
     @Autowired
     private CoreProperties properties;
-    @Autowired
-    private SpringContextUtil springContextUtil;
 
     @Bean(BasicConstant.beanNamePrefix + "resourceServletRegistrationBean")
     public ServletRegistrationBean resourceServletRegistrationBean() {
@@ -66,51 +62,58 @@ public class BeanConfig {
         return new GenerateServiceImpl();
     }
 
-    @PostConstruct
-    public void init() throws Exception {
-        System.out.println(
-                " ____  ____  _____  ____  _____  ____ \n" +
-                "/  __\\/  _ \\/__ __\\/  _ \\/__ __\\/  _ \\\n" +
-                "|  \\/|| / \\|  / \\  | / \\|  / \\  | / \\|\n" +
-                "|  __/| \\_/|  | |  | |-||  | |  | \\_/|\n" +
-                "\\_/   \\____/  \\_/  \\_/ \\|  \\_/  \\____/\n" +
-                " v1.0.0        https://www.appcnd.com\n");
-
+    @Bean(name = BasicConstant.beanNamePrefix + "HtmlController", initMethod = "requestMapping")
+    public HtmlController htmlController() {
         modify(HtmlController.class);
-        springContextUtil.addBean(HtmlController.class, BasicConstant.beanNamePrefix + "HtmlController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "HtmlController");
+        return new HtmlController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "SettingController", initMethod = "requestMapping")
+    public SettingController settingController() {
         modify(SettingController.class);
-        springContextUtil.addBean(SettingController.class, BasicConstant.beanNamePrefix + "SettingController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "SettingController");
+        return new SettingController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaController", initMethod = "requestMapping")
+    public MetaController metaController() {
         modify(MetaController.class);
-        springContextUtil.addBean(MetaController.class, BasicConstant.beanNamePrefix + "MetaController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaController");
+        return new MetaController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "DbController", initMethod = "requestMapping")
+    public DbController dbController() {
         modify(DbController.class);
-        springContextUtil.addBean(DbController.class, BasicConstant.beanNamePrefix + "DbController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "DbController");
+        return new DbController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaTableController", initMethod = "requestMapping")
+    public MetaTableController metaTableController() {
         modify(MetaTableController.class);
-        springContextUtil.addBean(MetaTableController.class, BasicConstant.beanNamePrefix + "MetaTableController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaTableController");
+        return new MetaTableController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaDbController", initMethod = "requestMapping")
+    public MetaDbController metaDbController() {
         modify(MetaDbController.class);
-        springContextUtil.addBean(MetaDbController.class, BasicConstant.beanNamePrefix + "MetaDbController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaDbController");
+        return new MetaDbController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaSearchController", initMethod = "requestMapping")
+    public MetaSearchController metaSearchController() {
         modify(MetaSearchController.class);
-        springContextUtil.addBean(MetaSearchController.class, BasicConstant.beanNamePrefix + "MetaSearchController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaSearchController");
+        return new MetaSearchController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaOperateController", initMethod = "requestMapping")
+    public MetaOperateController metaOperateController() {
         modify(MetaOperateController.class);
-        springContextUtil.addBean(MetaOperateController.class, BasicConstant.beanNamePrefix + "MetaOperateController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaOperateController");
+        return new MetaOperateController();
+    }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaStorageController", initMethod = "requestMapping")
+    public MetaStorageController metaStorageController() {
         modify(MetaStorageController.class);
-        springContextUtil.addBean(MetaStorageController.class, BasicConstant.beanNamePrefix + "MetaStorageController");
-        springContextUtil.registerController(BasicConstant.beanNamePrefix + "MetaStorageController");
+        return new MetaStorageController();
     }
 
     /**
@@ -119,18 +122,22 @@ public class BeanConfig {
      * @throws NoSuchFieldException
      * @throws IllegalAccessException
      */
-    private void modify(Class clazz) throws NoSuchFieldException, IllegalAccessException {
-        RequestMapping requestMapping = (RequestMapping) clazz.getAnnotation(RequestMapping.class);
-        String[] paths = requestMapping.value();
-        String[] newPaths = new String[paths.length];
-        for (int i = 0; i < paths.length; i ++) {
-            newPaths[i] = properties.getPath() + paths[i];
+    private void modify(Class clazz) {
+        try {
+            RequestMapping requestMapping = (RequestMapping) clazz.getAnnotation(RequestMapping.class);
+            String[] paths = requestMapping.value();
+            String[] newPaths = new String[paths.length];
+            for (int i = 0; i < paths.length; i ++) {
+                newPaths[i] = properties.getPath() + paths[i];
+            }
+            InvocationHandler invocationHandler = Proxy.getInvocationHandler(requestMapping);
+            Field field = invocationHandler.getClass().getDeclaredField("memberValues");
+            field.setAccessible(true);
+            Map<String, Object> memberValues = (Map<String, Object>) field.get(invocationHandler);
+            memberValues.put("value", newPaths);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        InvocationHandler invocationHandler = Proxy.getInvocationHandler(requestMapping);
-        Field field = invocationHandler.getClass().getDeclaredField("memberValues");
-        field.setAccessible(true);
-        Map<String, Object> memberValues = (Map<String, Object>) field.get(invocationHandler);
-        memberValues.put("value", newPaths);
     }
 
 }

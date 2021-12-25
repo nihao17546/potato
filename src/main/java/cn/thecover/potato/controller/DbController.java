@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
  * @author nihao 2021/06/28
  */
 @RequestMapping("/db")
-public class DbController {
+public class DbController extends BaseController {
     @Autowired
     private IDbService dbService;
 

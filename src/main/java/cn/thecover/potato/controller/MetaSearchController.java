@@ -22,7 +22,7 @@ import java.util.Map;
  * @author nihao 2021/07/03
  */
 @RequestMapping("/metaSearch")
-public class MetaSearchController {
+public class MetaSearchController extends BaseController {
     @Autowired
     private IMetaService metaService;
 

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
  * @author nihao 2021/07/03
  */
 @RequestMapping("/metaDb")
-public class MetaDbController {
+public class MetaDbController extends BaseController {
     @Autowired
     private IMetaService metaService;
 
