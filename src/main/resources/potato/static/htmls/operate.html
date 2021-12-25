@@ -103,7 +103,7 @@
                             </el-form-item>
                             <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('options') > -1"
                                           :prop="'elements.'+indexElement+'.options'" label="选项:"
-                                          :rules="[{required: false, message: '请添加', validator: validateArray, trigger: 'change'}]">
+                                          :rules="[{required: true, message: '请添加', validator: validateArray, trigger: 'change'}]">
                                 <el-button type="text" @click="showOptions({'obj':element,'key':'options','validateKey':'elements.'+indexElement+'.options'})">设置</el-button>
                             </el-form-item>
                             <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('sql') > -1"
@@ -410,7 +410,7 @@
                             </el-form-item>
                             <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('options') > -1"
                                           :prop="'follows.'+index+'.elements.'+indexElement+'.options'" label="选项:"
-                                          :rules="[{required: false, message: '请添加', validator: validateArray, trigger: 'change'}]">
+                                          :rules="[{required: true, message: '请添加', validator: validateArray, trigger: 'change'}]">
                                 <el-button type="text" @click="showOptions({'obj':element,'key':'options','validateKey':'follows.'+index+'.elements.'+indexElement+'.options'})">设置</el-button>
                             </el-form-item>
                             <el-form-item v-if="element.elementType && typeContains[element.elementType].indexOf('sql') > -1"

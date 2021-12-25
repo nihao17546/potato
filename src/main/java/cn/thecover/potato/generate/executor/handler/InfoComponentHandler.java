@@ -46,7 +46,7 @@ public class InfoComponentHandler extends ComponentHandler {
             String field = CamelUtil.underlineToCamel(column.getField());
             sqlStringBuilder.put(column.getField())
                     .append(" AS ")
-                    .append(field).append(",");
+                    .put(field).append(",");
             fields.add(field);
         }
         sqlStringBuilder.deleteCharAt(sqlStringBuilder.length() - 1);
@@ -56,7 +56,7 @@ public class InfoComponentHandler extends ComponentHandler {
                 String field = CamelUtil.underlineToCamel(pk);
                 sqlStringBuilder.append(",").put(pk)
                         .append(" AS ")
-                        .append(field);
+                        .put(field);
                 fields.add(field);
             }
         }
@@ -67,7 +67,7 @@ public class InfoComponentHandler extends ComponentHandler {
                     String field = CamelUtil.underlineToCamel(followTable.getParentKey());
                     sqlStringBuilder.append(",").put(followTable.getParentKey())
                             .append(" AS ")
-                            .append(field);
+                            .put(field);
                     fields.add(field);
                 }
             }
