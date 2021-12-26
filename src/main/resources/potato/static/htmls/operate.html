@@ -770,7 +770,7 @@
             <el-form-item label="正则校验表达式:" prop="value.regular" :rules="[{required: false, message: '请输入', trigger: 'change'}]">
                 <el-input v-model="dialog.rule.value.regular" clearable></el-input>
             </el-form-item>
-            <el-form-item label="校验失败提示文案:" prop="value.message" :rules="[{required: true, message: '请输入', trigger: 'change'}]">
+            <el-form-item label="校验失败提示文案:" prop="value.message" :rules="[{required: false, message: '请输入', trigger: 'change'}]">
                 <el-input v-model="dialog.rule.value.message" clearable></el-input>
             </el-form-item>
         </el-form>

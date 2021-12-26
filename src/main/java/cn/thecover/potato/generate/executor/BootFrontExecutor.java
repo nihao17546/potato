@@ -324,13 +324,21 @@ public class BootFrontExecutor extends FrontExecutor {
                 Rule rule = element.getRule();
                 if (rule != null) {
                     ruleBuilder
-                            .append("                    ").append(element.getFieldName())
-                            .append(": [{required : ").append(rule.getRequired())
-                            .append(", trigger: 'change', ");
-                    if (rule.getRegular() == null) {
-                        ruleBuilder.append("message: '").append(rule.getMessage()).append("'");
+                            .append("                    ")
+                            .append(element.getFieldName()).append(": [{required : ").append(rule.getRequired())
+                            .append(", trigger: 'change', message: '");
+                    if (rule.getMessage() != null && !rule.getMessage().isEmpty()) {
+                        if (rule.getRequired()) {
+                            ruleBuilder.append("请填写");
+                        } else {
+                            ruleBuilder.append("填写错误");
+                        }
                     } else {
-                        ruleBuilder.append("validator: function (rule, value, callback) {\n")
+                        ruleBuilder.append(rule.getMessage());
+                    }
+                    ruleBuilder.append("'");
+                    if (rule.getRegular() != null) {
+                        ruleBuilder.append(", validator: function (rule, value, callback) {\n")
                                 .append("                            if (typeof value == 'undefined' || value == null || value == '') {\n")
                                 .append("                                if (rule.required) {\n")
                                 .append("                                    callback(new Error(rule.message));\n")

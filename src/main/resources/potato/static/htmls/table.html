@@ -411,7 +411,7 @@
                     formatter: {
                         visible: false,
                         form: {
-                            formatter: null
+                            formatter: ''
                         },
                         row: null
                     },
@@ -488,23 +488,20 @@
                 });
             },
             formatterClose() {
-                this.dialog.formatter = {
-                    visible: false,
-                    form: {
-                        formatter: null
-                    },
-                    row: null
-                }
+                this.$set(this.dialog.formatter, 'form', {
+                    formatter: ''
+                })
+                this.$set(this.dialog.formatter, 'row', null)
+                this.$set(this.dialog.formatter, 'visible', false)
+                this.dialog.formatter = JSON.parse(JSON.stringify(this.dialog.formatter))
             },
             showFormatter(row) {
-                this.dialog.formatter = {
-                    visible: true,
-                    form: {
-                        formatter: row.formatter
-                    },
-                    row: row
-                }
+                this.$set(this.dialog.formatter, 'visible', true)
                 this.$nextTick(() => {
+                    this.$set(this.dialog.formatter, 'form', {
+                        formatter: row.formatter ? row.formatter : ''
+                    })
+                    this.$set(this.dialog.formatter, 'row', row)
                     this.$refs.formatterForm.resetFields();
                 })
             },
