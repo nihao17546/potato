@@ -4,6 +4,7 @@ import cn.thecover.potato.controller.*;
 import cn.thecover.potato.generate.boot.HtmlServlet;
 import cn.thecover.potato.model.constant.BasicConstant;
 import cn.thecover.potato.properties.CoreProperties;
+import cn.thecover.potato.controller.EnhancerController;
 import cn.thecover.potato.service.IDbService;
 import cn.thecover.potato.service.IGenerateService;
 import cn.thecover.potato.service.IMetaService;
@@ -65,55 +66,55 @@ public class BeanConfig {
     @Bean(name = BasicConstant.beanNamePrefix + "HtmlController", initMethod = "requestMapping")
     public HtmlController htmlController() {
         modify(HtmlController.class);
-        return new HtmlController();
+        return new EnhancerController<>(new HtmlController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "SettingController", initMethod = "requestMapping")
     public SettingController settingController() {
         modify(SettingController.class);
-        return new SettingController();
+        return new EnhancerController<>(new SettingController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaController", initMethod = "requestMapping")
     public MetaController metaController() {
         modify(MetaController.class);
-        return new MetaController();
+        return new EnhancerController<>(new MetaController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "DbController", initMethod = "requestMapping")
     public DbController dbController() {
         modify(DbController.class);
-        return new DbController();
+        return new EnhancerController<>(new DbController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaTableController", initMethod = "requestMapping")
     public MetaTableController metaTableController() {
         modify(MetaTableController.class);
-        return new MetaTableController();
+        return new EnhancerController<>(new MetaTableController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaDbController", initMethod = "requestMapping")
     public MetaDbController metaDbController() {
         modify(MetaDbController.class);
-        return new MetaDbController();
+        return new EnhancerController<>(new MetaDbController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaSearchController", initMethod = "requestMapping")
     public MetaSearchController metaSearchController() {
         modify(MetaSearchController.class);
-        return new MetaSearchController();
+        return new EnhancerController<>(new MetaSearchController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaOperateController", initMethod = "requestMapping")
     public MetaOperateController metaOperateController() {
         modify(MetaOperateController.class);
-        return new MetaOperateController();
+        return new EnhancerController<>(new MetaOperateController()).creatController();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "MetaStorageController", initMethod = "requestMapping")
     public MetaStorageController metaStorageController() {
         modify(MetaStorageController.class);
-        return new MetaStorageController();
+        return new EnhancerController<>(new MetaStorageController()).creatController();
     }
 
     /**

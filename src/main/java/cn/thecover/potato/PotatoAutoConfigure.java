@@ -1,6 +1,5 @@
 package cn.thecover.potato;
 
-import cn.thecover.potato.aop.ExceptionHandlerAop;
 import cn.thecover.potato.config.BeanConfig;
 import cn.thecover.potato.config.PotatoDataSourceAutoConfigure;
 import cn.thecover.potato.properties.CoreProperties;
@@ -17,7 +16,7 @@ import org.springframework.context.annotation.Import;
 @Configuration
 @ConditionalOnProperty("spring.potato.path")
 @EnableConfigurationProperties({CoreProperties.class, DbProperties.class})
-@Import({PotatoDataSourceAutoConfigure.class, BeanConfig.class, SpringContextUtil.class, ExceptionHandlerAop.class})
+@Import({PotatoDataSourceAutoConfigure.class, BeanConfig.class, SpringContextUtil.class})
 public class PotatoAutoConfigure {
     public PotatoAutoConfigure() {
         System.out.println(" ____  ____  _____  ____  _____  ____ \n" +
