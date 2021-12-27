@@ -39,6 +39,7 @@
                                            style="width: 100%" @change="tableChange(form.table, true)">
                                     <el-option
                                             v-for="item in tables"
+                                            :disabled="selectedTables.indexOf(item) > -1 && form.table.name != item"
                                             :key="item"
                                             :label="item"
                                             :value="item">
@@ -112,10 +113,11 @@
                                 <el-select filterable :disabled="disabled" v-model.trim="item.name" placeholder="请选择" size="small"
                                            style="width: 100%" @change="tableChange(item)">
                                     <el-option
-                                            v-for="item in tables"
-                                            :key="item"
-                                            :label="item"
-                                            :value="item">
+                                            v-for="tab in tables"
+                                            :disabled="selectedTables.indexOf(tab) > -1 && item.name != tab"
+                                            :key="tab"
+                                            :label="tab"
+                                            :value="tab">
                                     </el-option>
                                 </el-select>
                             </el-form-item>
@@ -184,10 +186,11 @@
                                 <el-select filterable :disabled="disabled" v-model.trim="item.name" placeholder="请选择" size="small"
                                            style="width: 100%" @change="tableChange(item)">
                                     <el-option
-                                            v-for="item in tables"
-                                            :key="item"
-                                            :label="item"
-                                            :value="item">
+                                            v-for="tab in tables"
+                                            :disabled="selectedTables.indexOf(tab) > -1 && item.name != tab"
+                                            :key="tab"
+                                            :label="tab"
+                                            :value="tab">
                                     </el-option>
                                 </el-select>
                             </el-form-item>
@@ -314,7 +317,8 @@
                 }],
                 primaryAllows: ['INT','BIGINT','VARCHAR','TEXT','CHAR','TINYTEXT','MEDIUMTEXT','LONGTEXT'],
                 autoTypes: ['INT','BIGINT'],
-                uuidTypes: ['VARCHAR','TEXT','CHAR','TINYTEXT','MEDIUMTEXT','LONGTEXT']
+                uuidTypes: ['VARCHAR','TEXT','CHAR','TINYTEXT','MEDIUMTEXT','LONGTEXT'],
+                selectedTables: []
             }
         },
         methods: {
@@ -513,6 +517,7 @@
                     this.$refs.form.clearValidate()
                 })
                 if (table.name) {
+                    this.handleSelectedTables()
                     this.disabled = true
                     axios.get('${contextPath}/db/descTable',{
                         params: {
@@ -537,6 +542,26 @@
                         this.disabled = false;
                     })
                 }
+            },
+            handleSelectedTables() {
+                this.selectedTables = []
+                if (this.form.table.name) {
+                    this.selectedTables.push(this.form.table.name)
+                }
+                if (this.form.followTables) {
+                    for (let i = 0; i < this.form.followTables.length; i ++) {
+                        if (this.form.followTables[i].name) {
+                            this.selectedTables.push(this.form.followTables[i].name)
+                        }
+                    }
+                }
+                if (this.form.associationTables) {
+                    for (let i = 0; i < this.form.associationTables.length; i ++) {
+                        if (this.form.associationTables[i].name) {
+                            this.selectedTables.push(this.form.associationTables[i].name)
+                        }
+                    }
+                }
             }
         },
         mounted() {
@@ -553,23 +578,8 @@
                 else {
                     this.version = res.data.content.version
                     if (res.data.content.dbConf) {
-                        this.loading = false
                         this.form = res.data.content.dbConf
-                        axios.get('${contextPath}/db/tables',{
-                            params: {
-                                schema: this.form.schema,
-                                db: this.form.db
-                            }
-                        }).then(res => {
-                            if (res.data.status != 0) {
-                                this.$message.error(res.data.msg);
-                            }
-                            else {
-                                this.tables = res.data.content.list
-                            }
-                        }).catch(res => {
-                            console.error(res)
-                        })
+                        this.handleSelectedTables()
                     }
                     this.loading = false
                 }
