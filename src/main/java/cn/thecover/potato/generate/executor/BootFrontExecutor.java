@@ -299,7 +299,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                this.$refs.form.resetFields()\n")
                     .append("            },\n");
             extraHtmlBuilder
-                    .append("    <el-dialog :title=\"formTitle\" :visible.sync=\"formVisible\" class=\"group-dialog\" :before-close=\"closeInfo\">\n")
+                    .append("    <el-dialog :title=\"formTitle\" :visible.sync=\"formVisible\" class=\"group-dialog\" :close-on-press-escape=\"false\" :close-on-click-modal=\"false\" :before-close=\"closeInfo\">\n")
                     .append("        <el-form :model=\"form\" :rules=\"rules\" ref=\"form\" size=\"small\">\n");
             StringBuilder formBuilder = new StringBuilder();
             StringBuilder ruleBuilder = new StringBuilder();
