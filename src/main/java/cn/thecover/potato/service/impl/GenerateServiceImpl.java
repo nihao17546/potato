@@ -1,9 +1,9 @@
 package cn.thecover.potato.service.impl;
 
-import cn.thecover.potato.dao.BootDao;
 import cn.thecover.potato.exception.HandlerException;
 import cn.thecover.potato.generate.boot.BootResult;
 import cn.thecover.potato.generate.boot.GenerateBoot;
+import cn.thecover.potato.generate.boot.HtmlServlet;
 import cn.thecover.potato.generate.constant.BootConstant;
 import cn.thecover.potato.generate.context.ClassName;
 import cn.thecover.potato.generate.context.FrontContext;
@@ -21,7 +21,6 @@ import cn.thecover.potato.meta.conf.form.search.SearchForm;
 import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
 import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
 import cn.thecover.potato.model.param.GenerateParam;
-import cn.thecover.potato.model.po.Boot;
 import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.service.IGenerateService;
@@ -44,9 +43,9 @@ import java.util.stream.Collectors;
 @Slf4j
 public class GenerateServiceImpl implements IGenerateService {
     @Autowired
-    private BootDao bootDao;
-    @Autowired
     private GenerateBoot generateBoot;
+    @Autowired
+    private HtmlServlet htmlServlet;
     @Autowired
     private CoreProperties coreProperties;
 
@@ -289,93 +288,77 @@ public class GenerateServiceImpl implements IGenerateService {
     @Transactional(rollbackFor = Exception.class)
     @Override
     public void boot(Integer id, Config config) throws Exception {
-        Boot boot = bootDao.selectByMetaIdAndVersion(id, config.getBasic().getVersion());
-        BootResult result;
-        if (boot != null) {
-            result = CommonUtil.unserialize(boot.getData(), BootResult.class);
-        } else {
-            result = new BootResult();
-            GenerateContext context = getContext(id, config, true);
-            result.setBasePackage(context.getPackageName());
-            Map<String,String> map = generate(context, config, true);
-            result.setClassPaths(context.getClasspaths());
-            FrontContext frontContext = context.getFrontContext();
-            Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();
-            if (frontMap != null) {
-                map.putAll(frontMap);
-            }
-            if (!CollectionUtils.isEmpty(frontContext.getFollows())) {
-                for (FrontContext follow : frontContext.getFollows()) {
-                    Map<String,String> followMap = new BootFrontExecutor(follow).compile();
-                    if (followMap != null) {
-                        map.putAll(followMap);
-                    }
-                }
-            }
-
-            String javaSrc = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator;
-
-            result.setId(id);
-            result.setVersion(config.getBasic().getVersion());
-            result.setUrl(frontContext.getPath());
-            for (String key : map.keySet()) {
-                if (key.startsWith(javaSrc) && key.endsWith(".java")) {
-                    BootResult.Java java = new BootResult.Java();
-                    String classFullName = key.replace(javaSrc, "").replaceAll(Matcher.quoteReplacement(File.separator), ".");
-                    classFullName = classFullName.substring(0, classFullName.length() - ".java".length());
-                    java.setClassName(classFullName);
-                    java.setSource(map.get(key));
-
-                    if (classFullName.endsWith("Po")) {
-                        result.getPo().add(java);
-                    } else if (classFullName.endsWith("Dto")) {
-                        result.getDto().add(java);
-                    } else if (classFullName.endsWith("Vo") || classFullName.endsWith("VO")) {
-                        result.getVo().add(java);
-                    } else if (classFullName.endsWith("Dao")) {
-                        result.getDao().add(java);
-                    } else if (classFullName.endsWith("Service")) {
-                        result.getServices().add(java);
-                    } else if (classFullName.endsWith("ServiceImpl")) {
-                        result.getServiceImpls().add(java);
-                    } else if (classFullName.endsWith("Controller")) {
-                        result.getControllers().add(java);
-                    }
-                } else if (key.endsWith(".xml")) {
-                    String source = map.get(key);
-                    Matcher matcher = pattern.matcher(source);
-                    if (matcher.find()) {
-                        String classFullName = source.substring(matcher.start() + "namespace=\"".length(), matcher.end() - 1);
-                        BootResult.Mapper mapper = new BootResult.Mapper();
-                        mapper.setMapperId(classFullName);
-                        mapper.setSource(source);
-                        result.getMappers().add(mapper);
-                    }
-                } else if (key.endsWith(".html")) {
-                    result.addHtml(key, map.get(key));
-                }
-            }
-            boot = new Boot();
-            boot.setMetaId(id);
-            boot.setVersion(config.getBasic().getVersion());
-            boot.setData(CommonUtil.serialize(result));
-            bootDao.insert(boot);
+        BootResult result = new BootResult();
+        GenerateContext context = getContext(id, config, true);
+        result.setBasePackage(context.getPackageName());
+        Map<String,String> map = generate(context, config, true);
+        FrontContext frontContext = context.getFrontContext();
+        Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();
+        if (frontMap != null) {
+            map.putAll(frontMap);
         }
-        generateBoot.boot(result);
+        if (!CollectionUtils.isEmpty(frontContext.getFollows())) {
+            for (FrontContext follow : frontContext.getFollows()) {
+                Map<String,String> followMap = new BootFrontExecutor(follow).compile();
+                if (followMap != null) {
+                    map.putAll(followMap);
+                }
+            }
+        }
+
+        String javaSrc = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator;
+
+        result.setId(id);
+        result.setVersion(config.getBasic().getVersion());
+        result.setUrl(frontContext.getPath());
+        for (String key : map.keySet()) {
+            if (key.startsWith(javaSrc) && key.endsWith(".java")) {
+                BootResult.Java java = new BootResult.Java();
+                String classFullName = key.replace(javaSrc, "").replaceAll(Matcher.quoteReplacement(File.separator), ".");
+                classFullName = classFullName.substring(0, classFullName.length() - ".java".length());
+                java.setClassName(classFullName);
+                java.setSource(map.get(key));
+
+                if (classFullName.endsWith("Po")) {
+                    result.getPo().add(java);
+                } else if (classFullName.endsWith("Dto")) {
+                    result.getDto().add(java);
+                } else if (classFullName.endsWith("Vo") || classFullName.endsWith("VO")) {
+                    result.getVo().add(java);
+                } else if (classFullName.endsWith("Dao")) {
+                    result.getDao().add(java);
+                } else if (classFullName.endsWith("Service")) {
+                    result.getServices().add(java);
+                } else if (classFullName.endsWith("ServiceImpl")) {
+                    result.getServiceImpls().add(java);
+                } else if (classFullName.endsWith("Controller")) {
+                    result.getControllers().add(java);
+                }
+            } else if (key.endsWith(".xml")) {
+                String source = map.get(key);
+                Matcher matcher = pattern.matcher(source);
+                if (matcher.find()) {
+                    String classFullName = source.substring(matcher.start() + "namespace=\"".length(), matcher.end() - 1);
+                    BootResult.Mapper mapper = new BootResult.Mapper();
+                    mapper.setMapperId(classFullName);
+                    mapper.setSource(source);
+                    result.getMappers().add(mapper);
+                }
+            } else if (key.endsWith(".html")) {
+                result.addHtml(key, map.get(key));
+            }
+        }
+        generateBoot.boot(result, context.getClasspaths());
     }
 
     @Override
     public void unBoot(Integer id) {
-        List<Boot> bootList = bootDao.selectListByMetaId(id);
-        if (!CollectionUtils.isEmpty(bootList)) {
-            bootDao.deleteByMetaId(id);
+        Set<String> htmls = generateBoot.unLoad(id);
+        if (htmls != null) {
+            for (String html : htmls) {
+                htmlServlet.removeCache(html);
+            }
         }
-        List<String> htmls = new ArrayList<>();
-        for (Boot boot : bootList) {
-            BootResult bootResult = CommonUtil.unserialize(boot.getData(), BootResult.class);
-            htmls.addAll(bootResult.getHtml().keySet());
-        }
-        generateBoot.unLoad(id, htmls);
     }
 
 }

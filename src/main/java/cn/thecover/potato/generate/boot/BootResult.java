@@ -30,8 +30,6 @@ public class BootResult implements Serializable {
 
     private ClassLoader classLoader;
 
-    private Set<String> classPaths;
-
     public void clear() {
 //        this.po = null;
 //        this.dto = null;

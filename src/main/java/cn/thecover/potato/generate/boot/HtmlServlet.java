@@ -2,10 +2,7 @@ package cn.thecover.potato.generate.boot;
 
 import cn.thecover.potato.cache.ResourceCache;
 import cn.thecover.potato.cache.SoftResourceCache;
-import cn.thecover.potato.dao.BootDao;
-import cn.thecover.potato.model.po.Boot;
 import cn.thecover.potato.properties.CoreProperties;
-import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.DesUtil;
 import cn.thecover.potato.util.Parser;
 import lombok.extern.slf4j.Slf4j;
@@ -24,7 +21,7 @@ import java.io.IOException;
 @Slf4j
 public class HtmlServlet extends HttpServlet {
     @Autowired
-    private BootDao bootDao;
+    private GenerateBoot generateBoot;
     @Autowired
     private CoreProperties coreProperties;
 
@@ -35,7 +32,7 @@ public class HtmlServlet extends HttpServlet {
         this.cache = new SoftResourceCache<>();
     }
 
-    void removeCache(String key) {
+    public void removeCache(String key) {
         cache.remove(key);
     }
 
@@ -69,12 +66,11 @@ public class HtmlServlet extends HttpServlet {
                 response.sendError(HttpStatus.NOT_FOUND.value(), "NOT FOUND");
                 return;
             }
-            Boot boot = bootDao.selectByMetaIdAndVersion(metaId, version);
-            if (boot == null) {
+            BootResult bootResult = generateBoot.getLoaded(metaId);
+            if (bootResult == null || !bootResult.getVersion().equals(version)) {
                 response.sendError(HttpStatus.NOT_FOUND.value(), "NOT FOUND");
                 return;
             }
-            BootResult bootResult = CommonUtil.unserialize(boot.getData(), BootResult.class);
             html = bootResult.getHtml().get(key).getSource();
             html = Parser.parse(html, "contextPath", request.getContextPath());
             html = Parser.parse(html, "potatoPath", coreProperties.getPath());

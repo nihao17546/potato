@@ -22,8 +22,6 @@ import javax.sql.DataSource;
 import javax.tools.*;
 import java.io.*;
 import java.net.URI;
-import java.net.URL;
-import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -34,8 +32,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class GenerateBoot {
     @Autowired
     private SpringContextUtil springContextUtil;
-    @Autowired
-    private HtmlServlet htmlServlet;
     @Autowired
     private CoreProperties coreProperties;
     private DataSource dataSource;
@@ -50,7 +46,7 @@ public class GenerateBoot {
         return loadMap.get(metaId);
     }
 
-    public void unLoad(Integer metaId, List<String> htmls) {
+    public Set<String> unLoad(Integer metaId) {
         if (loadMap.containsKey(metaId)) {
             synchronized(metaId.toString().intern()) {
                 if (loadMap.containsKey(metaId)) {
@@ -70,17 +66,34 @@ public class GenerateBoot {
                         springContextUtil.destroySingleton(beanId);
                     }
                     loadMap.remove(metaId);
-                    for (String html : htmls) {
-                        htmlServlet.removeCache(html);
-                    }
                     File file = new File(coreProperties.getClassPath() + File.separator + metaId);
                     if (file.exists()) {
-                        file.delete();
+                        boolean b = deleteDir(file);
+                        if (!b) {
+                            log.error("删除文件异常");
+                        }
                     }
                     System.gc();
+                    return bootResult.getHtml().keySet();
                 }
             }
         }
+        return null;
+    }
+
+    private boolean deleteDir(File dir) {
+        if (dir.isDirectory()) {
+            String[] children = dir.list();
+            //递归删除目录中的子目录下
+            for (int i=0; i < children.length; i++) {
+                boolean success = deleteDir(new File(dir, children[i]));
+                if (!success) {
+                    return false;
+                }
+            }
+        }
+        // 目录此时为空，可以删除
+        return dir.delete();
     }
 
     private class StringObject extends SimpleJavaFileObject {
@@ -128,11 +141,15 @@ public class GenerateBoot {
         }
     }
 
-    public void boot(BootResult bootResult) throws Exception {
+    public void boot(BootResult bootResult, Set<String> classPaths) throws Exception {
         if (!loadMap.containsKey(bootResult.getId())) {
             synchronized (bootResult.getId().toString().intern()) {
                 if (!loadMap.containsKey(bootResult.getId())) {
                     log.info("加载{}", bootResult.getId());
+                    File classPathFile = new File(coreProperties.getClassPath() + File.separator + bootResult.getId());
+                    if (classPathFile.exists()) {
+                        deleteDir(classPathFile);
+                    }
                     String basicPath = coreProperties.getClassPath() + File.separator + bootResult.getId() + File.separator;
                     File f = new File(basicPath + "java");
                     if (!f.exists()) {
@@ -166,7 +183,7 @@ public class GenerateBoot {
                     for (BootResult.Java java : bootResult.getControllers()) {
                         javas.add(java);
                     }
-                    compile(javas, basicPath, bootResult.getClassPaths());
+                    compile(javas, basicPath, classPaths);
                     for (BootResult.Mapper mapper : bootResult.getMappers()) {
                         String simpleName = CommonUtil.getSimpleClassName(mapper.getMapperId());
                         String mapperFileName = simpleName + "Mapper.xml";
