@@ -126,11 +126,12 @@ public class GenerateBoot {
             for (String classPath : classPaths) {
                 sb.append(classPath).append(File.pathSeparator);
             }
-            options.add(sb.toString());
+            String classPath = sb.toString();
+            options.add(classPath);
+            log.info("编译指定classpath: {}", classPath);
         }
         options.add("-d");
         options.add(basicPath + "java");
-        System.out.println(JSON.toJSONString(options));
         JavaCompiler.CompilationTask task = javaCompiler.getTask(null, standardFileManager, null, options, null, files);
         Boolean result = task.call();
         if (result) {
