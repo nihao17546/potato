@@ -19,7 +19,8 @@ public enum OperateElementType {
     CREATE_TIME("创建时间", Arrays.asList("timeFormatType")),
     UPDATE_TIME("更新时间", Arrays.asList("timeFormatType")),
     IMAGE("图片上传", Arrays.asList("label", "placeholder", "canEdit", "rule", "acceptType", "limitSize", "cut")),
-    MARKDOWN("Markdown", Arrays.asList("label", "placeholder", "uploadImage", "canEdit"));
+    MARKDOWN("Markdown", Arrays.asList("label", "placeholder", "uploadImage", "canEdit", "rule")),
+    RICH_TINYMCE("tinymce富文本编辑器", Arrays.asList("label", "placeholder", "canEdit", "rule"));
 
     private final String desc;
     private final List<String> contains;

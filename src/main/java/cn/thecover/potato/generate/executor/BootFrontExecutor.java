@@ -9,6 +9,7 @@ import cn.thecover.potato.meta.conf.form.operate.Rule;
 import cn.thecover.potato.meta.conf.form.operate.elements.ImageElement;
 import cn.thecover.potato.meta.conf.form.operate.elements.MarkdownElement;
 import cn.thecover.potato.meta.conf.form.operate.elements.OperateElement;
+import cn.thecover.potato.meta.conf.form.operate.elements.RichTinymceElement;
 import cn.thecover.potato.meta.conf.form.search.element.DateTimeRangeSearchElement;
 import cn.thecover.potato.meta.conf.form.storage.HuaweiStorage;
 import cn.thecover.potato.meta.conf.form.storage.QiniuStorage;
@@ -16,7 +17,9 @@ import cn.thecover.potato.meta.conf.table.UIColumn;
 import cn.thecover.potato.model.vo.HttpStatus;
 import org.springframework.util.CollectionUtils;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -63,6 +66,9 @@ public class BootFrontExecutor extends FrontExecutor {
         boolean hasCutImage = false;
         boolean hasMarkdown = false;
         boolean hasMarkdownUseStorage = false;
+        boolean hasTinymceElement = false;
+        List<String> tinymceInitMethods = new ArrayList<>();
+        List<String> tinymceEditorNames = new ArrayList<>();
 
 
         if (context.getForeignKeyProp() != null) {
@@ -223,81 +229,6 @@ public class BootFrontExecutor extends FrontExecutor {
                 pks.append("'").append(pk).append("'");
             }
 
-            if (Boolean.TRUE.equals(context.getOperateContext().getUpdate())) {
-                optionColumnBuilder.append("                    ")
-                        .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showInfo(props.row,[");
-                optionColumnBuilder.append(pks.toString());
-                optionColumnBuilder.append("])\">编辑")
-                        .append("</el-button>\n");
-                methodsBuilder
-                        .append("            showInfo(row, pks) {\n")
-                        .append("                let param = {}\n")
-                        .append("                for(let i = 0; i < pks.length; i ++) {\n")
-                        .append("                    param[pks[i]] = row[pks[i]]\n")
-                        .append("                }\n")
-                        .append("                axios.get('").append("${contextPath}").append(context.getInfoRequest()).append("',{\n")
-                        .append("                    params: param\n")
-                        .append("                }).then(res => {\n")
-                        .append("                    if (res.data) {\n")
-                        .append("                        this.form = res.data\n")
-                        .append("                        this.formVisible = true\n")
-                        .append("                        this.formTitle = '编辑'\n")
-                        .append("                    } else {\n")
-                        .append("                        this.$message.error('没有查询到数据');\n")
-                        .append("                    }\n")
-                        .append("                }).catch(res => {\n")
-                        .append("                    console.error(res)\n")
-                        .append("                    this.loading = false;\n")
-                        .append("                    this.$message.error('操作异常');\n")
-                        .append("                })\n")
-                        .append("            },\n");
-            }
-
-            if (Boolean.TRUE.equals(context.getOperateContext().getDelete())) {
-                optionColumnBuilder.append("                    ")
-                        .append("<el-button type=\"danger\" size=\"mini\" :disabled=\"loading\" @click=\"del(props.row,[");
-                optionColumnBuilder.append(pks.toString());
-                optionColumnBuilder.append("])\">删除")
-                        .append("</el-button>\n");
-                methodsBuilder
-                        .append("            del(row,pks) {\n")
-                        .append("                this.$confirm('确定要删除?', '提示', {\n")
-                        .append("                    confirmButtonText: '确定',\n")
-                        .append("                    cancelButtonText: '取消',\n")
-                        .append("                    type: 'warning'\n")
-                        .append("                }).then(() => {\n")
-                        .append("                    let param = {}\n")
-                        .append("                    for(let i = 0; i < pks.length; i ++) {\n")
-                        .append("                        param[pks[i]] = row[pks[i]]\n")
-                        .append("                    }\n")
-                        .append("                    this.loading = true;\n")
-                        .append("                    axios.get('").append("${contextPath}").append(context.getDeleteRequest()).append("',{\n")
-                        .append("                        params: param\n")
-                        .append("                    }).then(res => {\n")
-                        .append("                        this.loading = false;\n")
-                        .append("                        if (res.data.code != 0) {\n")
-                        .append("                            this.$message.error(res.data.message);\n")
-                        .append("                        } else {\n")
-                        .append("                            this.$message.success('删除成功');\n")
-                        .append("                            this.getList()\n")
-                        .append("                        }\n")
-                        .append("                    }).catch(res => {\n")
-                        .append("                        console.error(res)\n")
-                        .append("                        this.loading = false;\n")
-                        .append("                        this.$message.error('操作异常');\n")
-                        .append("                    })\n")
-                        .append("                }).catch(() => {\n")
-                        .append("                });\n")
-                        .append("            },\n");
-            }
-
-            methodsBuilder
-                    .append("            closeInfo() {\n")
-                    .append("                this.formVisible = false\n")
-                    .append("                this.formTitle = ''\n")
-                    .append("                this.form = ").append(formString).append("\n")
-                    .append("                this.$refs.form.resetFields()\n")
-                    .append("            },\n");
             extraHtmlBuilder
                     .append("    <el-dialog :title=\"formTitle\" :visible.sync=\"formVisible\" class=\"group-dialog\" :close-on-press-escape=\"false\" :close-on-click-modal=\"false\" :before-close=\"closeInfo\">\n")
                     .append("        <el-form :model=\"form\" :rules=\"rules\" ref=\"form\" size=\"small\">\n");
@@ -319,6 +250,123 @@ public class BootFrontExecutor extends FrontExecutor {
                         }
                         hasMarkdownUseStorage = true;
                     }
+                } else if (element instanceof RichTinymceElement) {
+                    RichTinymceElement richTinymceElement = (RichTinymceElement) element;
+                    hasTinymceElement = true;
+                    String initMethod = "initTinymce" + element.getFieldName();
+                    tinymceInitMethods.add(initMethod + "(this.form." + element.getFieldName() + ");");
+                    String editorName = "tinymceEditor" + element.getFieldName();
+                    tinymceEditorNames.add(editorName);
+                    datasBuilder.append("                ").append(editorName).append(": null,\n");
+                    methodsBuilder
+                            .append("            ").append(initMethod).append("(val) {\n")
+                            .append("                let _this = this;\n")
+                            .append("                tinymce.init({\n")
+                            .append("                    selector: '#tinymce").append(element.getFieldName()).append("',\n")
+                            .append("                    language: 'zh_CN',\n")
+                            .append("                    theme: 'modern',\n")
+                            .append("                    height: 350,\n")
+                            .append("                    base_url: '${contextPath}${potatoPath}/static/tinymce',\n")
+                            .append("                    branding: false,\n")
+                            .append("                    plugins: [\n")
+                            .append("                        'table advlist autolink lists link charmap print preview hr anchor pagebreak',\n")
+                            .append("                        'searchreplace wordcount visualblocks visualchars code fullscreen',\n")
+                            .append("                        'insertdatetime nonbreaking save table contextmenu directionality',\n")
+                            .append("                        'emoticons textcolor colorpicker textpattern image code codesample toc pagebreak'\n")
+                            .append("                    ],\n")
+                            .append("                    toolbar: 'undo redo | table | insert | styleselect | bold italic | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | link image | print preview | forecolor backcolor emoticons | codesample | pagebreak | toc | code | fullscreen',\n")
+                            .append("                    image_advtab: true,\n")
+                            .append("                    paste_data_images: true,\n")
+                            .append("                    menubar: false,//禁用标题栏\n")
+                            .append("                    automatic_uploads: true,\n")
+                            .append("                    media_live_embeds: true,//查看上传的视频\n");
+                    if (Boolean.FALSE.equals(richTinymceElement.getCanEdit())) {
+                        methodsBuilder.append("                    readonly: true,\n");
+                    }
+                    if (richTinymceElement.getPlaceholder() != null) {
+                        methodsBuilder.append("                    placeholder: \"").append(richTinymceElement.getPlaceholder()).append("\",\n");
+                    }
+                    if (context.getStorage() != null) {
+                        methodsBuilder
+                                .append("                    images_upload_handler: (blobInfo, succFun, failFun) => {\n")
+                                .append("                        let file = blobInfo.blob();\n")
+                                .append("                        axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                                .append("                            params: {\n")
+                                .append("                                file_name: file.name\n")
+                                .append("                            }\n")
+                                .append("                        }).then(res => {\n")
+                                .append("                            if (typeof res.data.token != 'undefined') {\n");
+                        if (context.getStorage() instanceof QiniuStorage) {
+                            methodsBuilder
+                                    .append("                                let observable = qiniu.upload(file, res.data.key, res.data.token, {}, {\n")
+                                    .append("                                    useCdnDomain: true\n")
+                                    .append("                                });\n")
+                                    .append("                                observable.subscribe({\n")
+                                    .append("                                    next: (result) => {\n")
+                                    .append("                                        console.log(result);\n")
+                                    .append("                                    },\n")
+                                    .append("                                    error: () => {\n")
+                                    .append("                                        failFun('上传图片失败');\n")
+                                    .append("                                    },\n")
+                                    .append("                                    complete: (successRes) => {\n")
+                                    .append("                                        let url = res.data.host + '/' + successRes.key;\n")
+                                    .append("                                        succFun(url)\n")
+                                    .append("                                    }\n")
+                                    .append("                                })\n");
+                        } else if (context.getStorage() instanceof HuaweiStorage) {
+                            methodsBuilder
+                                    .append("                                let obsClient = new ObsClient({\n")
+                                    .append("                                    access_key_id: res.data.access,\n")
+                                    .append("                                    secret_access_key: res.data.secret,\n")
+                                    .append("                                    server : res.data.endpoint,\n")
+                                    .append("                                    security_token: res.data.token,\n")
+                                    .append("                                    timeout: 24 * 60 * 60\n")
+                                    .append("                                });\n")
+                                    .append("                                obsClient.putObject({\n")
+                                    .append("                                    Bucket: res.data.bucket,\n")
+                                    .append("                                    Key: res.data.key,\n")
+                                    .append("                                    SourceFile: file,\n")
+                                    .append("                                    ProgressCallback: (transferredAmount, totalAmount, totalSeconds) => {\n")
+                                    .append("                                        console.log('上传速度: ' + transferredAmount * 1.0 / totalSeconds / 1024 + ' KB/S');\n")
+                                    .append("                                        console.log(transferredAmount * 100.0 / totalAmount);\n")
+                                    .append("                                    }\n")
+                                    .append("                                }, (err, result) => {\n")
+                                    .append("                                    console.log(result)\n")
+                                    .append("                                    if (result && result.CommonMsg && result.CommonMsg.Status == 200) {\n")
+                                    .append("                                        let url = res.data.host + '/' + res.data.key;\n")
+                                    .append("                                        succFun(url)\n")
+                                    .append("                                    } else {\n")
+                                    .append("                                        failFun('上传图片失败');\n")
+                                    .append("                                        console.error(err);\n")
+                                    .append("                                    }\n")
+                                    .append("                                });\n");
+                        }
+                        methodsBuilder
+                                .append("                            } else {\n")
+                                .append("                                console.error(res)\n")
+                                .append("                                failFun('获取token失败');\n")
+                                .append("                            }\n")
+                                .append("                        }).catch(res => {\n")
+                                .append("                            console.error(res)\n")
+                                .append("                            failFun('获取token失败');\n")
+                                .append("                        })\n")
+                                .append("                    },\n");
+                    }
+                    methodsBuilder
+                            .append("                    setup: function(editor) {\n")
+                            .append("                        editor.on('change', (e) => {\n")
+                            .append("                            _this.$set(_this.form, '").append(element.getFieldName()).append("', e.level.content);\n")
+                            .append("                        });\n")
+                            .append("                    },\n");
+                    methodsBuilder
+                            .append("                    init_instance_callback: editor => {\n")
+                            .append("                        if (typeof val != 'undefined' && val != null) {\n")
+                            .append("                            editor.setContent(val);\n")
+                            .append("                        }\n")
+                            .append("                        _this.").append(editorName).append(" = editor\n")
+                            .append("                    }\n")
+                            .append("                })\n")
+                            .append("            },\n");
                 }
                 formBuilder.append(element.getHtml());
                 Rule rule = element.getRule();
@@ -412,9 +460,111 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("            showAdd() {\n")
                         .append("                this.form = ").append(formString).append("\n")
                         .append("                this.formVisible = true\n")
-                        .append("                this.formTitle = '新增'\n")
+                        .append("                this.formTitle = '新增'\n");
+                if (!tinymceInitMethods.isEmpty()) {
+                    methodsBuilder.append("                this.$nextTick(() => {\n");
+                    for (String tinymceInitMethod : tinymceInitMethods) {
+                        methodsBuilder.append("                    this.").append(tinymceInitMethod).append("\n");
+                    }
+                    methodsBuilder.append("                })\n");
+                }
+                methodsBuilder
                         .append("            },\n");
             }
+
+            if (Boolean.TRUE.equals(context.getOperateContext().getUpdate())) {
+                optionColumnBuilder.append("                    ")
+                        .append("<el-button type=\"primary\" size=\"mini\" :disabled=\"loading\" @click=\"showInfo(props.row,[");
+                optionColumnBuilder.append(pks.toString());
+                optionColumnBuilder.append("])\">编辑")
+                        .append("</el-button>\n");
+                methodsBuilder
+                        .append("            showInfo(row, pks) {\n")
+                        .append("                let param = {}\n")
+                        .append("                for(let i = 0; i < pks.length; i ++) {\n")
+                        .append("                    param[pks[i]] = row[pks[i]]\n")
+                        .append("                }\n")
+                        .append("                axios.get('").append("${contextPath}").append(context.getInfoRequest()).append("',{\n")
+                        .append("                    params: param\n")
+                        .append("                }).then(res => {\n")
+                        .append("                    if (res.data) {\n")
+                        .append("                        this.form = res.data\n")
+                        .append("                        this.formVisible = true\n")
+                        .append("                        this.formTitle = '编辑'\n");
+                if (!tinymceInitMethods.isEmpty()) {
+                    methodsBuilder.append("                        this.$nextTick(() => {\n");
+                    for (String tinymceInitMethod : tinymceInitMethods) {
+                        methodsBuilder.append("                            this.").append(tinymceInitMethod).append("\n");
+                    }
+                    methodsBuilder.append("                        })\n");
+                }
+                methodsBuilder
+                        .append("                    } else {\n")
+                        .append("                        this.$message.error('没有查询到数据');\n")
+                        .append("                    }\n")
+                        .append("                }).catch(res => {\n")
+                        .append("                    console.error(res)\n")
+                        .append("                    this.loading = false;\n")
+                        .append("                    this.$message.error('操作异常');\n")
+                        .append("                })\n")
+                        .append("            },\n");
+            }
+
+            if (Boolean.TRUE.equals(context.getOperateContext().getDelete())) {
+                optionColumnBuilder.append("                    ")
+                        .append("<el-button type=\"danger\" size=\"mini\" :disabled=\"loading\" @click=\"del(props.row,[");
+                optionColumnBuilder.append(pks.toString());
+                optionColumnBuilder.append("])\">删除")
+                        .append("</el-button>\n");
+                methodsBuilder
+                        .append("            del(row,pks) {\n")
+                        .append("                this.$confirm('确定要删除?', '提示', {\n")
+                        .append("                    confirmButtonText: '确定',\n")
+                        .append("                    cancelButtonText: '取消',\n")
+                        .append("                    type: 'warning'\n")
+                        .append("                }).then(() => {\n")
+                        .append("                    let param = {}\n")
+                        .append("                    for(let i = 0; i < pks.length; i ++) {\n")
+                        .append("                        param[pks[i]] = row[pks[i]]\n")
+                        .append("                    }\n")
+                        .append("                    this.loading = true;\n")
+                        .append("                    axios.get('").append("${contextPath}").append(context.getDeleteRequest()).append("',{\n")
+                        .append("                        params: param\n")
+                        .append("                    }).then(res => {\n")
+                        .append("                        this.loading = false;\n")
+                        .append("                        if (res.data.code != 0) {\n")
+                        .append("                            this.$message.error(res.data.message);\n")
+                        .append("                        } else {\n")
+                        .append("                            this.$message.success('删除成功');\n")
+                        .append("                            this.getList()\n")
+                        .append("                        }\n")
+                        .append("                    }).catch(res => {\n")
+                        .append("                        console.error(res)\n")
+                        .append("                        this.loading = false;\n")
+                        .append("                        this.$message.error('操作异常');\n")
+                        .append("                    })\n")
+                        .append("                }).catch(() => {\n")
+                        .append("                });\n")
+                        .append("            },\n");
+            }
+
+            methodsBuilder
+                    .append("            closeInfo() {\n");
+            if (!tinymceEditorNames.isEmpty()) {
+                for (String editor : tinymceEditorNames) {
+                    methodsBuilder
+                            .append("                if (this.").append(editor).append(" != null) {\n")
+                            .append("                    this.").append(editor).append(".destroy();\n")
+                            .append("                    this.").append(editor).append(" = null;\n")
+                            .append("                }\n");
+                }
+            }
+            methodsBuilder
+                    .append("                this.formVisible = false\n")
+                    .append("                this.formTitle = ''\n")
+                    .append("                this.form = ").append(formString).append("\n")
+                    .append("                this.$refs.form.resetFields()\n")
+                    .append("            },\n");
         }
 
         if (!CollectionUtils.isEmpty(context.getFollows())) {
@@ -548,6 +698,11 @@ public class BootFrontExecutor extends FrontExecutor {
             } else if (context.getStorage() instanceof HuaweiStorage) {
                 jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/esdk-obs-browserjs-without-polyfill-3.19.9.min.js\"></script>\n");
             }
+        }
+
+        if (hasTinymceElement) {
+            jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/tinymce/tinymce.min.js\"></script>\n");
+
         }
 
         if (hasMarkdown) {

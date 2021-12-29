@@ -23,7 +23,8 @@ import lombok.Data;
         @JsonSubTypes.Type(value = CreateTimeElement.class, name = "CREATE_TIME"),
         @JsonSubTypes.Type(value = UpdateTimeElement.class, name = "UPDATE_TIME"),
         @JsonSubTypes.Type(value = ImageElement.class, name = "IMAGE"),
-        @JsonSubTypes.Type(value = MarkdownElement.class, name = "MARKDOWN")
+        @JsonSubTypes.Type(value = MarkdownElement.class, name = "MARKDOWN"),
+        @JsonSubTypes.Type(value = RichTinymceElement.class, name = "RICH_TINYMCE")
 })
 public abstract class OperateElement extends Element {
     // 是否可更新
