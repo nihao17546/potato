@@ -19,6 +19,8 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
 import java.io.File;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 import java.util.regex.Matcher;
 
@@ -172,6 +174,17 @@ public class ClassExecutor extends Executor {
                     if (!className.startsWith("java.lang.")) {
                         importBuilder.append("import ").append(className).append(";\n");
                     }
+                    try {
+                        ClassLoader classLoader = Class.forName(className).getClassLoader();
+                        if (classLoader != null) {
+                            if (classLoader instanceof URLClassLoader) {
+                                URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
+                                for (URL url : urlClassLoader.getURLs()) {
+                                    generateContext.addClasspath(url.getFile());
+                                }
+                            }
+                        }
+                    } catch (Exception e) {}
                 }
             }
             map.put("imports", importBuilder.toString());

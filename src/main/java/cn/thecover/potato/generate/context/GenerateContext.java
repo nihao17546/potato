@@ -4,9 +4,7 @@ import cn.thecover.potato.meta.conf.db.Column;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author nihao 2021/07/12
@@ -39,6 +37,16 @@ public class GenerateContext {
     @Getter
     @Setter
     private FrontContext frontContext;
+
+    @Getter
+    private Set<String> classpaths;
+
+    public void addClasspath(String classpath) {
+        if (classpaths == null) {
+            classpaths = new HashSet<>();
+        }
+        classpaths.add(classpath);
+    }
 
     public void addJavaClassContext(JavaClassContext... javaClassContextList) {
         if (javaClassContexts == null) {

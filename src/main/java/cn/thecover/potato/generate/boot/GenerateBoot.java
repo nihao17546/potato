@@ -5,6 +5,7 @@ import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.SpringContextUtil;
+import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.Environment;
@@ -21,6 +22,8 @@ import javax.sql.DataSource;
 import javax.tools.*;
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -91,7 +94,7 @@ public class GenerateBoot {
         }
     }
 
-    private void compile(List<BootResult.Java> javas, String basicPath) {
+    private void compile(List<BootResult.Java> javas, String basicPath, Set<String> classPaths) {
         List<JavaFileObject> files = new ArrayList<>(javas.size());
         for (BootResult.Java java : javas) {
             String className = java.getClassName();
@@ -103,7 +106,18 @@ public class GenerateBoot {
         }
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(null, null, null);
-        Iterable options = Arrays.asList("-d", basicPath + "java");
+        List<String> options = new ArrayList<>();
+        if (classPaths != null) {
+            options.add("-classpath");
+            StringBuilder sb = new StringBuilder();
+            for (String classPath : classPaths) {
+                sb.append(classPath).append(File.pathSeparator);
+            }
+            options.add(sb.toString());
+        }
+        options.add("-d");
+        options.add(basicPath + "java");
+        System.out.println(JSON.toJSONString(options));
         JavaCompiler.CompilationTask task = javaCompiler.getTask(null, standardFileManager, null, options, null, files);
         Boolean result = task.call();
         if (result) {
@@ -152,7 +166,7 @@ public class GenerateBoot {
                     for (BootResult.Java java : bootResult.getControllers()) {
                         javas.add(java);
                     }
-                    compile(javas, basicPath);
+                    compile(javas, basicPath, bootResult.getClassPaths());
                     for (BootResult.Mapper mapper : bootResult.getMappers()) {
                         String simpleName = CommonUtil.getSimpleClassName(mapper.getMapperId());
                         String mapperFileName = simpleName + "Mapper.xml";

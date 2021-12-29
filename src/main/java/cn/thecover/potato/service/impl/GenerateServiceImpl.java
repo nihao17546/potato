@@ -298,7 +298,7 @@ public class GenerateServiceImpl implements IGenerateService {
             GenerateContext context = getContext(id, config, true);
             result.setBasePackage(context.getPackageName());
             Map<String,String> map = generate(context, config, true);
-
+            result.setClassPaths(context.getClasspaths());
             FrontContext frontContext = context.getFrontContext();
             Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();
             if (frontMap != null) {

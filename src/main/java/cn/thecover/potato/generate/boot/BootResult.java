@@ -3,10 +3,7 @@ package cn.thecover.potato.generate.boot;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author nihao 2021/07/17
@@ -32,6 +29,8 @@ public class BootResult implements Serializable {
     private String url;
 
     private ClassLoader classLoader;
+
+    private Set<String> classPaths;
 
     public void clear() {
 //        this.po = null;
