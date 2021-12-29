@@ -376,13 +376,13 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append(element.getFieldName()).append(": [{required : ").append(rule.getRequired())
                             .append(", trigger: 'change', message: '");
                     if (rule.getMessage() != null && !rule.getMessage().isEmpty()) {
+                        ruleBuilder.append(rule.getMessage());
+                    } else {
                         if (rule.getRequired()) {
                             ruleBuilder.append("请填写");
                         } else {
                             ruleBuilder.append("填写错误");
                         }
-                    } else {
-                        ruleBuilder.append(rule.getMessage());
                     }
                     ruleBuilder.append("'");
                     if (rule.getRegular() != null) {
