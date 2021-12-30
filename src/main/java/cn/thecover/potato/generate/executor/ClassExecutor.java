@@ -7,26 +7,19 @@ import cn.thecover.potato.generate.context.GenerateContext;
 import cn.thecover.potato.generate.context.JavaClassContext;
 import cn.thecover.potato.generate.method.MethodInfo;
 import cn.thecover.potato.generate.method.ParamInfo;
-import cn.thecover.potato.model.constant.BasicConstant;
 import cn.thecover.potato.util.SimpleDateUtil;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.jdbc.datasource.DataSourceTransactionManager;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.DefaultTransactionDefinition;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 
-import java.io.File;
-import java.net.URL;
-import java.net.URLClassLoader;
+import java.io.*;
 import java.util.*;
 import java.util.regex.Matcher;
 
 /**
  * @author nihao 2021/07/12
  */
+@Slf4j
 public class ClassExecutor extends Executor {
     private final String FILE_PATH = "codeless/backend/Class.java";
     protected GenerateContext generateContext;
@@ -173,18 +166,8 @@ public class ClassExecutor extends Executor {
                 for (String className : list) {
                     if (!className.startsWith("java.lang.")) {
                         importBuilder.append("import ").append(className).append(";\n");
+                        generateContext.addNeedLoadClasse(className);
                     }
-                    try {
-                        ClassLoader classLoader = Class.forName(className).getClassLoader();
-                        if (classLoader != null) {
-                            if (classLoader instanceof URLClassLoader) {
-                                URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
-                                for (URL url : urlClassLoader.getURLs()) {
-                                    generateContext.addClasspath(url.getFile());
-                                }
-                            }
-                        }
-                    } catch (Exception e) {}
                 }
             }
             map.put("imports", importBuilder.toString());

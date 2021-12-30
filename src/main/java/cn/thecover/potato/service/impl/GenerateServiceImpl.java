@@ -348,7 +348,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 result.addHtml(key, map.get(key));
             }
         }
-        generateBoot.boot(result, context.getClasspaths());
+        generateBoot.boot(result, context.getNeedLoadClasses());
     }
 
     @Override

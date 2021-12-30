@@ -5,7 +5,6 @@ import cn.thecover.potato.model.vo.HttpStatus;
 import cn.thecover.potato.properties.CoreProperties;
 import cn.thecover.potato.util.CommonUtil;
 import cn.thecover.potato.util.SpringContextUtil;
-import com.alibaba.fastjson.JSON;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.Environment;
@@ -22,8 +21,12 @@ import javax.sql.DataSource;
 import javax.tools.*;
 import java.io.*;
 import java.net.URI;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 /**
  * @author nihao 2021/07/16
@@ -66,11 +69,14 @@ public class GenerateBoot {
                         springContextUtil.destroySingleton(beanId);
                     }
                     loadMap.remove(metaId);
-                    File file = new File(coreProperties.getClassPath() + File.separator + metaId);
+                    String path = coreProperties.getClassPath() + File.separator + metaId;
+                    File file = new File(path);
                     if (file.exists()) {
                         boolean b = deleteDir(file);
                         if (!b) {
-                            log.error("删除文件异常");
+                            log.error("删除文件异常: {}", path);
+                        } else {
+                            log.info("目录:{}已清空", path);
                         }
                     }
                     System.gc();
@@ -107,7 +113,110 @@ public class GenerateBoot {
         }
     }
 
-    private void compile(List<BootResult.Java> javas, String basicPath, Set<String> classPaths) {
+    private String getClassPath(Set<String> needLoadClasses, Integer id) {
+        Set<String> classPaths = new HashSet<>();
+        Map<String,Set<String>> map = new HashMap<>();
+        for (String className : needLoadClasses) {
+            try {
+                ClassLoader classLoader = Class.forName(className).getClassLoader();
+                if (classLoader != null) {
+                    if (classLoader instanceof URLClassLoader) {
+                        URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
+                        for (URL url : urlClassLoader.getURLs()) {
+                            String path = url.getPath();
+                            try {
+                                if (path.startsWith("file:")) {
+                                    path = path.replace("file:", "");
+                                    String[] strings = path.split("!/");
+                                    if (map.containsKey(strings[0])) {
+                                        map.get(strings[0]).add(strings[1]);
+                                    } else {
+                                        Set<String> set = new HashSet<>();
+                                        set.add(strings[1]);
+                                        map.put(strings[0], set);
+                                    }
+                                } else {
+                                    classPaths.add(url.getFile());
+                                }
+                            } catch (Exception e) {
+                                log.error("解析classpath: {} 异常", path, e);
+                                throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析classpath:" + path + "异常");
+                            }
+                        }
+                    }
+                }
+            } catch (Exception e) {}
+        }
+        if (!map.isEmpty()) {
+            for (String jar : map.keySet()) {
+                Set<String> set = map.get(jar);
+                JarFile jarFile = null;
+                try {
+                    jarFile = new JarFile(jar);
+                } catch (Exception e) {
+                    log.error("解析jar: {} 异常", jar, e);
+                    throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析jar:" + jar + "异常");
+                }
+                for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
+                    JarEntry jarEntry = e.nextElement();
+                    if (set.contains(jarEntry.getName())) {
+                        String path = coreProperties.getClassPath() + File.separator + id + File.separator
+                                + "classpath" + File.separator + jar + File.separator + jarEntry.getName();
+                        try {
+                            writeFile(jarFile, jarEntry, new File(path));
+                            classPaths.add(path);
+                        } catch (Exception ex) {
+                            log.error("解析jar: {}->{} 异常: {}:{} 输出目录: {}",
+                                    jar, jarEntry.getName(), ex.getClass().getName(), ex.getMessage(), path);
+                        }
+                    }
+                }
+            }
+        }
+        if (classPaths.isEmpty()) {
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        for (String classPath : classPaths) {
+            sb.append(classPath).append(File.pathSeparator);
+        }
+        return sb.toString();
+    }
+
+    private void writeFile(JarFile jarFile, JarEntry jarEntry, File file) throws Exception {
+        InputStream in = jarFile.getInputStream(jarEntry);
+        OutputStream os = null;
+        try {
+            if (!file.getParentFile().exists()) {
+                if (!file.getParentFile().mkdirs()) {
+                    throw new RuntimeException(file.getParentFile().getPath() + " 目录创建失败");
+                }
+            }
+            os = new BufferedOutputStream(new FileOutputStream(file));
+            byte[] bytes = new byte[2048];
+            int len;
+            while((len = in.read(bytes)) != -1) {
+                os.write(bytes, 0, len);
+            }
+        } finally {
+            if (os != null) {
+                try {
+                    os.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            if (in != null) {
+                try {
+                    in.close();
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+
+    private void compile(List<BootResult.Java> javas, String basicPath, Set<String> needLoadClasses, Integer id) {
         List<JavaFileObject> files = new ArrayList<>(javas.size());
         for (BootResult.Java java : javas) {
             String className = java.getClassName();
@@ -119,30 +228,35 @@ public class GenerateBoot {
         }
         JavaCompiler javaCompiler = ToolProvider.getSystemJavaCompiler();
         StandardJavaFileManager standardFileManager = javaCompiler.getStandardFileManager(null, null, null);
-        List<String> options = new ArrayList<>();
-        if (classPaths != null) {
-            options.add("-classpath");
-            StringBuilder sb = new StringBuilder();
-            for (String classPath : classPaths) {
-                sb.append(classPath).append(File.pathSeparator);
+        try {
+            List<String> options = new ArrayList<>();
+            if (needLoadClasses != null) {
+                String classPath = getClassPath(needLoadClasses, id);
+                if (classPath != null) {
+                    options.add("-classpath");
+                    options.add(classPath);
+                }
             }
-            String classPath = sb.toString();
-            options.add(classPath);
-            log.info("编译指定classpath: {}", classPath);
-        }
-        options.add("-d");
-        options.add(basicPath + "java");
-        JavaCompiler.CompilationTask task = javaCompiler.getTask(null, standardFileManager, null, options, null, files);
-        Boolean result = task.call();
-        if (result) {
-            log.info("class编译成功");
-        } else {
-            log.info("class编译异常");
-            throw new RuntimeException("编译异常");
+            options.add("-d");
+            options.add(basicPath + "java");
+            JavaCompiler.CompilationTask task = javaCompiler.getTask(null, standardFileManager, null, options, null, files);
+            Boolean result = task.call();
+            if (result) {
+                log.info("class编译成功");
+            } else {
+                log.info("class编译异常");
+                throw new RuntimeException("编译异常");
+            }
+        } finally {
+            try {
+                standardFileManager.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
 
-    public void boot(BootResult bootResult, Set<String> classPaths) throws Exception {
+    public void boot(BootResult bootResult, Set<String> needLoadClasses) throws Exception {
         if (!loadMap.containsKey(bootResult.getId())) {
             synchronized (bootResult.getId().toString().intern()) {
                 if (!loadMap.containsKey(bootResult.getId())) {
@@ -184,7 +298,7 @@ public class GenerateBoot {
                     for (BootResult.Java java : bootResult.getControllers()) {
                         javas.add(java);
                     }
-                    compile(javas, basicPath, classPaths);
+                    compile(javas, basicPath, needLoadClasses, bootResult.getId());
                     for (BootResult.Mapper mapper : bootResult.getMappers()) {
                         String simpleName = CommonUtil.getSimpleClassName(mapper.getMapperId());
                         String mapperFileName = simpleName + "Mapper.xml";

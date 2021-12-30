@@ -39,13 +39,13 @@ public class GenerateContext {
     private FrontContext frontContext;
 
     @Getter
-    private Set<String> classpaths;
+    private Set<String> needLoadClasses;
 
-    public void addClasspath(String classpath) {
-        if (classpaths == null) {
-            classpaths = new HashSet<>();
+    public void addNeedLoadClasse(String className) {
+        if (needLoadClasses == null) {
+            needLoadClasses = new HashSet<>();
         }
-        classpaths.add(classpath);
+        needLoadClasses.add(className);
     }
 
     public void addJavaClassContext(JavaClassContext... javaClassContextList) {
