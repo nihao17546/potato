@@ -117,35 +117,41 @@ public class GenerateBoot {
         Set<String> classPaths = new HashSet<>();
         Map<String,Set<String>> map = new HashMap<>();
         for (String className : needLoadClasses) {
+            ClassLoader classLoader = null;
             try {
-                ClassLoader classLoader = Class.forName(className).getClassLoader();
-                if (classLoader != null) {
-                    if (classLoader instanceof URLClassLoader) {
-                        URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
-                        for (URL url : urlClassLoader.getURLs()) {
-                            String path = url.getPath();
-                            try {
-                                if (path.startsWith("file:")) {
-                                    path = path.replace("file:", "");
-                                    String[] strings = path.split("!/");
-                                    if (map.containsKey(strings[0])) {
-                                        map.get(strings[0]).add(strings[1]);
-                                    } else {
-                                        Set<String> set = new HashSet<>();
-                                        set.add(strings[1]);
-                                        map.put(strings[0], set);
-                                    }
+                classLoader = Class.forName(className).getClassLoader();
+            } catch (ClassNotFoundException e) {
+                continue;
+            } catch (Exception e) {
+                log.error("解析class: {} 异常", className, e);
+                throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析class:" + className + "异常");
+            }
+            if (classLoader != null) {
+                if (classLoader instanceof URLClassLoader) {
+                    URLClassLoader urlClassLoader = (URLClassLoader) classLoader;
+                    for (URL url : urlClassLoader.getURLs()) {
+                        String path = url.getPath();
+                        try {
+                            if (path.startsWith("file:")) {
+                                path = path.replace("file:", "");
+                                String[] strings = path.split("!/");
+                                if (map.containsKey(strings[0])) {
+                                    map.get(strings[0]).add(strings[1]);
                                 } else {
-                                    classPaths.add(url.getFile());
+                                    Set<String> set = new HashSet<>();
+                                    set.add(strings[1]);
+                                    map.put(strings[0], set);
                                 }
-                            } catch (Exception e) {
-                                log.error("解析classpath: {} 异常", path, e);
-                                throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析classpath:" + path + "异常");
+                            } else {
+                                classPaths.add(url.getFile());
                             }
+                        } catch (Exception e) {
+                            log.error("解析classpath: {} 异常", path, e);
+                            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析classpath:" + path + "异常");
                         }
                     }
                 }
-            } catch (Exception e) {}
+            }
         }
         if (!map.isEmpty()) {
             for (String jar : map.keySet()) {
