@@ -1,2 +1,2 @@
 org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  cn.thecover.potato.PotatoAutoConfigure
+  com.appcnd.potato.PotatoAutoConfigure

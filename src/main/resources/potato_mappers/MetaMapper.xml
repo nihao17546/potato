@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.thecover.potato.dao.MetaDao">
-    <select id="selectByNameAndNeId" resultType="cn.thecover.potato.model.po.Meta">
+<mapper namespace="com.appcnd.potato.dao.MetaDao">
+    <select id="selectByNameAndNeId" resultType="com.appcnd.potato.model.po.Meta">
         select `id`,`name` from `meta` where `name`=#{name}
         <if test="id != null">
             and id != #{id}
@@ -9,7 +9,7 @@
     </select>
 
     <insert id="insert" useGeneratedKeys="true" keyProperty="id"
-            parameterType="cn.thecover.potato.model.po.Meta">
+            parameterType="com.appcnd.potato.model.po.Meta">
         insert into `meta`(`name`,title,`version`,`create_time`) values(#{name},#{title},#{version},#{createTime})
     </insert>
 
@@ -20,7 +20,7 @@
         </if>
     </select>
 
-    <select id="selectList" resultType="cn.thecover.potato.model.po.Meta">
+    <select id="selectList" resultType="com.appcnd.potato.model.po.Meta">
         select id, `name`, `version`, create_time createTime, update_time updateTime, title from `meta`
         where 1=1
         <if test="name != null">
@@ -37,7 +37,7 @@
         select `version` from `meta` where id=#{id}
     </select>
 
-    <update id="update" parameterType="cn.thecover.potato.model.po.Meta">
+    <update id="update" parameterType="com.appcnd.potato.model.po.Meta">
         update `meta` set update_time=#{updateTime},`version`=`version`+1
         <if test="name != null">
             ,`name`=#{name}
@@ -63,11 +63,11 @@
         where id=#{id} and `version`=#{version}
     </update>
 
-    <select id="selectById" resultType="cn.thecover.potato.model.po.Meta">
+    <select id="selectById" resultType="com.appcnd.potato.model.po.Meta">
         select * from `meta` where id=#{id}
     </select>
 
-    <select id="selectColumnsById" resultType="cn.thecover.potato.model.po.Meta">
+    <select id="selectColumnsById" resultType="com.appcnd.potato.model.po.Meta">
         select
         <foreach collection="columns" item="item" separator=",">
             ${item}

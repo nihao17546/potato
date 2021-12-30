@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-<mapper namespace="cn.thecover.potato.dao.DbDao">
+<mapper namespace="com.appcnd.potato.dao.DbDao">
     <select id="selectTables" resultType="java.lang.String">
         show tables
     </select>
@@ -9,7 +9,7 @@
         show create table ${table}
     </select>
 
-    <select id="getTableFieldInfo" resultType="cn.thecover.potato.meta.db.TableFieldInfo">
+    <select id="getTableFieldInfo" resultType="com.appcnd.potato.meta.db.TableFieldInfo">
         desc ${table}
     </select>
 </mapper>
