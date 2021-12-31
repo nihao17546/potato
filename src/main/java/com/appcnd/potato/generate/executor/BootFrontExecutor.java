@@ -264,7 +264,6 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append("                tinymce.init({\n")
                             .append("                    selector: '#tinymce").append(element.getFieldName()).append("',\n")
                             .append("                    language: 'zh_CN',\n")
-                            .append("                    theme: 'modern',\n")
                             .append("                    height: 350,\n")
                             .append("                    base_url: '${contextPath}${potatoPath}/static/tinymce',\n")
                             .append("                    branding: false,\n")
@@ -274,11 +273,7 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append("                        'insertdatetime nonbreaking save table contextmenu directionality',\n")
                             .append("                        'emoticons textcolor colorpicker textpattern image code codesample toc pagebreak'\n")
                             .append("                    ],\n")
-                            .append("                    toolbar: 'undo redo | table | insert | styleselect | bold italic | " +
-                                    "alignleft aligncenter alignright alignjustify | " +
-                                    "bullist numlist outdent indent | " +
-                                    "link image | forecolor backcolor emoticons fontsizeselect fontselect | " +
-                                    "codesample | pagebreak | toc | print preview | code | fullscreen',\n")
+                            .append("                    toolbar1: 'undo redo | table | insert | styleselect | bold italic | alignleft aligncenter alignright alignjustify lineheight| bullist numlist outdent indent | link image | fontsizeselect | fontselect | forecolor backcolor emoticons | codesample | pagebreak | toc | print preview | code fullscreen',\n")
                             .append("                    fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',\n")
                             .append("                    image_advtab: true,\n")
                             .append("                    paste_data_images: true,\n")
