@@ -271,11 +271,12 @@ public class BootFrontExecutor extends FrontExecutor {
                             .append("                        'table advlist autolink lists link charmap print preview hr anchor pagebreak',\n")
                             .append("                        'searchreplace wordcount visualblocks visualchars code fullscreen',\n")
                             .append("                        'insertdatetime nonbreaking save table contextmenu directionality',\n")
-                            .append("                        'emoticons textcolor colorpicker textpattern image code codesample toc pagebreak'\n")
+                            .append("                        'emoticons textcolor colorpicker textpattern image code codesample toc pagebreak media'\n")
                             .append("                    ],\n")
-                            .append("                    toolbar1: 'undo redo | table | insert | styleselect | bold italic | alignleft aligncenter alignright alignjustify lineheight| bullist numlist outdent indent | link image | fontsizeselect | fontselect | forecolor backcolor emoticons | codesample | pagebreak | toc | print preview | code fullscreen',\n")
+                            .append("                    toolbar1: 'undo redo | table | insert | styleselect | bold italic | alignleft aligncenter alignright alignjustify lineheight| bullist numlist outdent indent | link image media | fontsizeselect | fontselect | forecolor backcolor emoticons | codesample | pagebreak | toc | print preview | code fullscreen',\n")
                             .append("                    fontsize_formats: '8pt 10pt 12pt 14pt 18pt 24pt 36pt',\n")
                             .append("                    image_advtab: true,\n")
+                            .append("                    file_picker_types: 'media',\n")
                             .append("                    paste_data_images: true,\n")
                             .append("                    menubar: false,//禁用标题栏\n")
                             .append("                    automatic_uploads: true,\n")
@@ -286,6 +287,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     if (richTinymceElement.getPlaceholder() != null) {
                         methodsBuilder.append("                    placeholder: \"").append(richTinymceElement.getPlaceholder()).append("\",\n");
                     }
+                    // 图片上传
                     if (context.getStorage() != null) {
                         methodsBuilder
                                 .append("                    images_upload_handler: (blobInfo, succFun, failFun) => {\n")
@@ -350,6 +352,84 @@ public class BootFrontExecutor extends FrontExecutor {
                                 .append("                            console.error(res)\n")
                                 .append("                            failFun('获取token失败');\n")
                                 .append("                        })\n")
+                                .append("                    },\n");
+                    }
+                    // 视频上传
+                    if (context.getStorage() != null) {
+                        methodsBuilder
+                                .append("                    file_picker_callback: (callback, value, meta) => {\n")
+                                .append("                        if (meta.filetype == 'media') {\n")
+                                .append("                            let input = document.createElement('input');\n")
+                                .append("                            input.setAttribute('type', 'file');\n")
+                                .append("                            input.setAttribute('accept', 'video/*');\n")
+                                .append("                            input.click();\n")
+                                .append("                            input.onchange = function() {\n")
+                                .append("                                let file = this.files[0];\n")
+                                .append("                                if (file) {\n")
+                                .append("                                    axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                                .append("                                        params: {\n")
+                                .append("                                            file_name: file.name\n")
+                                .append("                                        }\n")
+                                .append("                                    }).then(res => {\n")
+                                .append("                                        if (typeof res.data.token != 'undefined') {\n");
+                        if (context.getStorage() instanceof QiniuStorage) {
+                            methodsBuilder
+                                    .append("                                            let observable = qiniu.upload(file, res.data.key, res.data.token, {}, {\n")
+                                    .append("                                                useCdnDomain: true\n")
+                                    .append("                                            });\n")
+                                    .append("                                            observable.subscribe({\n")
+                                    .append("                                                next: (result) => {\n")
+                                    .append("                                                    console.log(result);\n")
+                                    .append("                                                },\n")
+                                    .append("                                                error: () => {\n")
+                                    .append("                                                    _this.$message.error('上传视频失败');\n")
+                                    .append("                                                },\n")
+                                    .append("                                                complete: (successRes) => {\n")
+                                    .append("                                                    let url = res.data.host + '/' + successRes.key;\n")
+                                    .append("                                                    callback(url, { title: file.name });\n")
+                                    .append("                                                }\n")
+                                    .append("                                            })\n");
+                        } else if (context.getStorage() instanceof HuaweiStorage) {
+                            methodsBuilder
+                                    .append("                                            let obsClient = new ObsClient({\n")
+                                    .append("                                                access_key_id: res.data.access,\n")
+                                    .append("                                                secret_access_key: res.data.secret,\n")
+                                    .append("                                                server : res.data.endpoint,\n")
+                                    .append("                                                security_token: res.data.token,\n")
+                                    .append("                                                timeout: 24 * 60 * 60\n")
+                                    .append("                                            });\n")
+                                    .append("                                            obsClient.putObject({\n")
+                                    .append("                                                Bucket: res.data.bucket,\n")
+                                    .append("                                                Key: res.data.key,\n")
+                                    .append("                                                SourceFile: file,\n")
+                                    .append("                                                ProgressCallback: (transferredAmount, totalAmount, totalSeconds) => {\n")
+                                    .append("                                                    console.log('上传速度: ' + transferredAmount * 1.0 / totalSeconds / 1024 + ' KB/S');\n")
+                                    .append("                                                    console.log(transferredAmount * 100.0 / totalAmount);\n")
+                                    .append("                                                }\n")
+                                    .append("                                            }, (err, result) => {\n")
+                                    .append("                                                console.log(result)\n")
+                                    .append("                                                if (result && result.CommonMsg && result.CommonMsg.Status == 200) {\n")
+                                    .append("                                                    let url = res.data.host + '/' + res.data.key;\n")
+                                    .append("                                                    callback(url, { title: file.name });\n")
+                                    .append("                                                } else {\n")
+                                    .append("                                                    _this.$message.error('上传视频失败');\n")
+                                    .append("                                                    console.error(err);\n")
+                                    .append("                                                }\n")
+                                    .append("                                            });\n");
+                        }
+                        methodsBuilder
+                                .append("                                        } else {\n")
+                                .append("                                            console.error(res)\n")
+                                .append("                                            _this.$message.error('获取token失败');\n")
+                                .append("                                        }\n")
+                                .append("                                    }).catch(res => {\n")
+                                .append("                                        console.error(res)\n")
+                                .append("                                        _this.$message.error('获取token失败');\n")
+                                .append("                                    })\n")
+                                .append("                                }\n");
+                        methodsBuilder
+                                .append("                            }\n")
+                                .append("                        }\n")
                                 .append("                    },\n");
                     }
                     methodsBuilder
