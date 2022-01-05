@@ -1,6 +1,5 @@
 package com.appcnd.potato.config;
 
-import com.appcnd.potato.dao.BootDao;
 import com.appcnd.potato.dao.DbDao;
 import com.appcnd.potato.dao.MetaDao;
 import com.appcnd.potato.generate.boot.GenerateBoot;
@@ -117,13 +116,6 @@ public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
         log.info("创建 MetaDao");
         String data = getResource("MetaMapper.xml");
         return mapperBoot.registerMapper(data, MetaDao.class);
-    }
-
-    @Bean(name = BasicConstant.beanNamePrefix + "BootDao")
-    public BootDao bootDao(@Autowired MapperBoot mapperBoot) {
-        log.info("创建 BootDao");
-        String data = getResource("BootMapper.xml");
-        return mapperBoot.registerMapper(data, BootDao.class);
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "DbDao")
