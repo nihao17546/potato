@@ -14,7 +14,9 @@ import org.springframework.util.ReflectionUtils;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping;
 
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.util.Map;
 
 /**
  * created by nihao 2020/07/07
@@ -32,6 +34,18 @@ public class SpringContextUtil implements ApplicationContextAware {
     public void removeBean(String beanName) {
         log.info("卸载Bean:{}", beanName);
         beanFactory.removeBeanDefinition(beanName);
+        removeMergedBeanDefinitions(beanName);
+    }
+
+    private void removeMergedBeanDefinitions(String beanName) {
+        try {
+            Field field = beanFactory.getClass().getSuperclass().getSuperclass().getDeclaredField("mergedBeanDefinitions");
+            field.setAccessible(true);
+            Map map = (Map) field.get(beanFactory);
+            map.remove(beanName);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void destroySingleton(String beanName) {

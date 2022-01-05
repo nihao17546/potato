@@ -1,8 +1,12 @@
 package com.appcnd.potato.generate.boot;
 
 import lombok.Data;
+import org.apache.ibatis.binding.MapperRegistry;
+import org.apache.ibatis.session.SqlSessionFactory;
+import org.apache.ibatis.type.TypeAliasRegistry;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.util.*;
 
 /**
@@ -28,15 +32,81 @@ public class BootResult implements Serializable {
     private Map<String,Html> html;
     private String url;
 
-    private ClassLoader classLoader;
+    private PotatoClassLoader classLoader;
+
+    private SqlSessionFactory sqlSessionFactory;
 
     public void clear() {
-//        this.po = null;
-//        this.dto = null;
-//        this.vo = null;
-//        this.dao = null;
-//        this.services = null;
-//        this.html = null;
+        if (this.po != null) {
+            this.po.clear();
+        }
+        if (this.dto != null) {
+            this.dto.clear();
+        }
+        if (this.vo != null) {
+            this.vo.clear();
+        }
+        if (this.dao != null) {
+            this.dao.clear();
+        }
+        if (this.services != null) {
+            this.services.clear();
+        }
+        if (this.serviceImpls != null) {
+            this.serviceImpls.clear();
+        }
+        if (this.controllers != null) {
+            this.controllers.clear();
+        }
+        if (this.mappers != null) {
+            this.mappers.clear();
+        }
+        if (this.html != null) {
+            this.html.clear();
+        }
+        if (this.classLoader != null) {
+            this.classLoader.clear();
+        }
+        this.classLoader = null;
+        if (this.sqlSessionFactory != null && this.sqlSessionFactory.getConfiguration() != null) {
+            try {
+                TypeAliasRegistry typeAliasRegistry = this.sqlSessionFactory.getConfiguration().getTypeAliasRegistry();
+                Field[] fields = typeAliasRegistry.getClass().getDeclaredFields();
+                for (Field field : fields) {
+                    if (field.getType().equals(Map.class) || field.getType().equals(HashMap.class)) {
+                        field.setAccessible(true);
+                        Map map = (Map) field.get(typeAliasRegistry);
+                        map.clear();
+                        break;
+                    }
+                }
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            try {
+                Field[] fields = this.sqlSessionFactory.getConfiguration().getClass().getDeclaredFields();
+                for (Field field : fields) {
+                    if (field.getType().equals(MapperRegistry.class)) {
+                        field.setAccessible(true);
+                        MapperRegistry mapperRegistry = (MapperRegistry) field.get(this.sqlSessionFactory.getConfiguration());
+                        Field[] ff = mapperRegistry.getClass().getDeclaredFields();
+                        for (Field f : ff) {
+                            if (f.getType().equals(Map.class) || f.getType().equals(HashMap.class)) {
+                                f.setAccessible(true);
+                                Map map = (Map) f.get(mapperRegistry);
+                                map.clear();
+                                break;
+                            }
+                        }
+                        break;
+                    }
+                }
+
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+            this.sqlSessionFactory = null;
+        }
     }
 
     public void addHtml(String path, String source) {

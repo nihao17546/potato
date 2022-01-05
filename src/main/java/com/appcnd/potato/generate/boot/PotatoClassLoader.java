@@ -5,11 +5,13 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.FileChannel;
 import java.nio.channels.WritableByteChannel;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -25,6 +27,20 @@ public class PotatoClassLoader extends ClassLoader {
         this.path = classPath;
         this.parent = parent;
         this.classMap = new ConcurrentHashMap<>();
+    }
+
+    void clear() {
+        this.classMap.clear();
+        this.path = null;
+        this.parent = null;
+        try {
+            Field field = this.getClass().getSuperclass().getDeclaredField("classes");
+            field.setAccessible(true);
+            Vector vector = (Vector) field.get(this);
+            vector.clear();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

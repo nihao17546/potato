@@ -79,8 +79,9 @@ public class GenerateBoot {
                             log.info("目录:{}已清空", path);
                         }
                     }
-                    System.gc();
-                    return bootResult.getHtml().keySet();
+                    Set<String> htmls = bootResult.getHtml().keySet();
+                    bootResult.clear();
+                    return htmls;
                 }
             }
         }
@@ -347,6 +348,7 @@ public class GenerateBoot {
                     String springBeanNamePrefix = bootResult.getId().toString() + "@";
                     try {
                         SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
+                        bootResult.setSqlSessionFactory(sqlSessionFactory);
                         for (BootResult.Mapper mapper : bootResult.getMappers()) {
                             String beanId = springBeanNamePrefix + mapper.getMapperId();
                             daoSet.add(beanId);
