@@ -604,14 +604,11 @@ public class ListComponentHandler extends ComponentHandler {
             String voListName = getSqlParam(sqlParams, "voList");
             serviceGetListImplContentBuilder.append("            ")
                     .append(List.class.getName() + "<" + request.getClassName().getVoClassName() + "> ")
-                    .append(voListName).append(" = ").append(listName)
-                    .append(".stream().map(po -> {\n")
-                    .append("                return new ")
-                    .append(request.getClassName().getVoClassName()).append("(po);\n")
-                    .append("            }).collect(");
-            serviceGetListImpl.addContentClass(Collectors.class.getName());
-            serviceGetListImplContentBuilder.append(Collectors.class.getName()).append(".toList());\n");
-
+                    .append(voListName).append(" = new ").append(ArrayList.class.getName()).append("();\n");
+            serviceGetListImpl.addContentClass(ArrayList.class.getName());
+            serviceGetListImplContentBuilder.append("            for (").append(resultType).append(" po : ").append(listName).append(") {\n");
+            serviceGetListImplContentBuilder.append("                ").append(voListName).append(".add(new ").append(request.getClassName().getVoClassName()).append("(po)").append(");\n");
+            serviceGetListImplContentBuilder.append("            }\n");
             String lisVOName = getSqlParam(sqlParams, "listVO");
             serviceGetListImplContentBuilder.append("            ")
                     .append(listVOClass.getClassName()).append(" ").append(lisVOName)
@@ -675,13 +672,11 @@ public class ListComponentHandler extends ComponentHandler {
             String voListName = getSqlParam(sqlParams, "voList");
             serviceGetListImplContentBuilder.append("        ")
                     .append(List.class.getName() + "<" + request.getClassName().getVoClassName() + "> ")
-                    .append(voListName).append(" = ").append(listName)
-                    .append(".stream().map(po -> {\n")
-                    .append("            return new ")
-                    .append(request.getClassName().getVoClassName()).append("(po);\n")
-                    .append("        }).collect(");
-            serviceGetListImpl.addContentClass(Collectors.class.getName());
-            serviceGetListImplContentBuilder.append(Collectors.class.getName()).append(".toList());\n");
+                    .append(voListName).append(" = new ").append(ArrayList.class.getName()).append("();\n");
+            serviceGetListImpl.addContentClass(ArrayList.class.getName());
+            serviceGetListImplContentBuilder.append("            for (").append(resultType).append(" po : ").append(listName).append(") {\n");
+            serviceGetListImplContentBuilder.append("                ").append(voListName).append(".add(new ").append(request.getClassName().getVoClassName()).append("(po)").append(");\n");
+            serviceGetListImplContentBuilder.append("            }\n");
             serviceGetListImplContentBuilder.append("        return ").append(voListName).append(";\n");
         }
 
