@@ -4,3 +4,4 @@
 * tinymce富文本视频上传进度条
 * tinymce富文本在dialog全屏的时候z-index处理
 * 表单分类显示
+* 表结构更新处理
