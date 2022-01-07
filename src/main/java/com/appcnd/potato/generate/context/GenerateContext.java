@@ -1,6 +1,7 @@
 package com.appcnd.potato.generate.context;
 
 import com.appcnd.potato.meta.conf.db.Column;
+import com.appcnd.potato.model.param.response.ResponseParam;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -40,6 +41,10 @@ public class GenerateContext {
 
     @Getter
     private Set<String> needLoadClasses;
+
+    @Getter
+    @Setter
+    private ResponseParam responseParam;
 
     public void addNeedLoadClasse(String className) {
         if (needLoadClasses == null) {

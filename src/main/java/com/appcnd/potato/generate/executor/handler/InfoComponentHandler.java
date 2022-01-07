@@ -171,7 +171,8 @@ public class InfoComponentHandler extends ComponentHandler {
         controllerGetInfoMethod.addAnnotation(requestMapping);
         controllerGetInfoMethod.addContentClass(request.getClassName().getPoClassName());
         controllerGetInfoMethod.addContentClass(request.getClassName().getVoClassName());
-        controllerGetInfoMethod.setReturnString(request.getClassName().getVoClassName());
+        controllerGetInfoMethod.addContentClass(request.getResponseVoSetting().getClassName());
+        controllerGetInfoMethod.setReturnString(request.getResponseVoSetting().getClassName());
         controllerGetInfoMethod.addParam(controllerParamInfoList);
         ClassField serviceClassField = null;
         for (ClassField classField : request.getControllerClass().getFields()) {
@@ -181,11 +182,24 @@ public class InfoComponentHandler extends ComponentHandler {
             }
         }
         StringBuilder controllerContentBuilder = new StringBuilder();
-        controllerContentBuilder.append("        return this.").append(serviceClassField.getName()).append(".getSingle(");
+        controllerContentBuilder.append("        ").append(request.getResponseVoSetting().getClassName())
+                .append(" result = new ").append(request.getResponseVoSetting().getClassName()).append("();\n");
+        controllerContentBuilder.append("        ").append(request.getClassName().getVoClassName())
+                .append(" vo = this.").append(serviceClassField.getName()).append(".getSingle(");
         if (serviceParamBuilder.length() > 0) {
             controllerContentBuilder.append(serviceParamBuilder.toString());
         }
         controllerContentBuilder.append(");\n");
+        controllerContentBuilder
+                .append("        if (vo == null) {\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetErrorMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(\"未找到\");\n")
+                .append("        } else {\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetSuccessMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(\"OK\");\n")
+                .append("            result.").append(request.getResponseVoSetting().getContentSetMethod()).append("(vo);\n")
+                .append("        }\n")
+                .append("        return result;\n");
         controllerGetInfoMethod.setContent(controllerContentBuilder.toString());
         request.getControllerClass().addMethod(controllerGetInfoMethod);
 

@@ -102,8 +102,8 @@ public class DelComponentHandler extends ComponentHandler {
         controllerMethod.addAnnotation(requestMapping);
         controllerMethod.addContentClass(className.getPoClassName());
         controllerMethod.addContentClass(Map.class.getName());
-        controllerMethod.addContentClass(HashMap.class.getName());
-        controllerMethod.setReturnString(Map.class.getName());
+        controllerMethod.addContentClass(request.getResponseVoSetting().getClassName());
+        controllerMethod.setReturnString(request.getResponseVoSetting().getClassName());
         controllerMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
         ClassField serviceClassField = null;
         for (ClassField classField : controllerClass.getFields()) {
@@ -112,19 +112,22 @@ public class DelComponentHandler extends ComponentHandler {
                 break;
             }
         }
+
         StringBuilder controllerContentBuilder = new StringBuilder();
-        controllerContentBuilder.append("        ").append(Map.class.getName()).append(" result = new ").append(HashMap.class.getName()).append("();\n");
-        controllerContentBuilder.append("        try {\n")
+        controllerContentBuilder.append("        ").append(request.getResponseVoSetting().getClassName())
+                .append(" result = new ").append(request.getResponseVoSetting().getClassName()).append("();\n");
+        controllerContentBuilder
+                .append("        try {\n")
                 .append("            this.").append(serviceClassField.getName()).append(".delete(param);\n")
-                .append("            result.put(\"code\", 0);\n")
-                .append("            result.put(\"message\", \"OK\");\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetSuccessMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(\"删除成功!\");\n")
                 .append("        } catch (Exception e) {\n")
-                .append("            result.put(\"code\", 1);\n")
-                .append("            result.put(\"message\", e.getMessage());\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetErrorMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(e.getMessage());\n")
                 .append("        }\n")
                 .append("        return result;\n");
         controllerMethod.setContent(controllerContentBuilder.toString());
-        controllerClass.addMethod(controllerMethod);
+        request.getControllerClass().addMethod(controllerMethod);
 
 
         ComponentExecutor.El el = new ComponentExecutor.El();

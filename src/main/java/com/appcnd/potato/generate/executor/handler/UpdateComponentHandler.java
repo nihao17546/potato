@@ -205,8 +205,8 @@ public class UpdateComponentHandler extends ComponentHandler {
         controllerMethod.addContentClass(className.getPoClassName());
         controllerMethod.addContentClass(className.getVoClassName());
         controllerMethod.addContentClass(Map.class.getName());
-        controllerMethod.addContentClass(HashMap.class.getName());
-        controllerMethod.setReturnString(Map.class.getName());
+        controllerMethod.addContentClass(request.getResponseVoSetting().getClassName());
+        controllerMethod.setReturnString(request.getResponseVoSetting().getClassName());
         ParamInfo controllerParam = new ParamInfo(className.getPoClassName(), "param");
         controllerParam.addAnnotation(new AnnotationInfo(RequestBody.class.getName()));
         controllerMethod.addParam(controllerParam);
@@ -217,15 +217,18 @@ public class UpdateComponentHandler extends ComponentHandler {
                 break;
             }
         }
+
         StringBuilder controllerContentBuilder = new StringBuilder();
-        controllerContentBuilder.append("        ").append(Map.class.getName()).append(" result = new ").append(HashMap.class.getName()).append("();\n");
-        controllerContentBuilder.append("        try {\n")
+        controllerContentBuilder.append("        ").append(request.getResponseVoSetting().getClassName())
+                .append(" result = new ").append(request.getResponseVoSetting().getClassName()).append("();\n");
+        controllerContentBuilder
+                .append("        try {\n")
                 .append("            this.").append(serviceClassField.getName()).append(".update(param);\n")
-                .append("            result.put(\"code\", 0);\n")
-                .append("            result.put(\"message\", \"OK\");\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetSuccessMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(\"更新成功!\");\n")
                 .append("        } catch (Exception e) {\n")
-                .append("            result.put(\"code\", 1);\n")
-                .append("            result.put(\"message\", e.getMessage());\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetErrorMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(e.getMessage());\n")
                 .append("        }\n")
                 .append("        return result;\n");
         controllerMethod.setContent(controllerContentBuilder.toString());

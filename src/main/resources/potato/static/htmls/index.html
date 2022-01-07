@@ -154,6 +154,63 @@
                     </template>
                 </el-table-column>
             </el-table>
+            <el-form-item label="指定http响应实体">
+                <el-switch v-model="generate.useResponse" @change="useResponseChange"></el-switch>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse" prop="responseClassName" label="响应实体类名"
+                          :rules="[{required: true, message: '请填写正确的类名', validator: validateClassName, trigger: 'change', javas: javas}]">
+                <el-input v-model="generate.responseClassName" placeholder="请填写实体类名" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse" prop="responseStatusField" label="响应状态属性名"
+                          :rules="[{required: true, message: '请填写正确的状态属性名', trigger: 'change'}]">
+                <el-input v-model="generate.responseStatusField" placeholder="请填写状态属性名" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse" prop="responseMessageField" label="响应提示信息属性名"
+                          :rules="[{required: true, message: '请填写正确的提示信息属性名', trigger: 'change'}]">
+                <el-input v-model="generate.responseMessageField" placeholder="请填写提示信息属性名" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse" prop="responseContentField" label="响应内容属性名"
+                          :rules="[{required: true, message: '请填写正确的内容属性名', trigger: 'change'}]">
+                <el-input v-model="generate.responseContentField" placeholder="请填写内容属性名" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse" prop="responseStatusType" label="响应状态属性类型"
+                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                <el-select @change="responseStatusTypeChange" style="width: 100%;" v-model="generate.responseStatusType" placeholder="请选择类型">
+                    <el-option key="integer" label="数字类型" value="integer"></el-option>
+                    <el-option key="boolean" label="布尔类型" value="boolean"></el-option>
+                    <el-option key="string" label="字符串类型" value="string"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse && generate.responseStatusType=='string'" prop="responseSuccessStatus" label="成功状态值"
+                          :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                <el-input v-model="generate.responseSuccessStatus" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse && generate.responseStatusType=='integer'" prop="responseSuccessStatus" label="成功状态值"
+                          :rules="[{required: true, message: '请填写正确的数字格式内容',validator: validateAllNumber, trigger: 'change'}]">
+                <el-input v-model="generate.responseSuccessStatus" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse && generate.responseStatusType=='boolean'" prop="responseSuccessStatus" label="成功状态值"
+                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                <el-select style="width: 100%" v-model="generate.responseSuccessStatus" clearable>
+                    <el-option :key="true" label="TRUE" :value="true"></el-option>
+                    <el-option :key="false" label="FALSE" :value="false"></el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse && generate.responseStatusType=='string'" prop="responseErrorStatus" label="异常状态值"
+                          :rules="[{required: true, message: '请填写', trigger: 'change'}]">
+                <el-input v-model="generate.responseErrorStatus" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse && generate.responseStatusType=='integer'" prop="responseErrorStatus" label="异常状态值"
+                          :rules="[{required: true, message: '请填写正确的数字格式内容',validator: validateAllNumber, trigger: 'change'}]">
+                <el-input v-model="generate.responseErrorStatus" clearable/>
+            </el-form-item>
+            <el-form-item v-if="generate.useResponse && generate.responseStatusType=='boolean'" prop="responseErrorStatus" label="异常状态值"
+                          :rules="[{required: true, message: '请选择', trigger: 'change'}]">
+                <el-select style="width: 100%" v-model="generate.responseErrorStatus" clearable>
+                    <el-option :key="true" label="TRUE" :value="true"></el-option>
+                    <el-option :key="false" label="FALSE" :value="false"></el-option>
+                </el-select>
+            </el-form-item>
         </el-form>
         <div style="text-align: right">
             <el-button @click="generateClose" size="mini" :disabled="loading">取 消</el-button>
@@ -230,6 +287,34 @@
             }
         }
     }
+    function validateClassName(rule, value, callback) {
+        if (typeof value == 'undefined' || value == null || value == '') {
+            if (rule.required) {
+                callback(new Error(rule.message));
+            } else {
+                callback();
+            }
+        } else {
+            if((/^([a-zA-Z_$][a-zA-Z\d_$]*\.)*[a-zA-Z_$][a-zA-Z\d_$]*$/.test(value))){
+                if (rule.javas && rule.javas.length > 0) {
+                    let ss = value.split(".");
+                    for (let i = 0;i < ss.length; i ++) {
+                        if (rule.javas.indexOf(ss[i]) > -1) {
+                            callback(new Error(rule.message));
+                            return
+                        } else {
+                            callback();
+                            return
+                        }
+                    }
+                } else {
+                    callback();
+                }
+            } else {
+                callback(new Error(rule.message));
+            }
+        }
+    }
     new Vue({
         name: 'index',
         el: '#app',
@@ -253,7 +338,15 @@
                 generate: {
                     visible: false,
                     form: [],
-                    packageName: null
+                    packageName: null,
+                    useResponse: false,
+                    responseClassName: null,
+                    responseStatusField: null,
+                    responseMessageField: null,
+                    responseContentField: null,
+                    responseStatusType: null,
+                    responseSuccessStatus: null,
+                    responseErrorStatus: null
                 },
                 javas: [],
                 bootCode: {
@@ -264,6 +357,35 @@
             }
         },
         methods: {
+            responseStatusTypeChange() {
+                if (this.generate.responseStatusType) {
+                    if (this.generate.responseStatusType == 'integer') {
+                        this.generate.responseSuccessStatus = 0
+                        this.generate.responseErrorStatus = 1
+                    } else if (this.generate.responseStatusType == 'boolean') {
+                        this.generate.responseSuccessStatus = true
+                        this.generate.responseErrorStatus = false
+                    } else if (this.generate.responseStatusType == 'string') {
+                        this.generate.responseSuccessStatus = ''
+                        this.generate.responseErrorStatus = ''
+                    }
+                } else {
+                    this.generate.responseSuccessStatus = null
+                    this.generate.responseErrorStatus = null
+                }
+                this.generate = JSON.parse(JSON.stringify(this.generate))
+            },
+            useResponseChange() {
+                if (!this.generate.useResponse) {
+                    this.generate.responseClassName = null
+                    this.generate.responseStatusField = null
+                    this.generate.responseMessageField = null
+                    this.generate.responseContentField = null
+                    this.generate.responseStatusType = null
+                    this.generate.responseSuccessStatus = null
+                    this.generate.responseErrorStatus = null
+                }
+            },
             handleNodeClick(data) {
                 this.code = data.content
                 console.log(this.code)
@@ -310,7 +432,15 @@
                 this.generate = {
                     visible: false,
                     form: [],
-                    packageName: null
+                    packageName: null,
+                    useResponse: false,
+                    responseClassName: null,
+                    responseStatusField: null,
+                    responseMessageField: null,
+                    responseContentField: null,
+                    responseStatusType: null,
+                    responseSuccessStatus: null,
+                    responseErrorStatus: null
                 }
             },
             showGenerate(row) {
@@ -361,6 +491,18 @@
                 this.$refs['generateForm'].validate((valid) => {
                     if (valid) {
                         this.loading = true;
+                        let responseParam = null
+                        if (this.generate.useResponse) {
+                            responseParam = {
+                                statusType: this.generate.responseStatusType,
+                                className: this.generate.responseClassName,
+                                statusField: this.generate.responseStatusField,
+                                messageField: this.generate.responseMessageField,
+                                contentField: this.generate.responseContentField,
+                                successStatus: this.generate.responseSuccessStatus,
+                                errorStatus: this.generate.responseErrorStatus
+                            }
+                        }
                         axios({
                             url: window.contextPath + '/meta/generate',
                             method: 'post',
@@ -368,7 +510,8 @@
                             data: {
                                 id: this.generate.id,
                                 packageName: this.generate.packageName,
-                                entityNames: this.generate.form
+                                entityNames: this.generate.form,
+                                responseParam: responseParam
                             }
                         }).then(res => {
                             if (res.data.type == 'application/json') {

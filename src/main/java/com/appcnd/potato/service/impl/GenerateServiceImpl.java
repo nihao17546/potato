@@ -129,6 +129,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 Collectors.toMap(GenerateParam.Entity::getTable, GenerateParam.Entity::getClazz));
 
         GenerateContext context = new GenerateContext();
+        context.setResponseParam(param.getResponseParam());
         context.setPackageName(param.getPackageName());
         context.setColumnMap(getColumnMap(config.getDbConf()));
         context.setMainClassName(new ClassName(param.getPackageName(), entityMap.get(config.getDbConf().getTable().getName())));
@@ -140,7 +141,7 @@ public class GenerateServiceImpl implements IGenerateService {
             listRequestPath = BootConstant.requestPrefix + CommonUtil.getClassNameField(context.getMainClassName().getEntityName()) + "/list";
         }
         FrontContext frontContext = new FrontContext(config.getBasic().getTitle(), listRequestPath,
-                config.getTable(), config.getSearchForm(), path, config.getStorage());
+                config.getTable(), config.getSearchForm(), path, config.getStorage(), param.getResponseParam());
         context.setFrontContext(frontContext);
         if (config.getDbConf().getAssociationTables() != null) {
             for (FollowTable followTable : config.getDbConf().getAssociationTables()) {
@@ -168,7 +169,7 @@ public class GenerateServiceImpl implements IGenerateService {
                 context.getFrontContext().addFollow(followListRequestPath,
                         config.getTable().getFollows().get(index), followSearch,
                         followTable.getForeignKey(), followTable.getName(),
-                        followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath, config.getStorage());
+                        followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath, config.getStorage(), param.getResponseParam());
                 index ++;
             }
         }
@@ -194,6 +195,18 @@ public class GenerateServiceImpl implements IGenerateService {
         }
         if (classMap != null) {
             map.putAll(classMap);
+        }
+        // ResponseVo
+        if (context.getResponseParam() == null) {
+            String path = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator +
+                    (context.getPackageName() + ".pojo.vo").replaceAll("\\.", Matcher.quoteReplacement(File.separator)) + File.separator + "ResponseVo.java";
+            String content = CommonUtil.readFromResource("codeless/backend/ResponseVo.java");
+            Map<String,String> datas = new HashMap<>();
+            datas.put("basePackageName", context.getPackageName());
+            datas.put("version", config.getBasic().getVersion().toString());
+            datas.put("now", SimpleDateUtil.format(new Date()));
+            String bytes = new StringSubstitutor(datas).replace(content);
+            map.put(path, bytes);
         }
         // 对象存储
         if (config.getStorage() != null) {

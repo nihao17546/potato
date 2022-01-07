@@ -706,73 +706,8 @@ public class ListComponentHandler extends ComponentHandler {
         controllerGetListMethod.setContent(controllerListContentBuilder.toString());
         request.getControllerClass().addMethod(controllerGetListMethod);
 
-//        elList.addAll(getOthers(request.getSearchForm(), request.getDaoClass(), request.getControllerClass(), request.getClassName()));
-
         return elList;
     }
-
-//    private List<ComponentExecutor.El> getOthers(SearchForm searchForm, JavaClassContext daoClass, JavaClassContext controllerClass, ClassName className) {
-//        List<ComponentExecutor.El> elList = new ArrayList<>();
-//        // 校验是否有远程下拉框
-//        List<RemoteSelectSearchElement> remoteSelectSearchElementList = new ArrayList<>();
-//        if (searchForm != null && searchForm.getElements() != null) {
-//            for (SearchElement searchElement : searchForm.getElements()) {
-//                if (searchElement instanceof RemoteSelectSearchElement) {
-//                    RemoteSelectSearchElement remote = (RemoteSelectSearchElement) searchElement;
-//                    if (!remoteSelectSearchElementList.contains(remote)) {
-//                        remoteSelectSearchElementList.add(remote);
-//                    }
-//                }
-//            }
-//        }
-//        if (!remoteSelectSearchElementList.isEmpty()) {
-//            AnnotationInfo annotationInfo = new AnnotationInfo(Autowired.class.getName());
-//            ClassField classField = new ClassField("private", className.getDaoClassName(), annotationInfo);
-//            if (!controllerClass.hasField(classField)) {
-//                controllerClass.addField(classField);
-//            }
-//            for (RemoteSelectSearchElement element : remoteSelectSearchElementList) {
-//                String methodName = "getRemote" + element.hashCode();
-//                methodName = methodName.replaceAll("-", "_");
-//
-//                ComponentExecutor.El el = new ComponentExecutor.El();
-//                el.setId(methodName);
-//                el.setType("select");
-//                el.setResultType(Map.class.getName());
-//                el.setSql(element.getSql());
-//                elList.add(el);
-//
-//                MethodInfo daoMethod = new MethodInfo();
-//                daoMethod.setHasContent(false);
-//                daoMethod.setMethodName(methodName);
-//                daoMethod.addContentClass(Map.class.getName());
-//                daoMethod.addContentClass(List.class.getName());
-//                daoMethod.setReturnString(List.class.getName() + "<" + Map.class.getName() + ">");
-//                daoClass.addMethod(daoMethod);
-//
-//                MethodInfo controllerMethod = new MethodInfo();
-//                controllerMethod.setDecorate("public");
-//                controllerMethod.setHasContent(true);
-//                controllerMethod.setMethodName(methodName);
-//                controllerMethod.addAnnotation(new AnnotationInfo(ResponseBody.class.getName()));
-//                AnnotationInfo requestMapping = new AnnotationInfo(RequestMapping.class.getName());
-//                requestMapping.addField("value", BootConstant.requestPrefix + methodName);
-//                requestMapping.addField("produces", "application/json;charset=UTF-8");
-//                controllerMethod.addAnnotation(requestMapping);
-//                controllerMethod.addContentClass(Map.class.getName());
-//                controllerMethod.addContentClass(List.class.getName());
-//                controllerMethod.setReturnString(List.class.getName() + "<" + Map.class.getName() + ">");
-//
-//                StringBuilder sb = new StringBuilder();
-//                sb.append("        return this.").append(classField.getName()).append(".").append(methodName).append("();\n");
-//                controllerMethod.setContent(sb.toString());
-//
-//                controllerClass.addMethod(controllerMethod);
-//            }
-//        }
-//
-//        return elList;
-//    }
 
     private String getSqlParam(Set<String> params, String param) {
         if (params.contains(param)) {

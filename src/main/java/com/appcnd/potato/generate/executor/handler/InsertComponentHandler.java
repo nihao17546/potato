@@ -226,9 +226,8 @@ public class InsertComponentHandler extends ComponentHandler {
         controllerMethod.addAnnotation(requestMapping);
         controllerMethod.addContentClass(request.getClassName().getPoClassName());
         controllerMethod.addContentClass(request.getClassName().getVoClassName());
-        controllerMethod.addContentClass(Map.class.getName());
-        controllerMethod.addContentClass(HashMap.class.getName());
-        controllerMethod.setReturnString(Map.class.getName());
+        controllerMethod.addContentClass(request.getResponseVoSetting().getClassName());
+        controllerMethod.setReturnString(request.getResponseVoSetting().getClassName());
         ParamInfo controllerParam = new ParamInfo(request.getClassName().getPoClassName(), "param");
         controllerParam.addAnnotation(new AnnotationInfo(RequestBody.class.getName()));
         controllerMethod.addParam(controllerParam);
@@ -240,14 +239,16 @@ public class InsertComponentHandler extends ComponentHandler {
             }
         }
         StringBuilder controllerContentBuilder = new StringBuilder();
-        controllerContentBuilder.append("        ").append(Map.class.getName()).append(" result = new ").append(HashMap.class.getName()).append("();\n");
-        controllerContentBuilder.append("        try {\n")
+        controllerContentBuilder.append("        ").append(request.getResponseVoSetting().getClassName())
+                .append(" result = new ").append(request.getResponseVoSetting().getClassName()).append("();\n");
+        controllerContentBuilder
+                .append("        try {\n")
                 .append("            this.").append(serviceClassField.getName()).append(".save(param);\n")
-                .append("            result.put(\"code\", 0);\n")
-                .append("            result.put(\"message\", \"OK\");\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetSuccessMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(\"创建成功!\");\n")
                 .append("        } catch (Exception e) {\n")
-                .append("            result.put(\"code\", 1);\n")
-                .append("            result.put(\"message\", e.getMessage());\n")
+                .append("            result.").append(request.getResponseVoSetting().getSetErrorMethod()).append(";\n")
+                .append("            result.").append(request.getResponseVoSetting().getMessageSetMethod()).append("(e.getMessage());\n")
                 .append("        }\n")
                 .append("        return result;\n");
         controllerMethod.setContent(controllerContentBuilder.toString());

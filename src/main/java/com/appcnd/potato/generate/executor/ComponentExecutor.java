@@ -149,6 +149,7 @@ public class ComponentExecutor extends Executor {
     private Pair<HandlerRequest,List<HandlerRequest>> handlerRequest() {
         // 主表
         HandlerRequest handlerRequest = new HandlerRequest();
+        handlerRequest.setResponseVo(context.getResponseParam());
         handlerRequest.setVersion(config.getBasic().getVersion());
         handlerRequest.setContext(context);
         Map<String,String> columnMap = getFieldMap(config.getDbConf().getTable(), config.getDbConf().getAssociationTables());
@@ -187,6 +188,7 @@ public class ComponentExecutor extends Executor {
                 }
 
                 HandlerRequest request = new HandlerRequest();
+                request.setResponseVo(context.getResponseParam());
                 request.setVersion(config.getBasic().getVersion());
                 request.setContext(context);
                 request.setColumnMap(getFieldMap(table, null));

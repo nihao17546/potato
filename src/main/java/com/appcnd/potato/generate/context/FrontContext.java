@@ -6,6 +6,10 @@ import com.appcnd.potato.meta.conf.form.storage.Storage;
 import com.appcnd.potato.meta.conf.table.UIColumn;
 import com.appcnd.potato.meta.conf.table.UIFollowTable;
 import com.appcnd.potato.meta.conf.table.UITable;
+import com.appcnd.potato.model.param.response.BooleanResponse;
+import com.appcnd.potato.model.param.response.IntegerResponse;
+import com.appcnd.potato.model.param.response.ResponseParam;
+import com.appcnd.potato.model.param.response.StringResponse;
 import com.appcnd.potato.util.FieldUtil;
 import lombok.Data;
 import org.springframework.util.CollectionUtils;
@@ -43,6 +47,8 @@ public class FrontContext {
     private Set<RemoteContext> remoteContexts;
     private Storage storage;
 
+    private ResponseVoSetting responseVoSetting;
+
     public void addRemoteContext(RemoteContext remoteContext) {
         if (remoteContexts == null) {
             remoteContexts = new HashSet<>();
@@ -50,7 +56,7 @@ public class FrontContext {
         remoteContexts.add(remoteContext);
     }
 
-    public FrontContext(String title, String listRequest, UITable uiTable, SearchForm searchForm, String path, Storage storage) {
+    public FrontContext(String title, String listRequest, UITable uiTable, SearchForm searchForm, String path, Storage storage, ResponseParam responseParam) {
         this.title = title;
         this.listRequest = listRequest;
         this.infoRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/getInfo";
@@ -70,14 +76,39 @@ public class FrontContext {
                 this.searchElements.add(elementContext);
             }
         }
+        this.responseVoSetting = new ResponseVoSetting();
+        if (responseParam != null) {
+            responseVoSetting.setStatusKey(responseParam.getStatusField());
+            responseVoSetting.setMessageKey(responseParam.getMessageField());
+            responseVoSetting.setContentKey(responseParam.getContentField());
+            if (responseParam instanceof IntegerResponse) {
+                IntegerResponse response = (IntegerResponse) responseParam;
+                responseVoSetting.setSuccessValue(response.getSuccessStatus().toString());
+                responseVoSetting.setErrorValue(response.getSuccessStatus().toString());
+            } else if (responseParam instanceof BooleanResponse) {
+                BooleanResponse response = (BooleanResponse) responseParam;
+                responseVoSetting.setSuccessValue(response.getSuccessStatus().toString());
+                responseVoSetting.setErrorValue(response.getSuccessStatus().toString());
+            } else if (responseParam instanceof StringResponse) {
+                StringResponse response = (StringResponse) responseParam;
+                responseVoSetting.setSuccessValue("'" + response.getSuccessStatus() + "'");
+                responseVoSetting.setErrorValue("'" + response.getSuccessStatus() + "'");
+            }
+        } else {
+            responseVoSetting.setStatusKey("code");
+            responseVoSetting.setMessageKey("message");
+            responseVoSetting.setContentKey("data");
+            responseVoSetting.setSuccessValue("0");
+            responseVoSetting.setErrorValue("1");
+        }
     }
 
     public void addFollow(String listRequest, UIFollowTable uiTable, SearchForm searchForm, String foreignKey, String table,
-                          String parentKey, String parentTable, String path , Storage storage) {
+                          String parentKey, String parentTable, String path , Storage storage, ResponseParam responseParam) {
         if (follows == null) {
             follows = new ArrayList<>();
         }
-        FrontContext frontContext = new FrontContext(uiTable.getBottom(), listRequest, uiTable, searchForm, path, storage);
+        FrontContext frontContext = new FrontContext(uiTable.getBottom(), listRequest, uiTable, searchForm, path, storage, responseParam);
         frontContext.setForeignKey(foreignKey);
         frontContext.setParentKey(parentKey);
         frontContext.setParentTable(parentTable);
@@ -104,5 +135,14 @@ public class FrontContext {
 
     public String getProp(UIColumn column) {
         return propMap.get(FieldUtil.getField(column.getTable(), column.getColumn().getField()));
+    }
+
+    @Data
+    public static class ResponseVoSetting {
+        private String statusKey;
+        private String messageKey;
+        private String contentKey;
+        private String successValue;
+        private String errorValue;
     }
 }
