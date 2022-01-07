@@ -293,6 +293,9 @@ public class GenerateBoot {
                     for (BootResult.Java java : bootResult.getVo()) {
                         javas.add(java);
                     }
+                    for (BootResult.Java java : bootResult.getParam()) {
+                        javas.add(java);
+                    }
                     for (BootResult.Java java : bootResult.getDao()) {
                         javas.add(java);
                     }

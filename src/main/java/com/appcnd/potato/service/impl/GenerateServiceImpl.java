@@ -338,6 +338,8 @@ public class GenerateServiceImpl implements IGenerateService {
                     result.getDto().add(java);
                 } else if (classFullName.endsWith("Vo") || classFullName.endsWith("VO")) {
                     result.getVo().add(java);
+                } else if (classFullName.endsWith("Req")) {
+                    result.getParam().add(java);
                 } else if (classFullName.endsWith("Dao")) {
                     result.getDao().add(java);
                 } else if (classFullName.endsWith("Service")) {

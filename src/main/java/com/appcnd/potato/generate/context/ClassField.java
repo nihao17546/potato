@@ -5,6 +5,7 @@ import com.appcnd.potato.util.CommonUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -12,7 +13,7 @@ import java.util.Objects;
 /**
  * @author nihao 2021/07/11
  */
-public class ClassField {
+public class ClassField implements Serializable {
     @Getter
     private String decorate = "";
 
@@ -52,7 +53,7 @@ public class ClassField {
         }
     }
 
-    private void addAnnotation(AnnotationInfo annotation) {
+    public void addAnnotation(AnnotationInfo annotation) {
         if (annotations == null) {
             annotations = new ArrayList<>();
         }

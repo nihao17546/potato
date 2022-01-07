@@ -13,6 +13,9 @@ public class ClassName {
     private String poClassName;
     private String voClassName;
     private String dtoClassName;
+    private String insertReqClassName;
+    private String updateReqClassName;
+    private String deleteReqClassName;
 
     private String daoClassName;
     private String serviceClassName;
@@ -25,6 +28,9 @@ public class ClassName {
         poClassName = packageName + ".pojo.po." + entityName + "Po";
         voClassName = packageName + ".pojo.vo." + entityName + "Vo";
         dtoClassName = packageName + ".pojo.dto." + entityName + "Dto";
+        insertReqClassName = packageName + ".pojo.param." + entityName + "InsertReq";
+        updateReqClassName = packageName + ".pojo.param." + entityName + "UpdateReq";
+        deleteReqClassName = packageName + ".pojo.param." + entityName + "DeleteReq";
         daoClassName = packageName + ".dao." + entityName + "Dao";
         serviceClassName = packageName + ".service." + entityName + "Service";
         serviceImplClassName = packageName + ".service.impl." + entityName + "ServiceImpl";

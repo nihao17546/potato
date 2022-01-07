@@ -14,6 +14,7 @@ import com.appcnd.potato.util.SqlStringBuilder;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
@@ -67,9 +68,9 @@ public class DelComponentHandler extends ComponentHandler {
 
         MethodInfo serviceMethod = new MethodInfo();
         serviceMethod.setHasContent(false);
-        serviceMethod.addContentClass(className.getPoClassName());
+        serviceMethod.addContentClass(className.getDeleteReqClassName());
         serviceMethod.setMethodName("delete");
-        serviceMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
+        serviceMethod.addParam(new ParamInfo(className.getDeleteReqClassName(), "param"));
         serviceClass.addMethod(serviceMethod);
 
         MethodInfo serviceImplMethod = new MethodInfo();
@@ -77,9 +78,12 @@ public class DelComponentHandler extends ComponentHandler {
         serviceImplMethod.setHasContent(true);
         serviceImplMethod.addAnnotation(new AnnotationInfo(Override.class.getName()));
         serviceImplMethod.addContentClass(className.getPoClassName());
+        serviceImplMethod.addContentClass(className.getDeleteReqClassName());
         serviceImplMethod.setMethodName("delete");
-        serviceImplMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
+        serviceImplMethod.addParam(new ParamInfo(className.getDeleteReqClassName(), "param"));
         StringBuilder serviceContentBuilder = new StringBuilder();
+        serviceContentBuilder.append("        ").append(request.getClassName().getPoClassName())
+                .append(" po = param.transferToPo();\n");
         ClassField daoClassField = null;
         for (ClassField classField : serviceImplClass.getFields()) {
             if (classField.getClassName().equals(daoClass.getClassName())) {
@@ -87,7 +91,7 @@ public class DelComponentHandler extends ComponentHandler {
                 break;
             }
         }
-        serviceContentBuilder.append("        this.").append(daoClassField.getName()).append(".delete(param);\n");
+        serviceContentBuilder.append("        this.").append(daoClassField.getName()).append(".delete(po);\n");
         serviceImplMethod.setContent(serviceContentBuilder.toString());
         serviceImplClass.addMethod(serviceImplMethod);
 
@@ -100,11 +104,13 @@ public class DelComponentHandler extends ComponentHandler {
         requestMapping.addField("value", frontContext.getDeleteRequest());
         requestMapping.addField("produces", "application/json;charset=UTF-8");
         controllerMethod.addAnnotation(requestMapping);
-        controllerMethod.addContentClass(className.getPoClassName());
+        controllerMethod.addContentClass(className.getDeleteReqClassName());
         controllerMethod.addContentClass(Map.class.getName());
         controllerMethod.addContentClass(request.getResponseVoSetting().getClassName());
         controllerMethod.setReturnString(request.getResponseVoSetting().getClassName());
-        controllerMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
+        ParamInfo paramInfo = new ParamInfo(className.getDeleteReqClassName(), "param");
+        paramInfo.addAnnotation(new AnnotationInfo(Validated.class.getName()));
+        controllerMethod.addParam(paramInfo);
         ClassField serviceClassField = null;
         for (ClassField classField : controllerClass.getFields()) {
             if (classField.getClassName().equals(serviceClass.getClassName())) {

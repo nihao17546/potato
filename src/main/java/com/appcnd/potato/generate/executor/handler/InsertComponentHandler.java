@@ -17,6 +17,7 @@ import com.appcnd.potato.meta.conf.form.operate.enums.TimeFormatType;
 import com.appcnd.potato.model.vo.HttpStatus;
 import com.appcnd.potato.util.CamelUtil;
 import com.appcnd.potato.util.SqlStringBuilder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -138,19 +139,22 @@ public class InsertComponentHandler extends ComponentHandler {
 
         MethodInfo serviceMethod = new MethodInfo();
         serviceMethod.setHasContent(false);
-        serviceMethod.addContentClass(request.getClassName().getPoClassName());
+        serviceMethod.addContentClass(request.getClassName().getInsertReqClassName());
         serviceMethod.setMethodName("save");
-        serviceMethod.addParam(new ParamInfo(request.getClassName().getPoClassName(), "param"));
+        serviceMethod.addParam(new ParamInfo(request.getClassName().getInsertReqClassName(), "param"));
         request.getServiceClass().addMethod(serviceMethod);
 
         MethodInfo serviceImplMethod = new MethodInfo();
         serviceImplMethod.setDecorate("public");
         serviceImplMethod.setHasContent(true);
         serviceImplMethod.addAnnotation(new AnnotationInfo(Override.class.getName()));
+        serviceImplMethod.addContentClass(request.getClassName().getInsertReqClassName());
         serviceImplMethod.addContentClass(request.getClassName().getPoClassName());
         serviceImplMethod.setMethodName("save");
-        serviceImplMethod.addParam(new ParamInfo(request.getClassName().getPoClassName(), "param"));
+        serviceImplMethod.addParam(new ParamInfo(request.getClassName().getInsertReqClassName(), "param"));
         StringBuilder serviceContentBuilder = new StringBuilder();
+        serviceContentBuilder.append("        ").append(request.getClassName().getPoClassName())
+                .append(" po = param.transferToPo();\n");
         ClassField daoClassField = null;
         for (ClassField classField : request.getServiceImplClass().getFields()) {
             if (classField.getClassName().equals(request.getDaoClass().getClassName())) {
@@ -161,7 +165,7 @@ public class InsertComponentHandler extends ComponentHandler {
         if (request.getTable().getPrimaryType() == PrimaryType.UUID) {
             serviceImplMethod.addContentClass(UUID.class.getName());
             for (String key : request.getTable().getPrimaryFields()) {
-                serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(key)))
+                serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(key)))
                         .append("(").append(UUID.class.getName()).append(".randomUUID().toString()").append(");\n");
             }
         }
@@ -171,18 +175,18 @@ public class InsertComponentHandler extends ComponentHandler {
                 if (createTimeElement.getTimeFormatType() == TimeFormatType.DATE) {
                     if (createTimeElement.getColumn().getJavaType().equals(Date.class)) {
                         serviceImplMethod.addContentClass(Date.class.getName());
-                        serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
+                        serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
                                 .append("(new ").append(Date.class.getName()).append("());\n");
                     } else if (createTimeElement.getColumn().getJavaType().equals(java.sql.Timestamp.class)) {
                         serviceImplMethod.addContentClass(java.sql.Timestamp.class.getName());
                         serviceImplMethod.addContentClass(System.class.getName());
-                        serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
+                        serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
                                 .append("(new ").append(java.sql.Timestamp.class.getName()).append("(")
                                 .append(System.class.getName()).append(".currentTimeMillis()));\n");
                     } else if (createTimeElement.getColumn().getJavaType().equals(java.sql.Time.class)) {
                         serviceImplMethod.addContentClass(java.sql.Time.class.getName());
                         serviceImplMethod.addContentClass(System.class.getName());
-                        serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
+                        serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
                                 .append("(new ").append(java.sql.Time.class.getName()).append("(")
                                 .append(System.class.getName()).append(".currentTimeMillis()));\n");
                     } else {
@@ -190,7 +194,7 @@ public class InsertComponentHandler extends ComponentHandler {
                     }
                 } else if (createTimeElement.getTimeFormatType() == TimeFormatType.LONG) {
                     serviceImplMethod.addContentClass(System.class.getName());
-                    serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
+                    serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(createTimeElement.getColumn().getField())))
                             .append("(").append(System.class.getName()).append(".currentTimeMillis());\n");
                 }
             }
@@ -204,14 +208,14 @@ public class InsertComponentHandler extends ComponentHandler {
                 serviceContentBuilder.append("        ")
                         .append(List.class.getName()).append("<").append(request.getClassName().getPoClassName()).append("> ");
                 serviceContentBuilder.append(name)
-                        .append(" = this.").append(daoClassField.getName()).append(".").append(methodName).append("(param);\n");
+                        .append(" = this.").append(daoClassField.getName()).append(".").append(methodName).append("(po);\n");
                 serviceContentBuilder.append("        if (").append(name).append(" != null && !").append(name).append(".isEmpty()) {\n");
                 serviceContentBuilder.append("            throw new IllegalArgumentException(\"")
                         .append(unique.getToast()).append("\");\n");
                 serviceContentBuilder.append("        }\n");
             }
         }
-        serviceContentBuilder.append("        this.").append(daoClassField.getName()).append(".insert(param);\n");
+        serviceContentBuilder.append("        this.").append(daoClassField.getName()).append(".insert(po);\n");
         serviceImplMethod.setContent(serviceContentBuilder.toString());
         request.getServiceImplClass().addMethod(serviceImplMethod);
 
@@ -224,12 +228,13 @@ public class InsertComponentHandler extends ComponentHandler {
         requestMapping.addField("value", request.getFrontContext().getSaveRequest());
         requestMapping.addField("produces", "application/json;charset=UTF-8");
         controllerMethod.addAnnotation(requestMapping);
-        controllerMethod.addContentClass(request.getClassName().getPoClassName());
+        controllerMethod.addContentClass(request.getClassName().getInsertReqClassName());
         controllerMethod.addContentClass(request.getClassName().getVoClassName());
         controllerMethod.addContentClass(request.getResponseVoSetting().getClassName());
         controllerMethod.setReturnString(request.getResponseVoSetting().getClassName());
-        ParamInfo controllerParam = new ParamInfo(request.getClassName().getPoClassName(), "param");
+        ParamInfo controllerParam = new ParamInfo(request.getClassName().getInsertReqClassName(), "param");
         controllerParam.addAnnotation(new AnnotationInfo(RequestBody.class.getName()));
+        controllerParam.addAnnotation(new AnnotationInfo(Validated.class.getName()));
         controllerMethod.addParam(controllerParam);
         ClassField serviceClassField = null;
         for (ClassField classField : request.getControllerClass().getFields()) {

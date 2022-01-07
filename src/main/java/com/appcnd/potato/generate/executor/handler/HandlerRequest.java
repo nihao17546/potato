@@ -36,6 +36,9 @@ public class HandlerRequest {
     private JavaClassContext po;
     private JavaClassContext vo;
     private JavaClassContext dto;
+    private JavaClassContext insertReq;
+    private JavaClassContext updateReq;
+    private JavaClassContext deleteeq;
 
     private ClassName className;
 

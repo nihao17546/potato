@@ -16,6 +16,7 @@ import com.appcnd.potato.meta.conf.form.operate.enums.TimeFormatType;
 import com.appcnd.potato.model.vo.HttpStatus;
 import com.appcnd.potato.util.CamelUtil;
 import com.appcnd.potato.util.SqlStringBuilder;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
@@ -123,9 +124,9 @@ public class UpdateComponentHandler extends ComponentHandler {
 
         MethodInfo serviceMethod = new MethodInfo();
         serviceMethod.setHasContent(false);
-        serviceMethod.addContentClass(className.getPoClassName());
+        serviceMethod.addContentClass(className.getUpdateReqClassName());
         serviceMethod.setMethodName("update");
-        serviceMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
+        serviceMethod.addParam(new ParamInfo(className.getUpdateReqClassName(), "param"));
         serviceClass.addMethod(serviceMethod);
 
         MethodInfo serviceImplMethod = new MethodInfo();
@@ -133,9 +134,12 @@ public class UpdateComponentHandler extends ComponentHandler {
         serviceImplMethod.setHasContent(true);
         serviceImplMethod.addAnnotation(new AnnotationInfo(Override.class.getName()));
         serviceImplMethod.addContentClass(className.getPoClassName());
+        serviceImplMethod.addContentClass(className.getUpdateReqClassName());
         serviceImplMethod.setMethodName("update");
-        serviceImplMethod.addParam(new ParamInfo(className.getPoClassName(), "param"));
+        serviceImplMethod.addParam(new ParamInfo(className.getUpdateReqClassName(), "param"));
         StringBuilder serviceContentBuilder = new StringBuilder();
+        serviceContentBuilder.append("        ").append(request.getClassName().getPoClassName())
+                .append(" po = param.transferToPo();\n");
         ClassField daoClassField = null;
         for (ClassField classField : serviceImplClass.getFields()) {
             if (classField.getClassName().equals(daoClass.getClassName())) {
@@ -149,18 +153,18 @@ public class UpdateComponentHandler extends ComponentHandler {
                 if (updateTimeElement.getTimeFormatType() == TimeFormatType.DATE) {
                     if (updateTimeElement.getColumn().getJavaType().equals(Date.class)) {
                         serviceImplMethod.addContentClass(Date.class.getName());
-                        serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
+                        serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
                                 .append("(new ").append(Date.class.getName()).append("());\n");
                     } else if (updateTimeElement.getColumn().getJavaType().equals(java.sql.Timestamp.class)) {
                         serviceImplMethod.addContentClass(java.sql.Timestamp.class.getName());
                         serviceImplMethod.addContentClass(System.class.getName());
-                        serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
+                        serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
                                 .append("(new ").append(java.sql.Timestamp.class.getName()).append("(")
                                 .append(System.class.getName()).append(".currentTimeMillis()));\n");
                     } else if (updateTimeElement.getColumn().getJavaType().equals(java.sql.Time.class)) {
                         serviceImplMethod.addContentClass(java.sql.Time.class.getName());
                         serviceImplMethod.addContentClass(System.class.getName());
-                        serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
+                        serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
                                 .append("(new ").append(java.sql.Time.class.getName()).append("(")
                                 .append(System.class.getName()).append(".currentTimeMillis()));\n");
                     } else {
@@ -168,7 +172,7 @@ public class UpdateComponentHandler extends ComponentHandler {
                     }
                 } else if (updateTimeElement.getTimeFormatType() == TimeFormatType.LONG) {
                     serviceImplMethod.addContentClass(System.class.getName());
-                    serviceContentBuilder.append("        param.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
+                    serviceContentBuilder.append("        po.").append(CamelUtil.set(CamelUtil.underlineToCamel(updateTimeElement.getColumn().getField())))
                             .append("(").append(System.class.getName()).append(".currentTimeMillis());\n");
                 }
             }
@@ -182,14 +186,14 @@ public class UpdateComponentHandler extends ComponentHandler {
                 serviceContentBuilder.append("        ")
                         .append(List.class.getName()).append("<").append(className.getPoClassName()).append("> ");
                 serviceContentBuilder.append(name)
-                        .append(" = this.").append(daoClassField.getName()).append(".").append(methodName).append("(param);\n");
+                        .append(" = this.").append(daoClassField.getName()).append(".").append(methodName).append("(po);\n");
                 serviceContentBuilder.append("        if (").append(name).append(" != null && !").append(name).append(".isEmpty()) {\n");
                 serviceContentBuilder.append("            throw new IllegalArgumentException(\"")
                         .append(unique.getToast()).append("\");\n");
                 serviceContentBuilder.append("        }\n");
             }
         }
-        serviceContentBuilder.append("        this.").append(daoClassField.getName()).append(".update(param);\n");
+        serviceContentBuilder.append("        this.").append(daoClassField.getName()).append(".update(po);\n");
         serviceImplMethod.setContent(serviceContentBuilder.toString());
         serviceImplClass.addMethod(serviceImplMethod);
 
@@ -202,13 +206,14 @@ public class UpdateComponentHandler extends ComponentHandler {
         requestMapping.addField("value", frontContext.getUpdateRequest());
         requestMapping.addField("produces", "application/json;charset=UTF-8");
         controllerMethod.addAnnotation(requestMapping);
-        controllerMethod.addContentClass(className.getPoClassName());
+        controllerMethod.addContentClass(className.getUpdateReqClassName());
         controllerMethod.addContentClass(className.getVoClassName());
         controllerMethod.addContentClass(Map.class.getName());
         controllerMethod.addContentClass(request.getResponseVoSetting().getClassName());
         controllerMethod.setReturnString(request.getResponseVoSetting().getClassName());
-        ParamInfo controllerParam = new ParamInfo(className.getPoClassName(), "param");
+        ParamInfo controllerParam = new ParamInfo(className.getUpdateReqClassName(), "param");
         controllerParam.addAnnotation(new AnnotationInfo(RequestBody.class.getName()));
+        controllerParam.addAnnotation(new AnnotationInfo(Validated.class.getName()));
         controllerMethod.addParam(controllerParam);
         ClassField serviceClassField = null;
         for (ClassField classField : controllerClass.getFields()) {

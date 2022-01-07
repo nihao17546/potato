@@ -33,14 +33,14 @@ public class PotatoClassLoader extends ClassLoader {
         this.classMap.clear();
         this.path = null;
         this.parent = null;
-        try {
-            Field field = this.getClass().getSuperclass().getDeclaredField("classes");
-            field.setAccessible(true);
-            Vector vector = (Vector) field.get(this);
-            vector.clear();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Field field = this.getClass().getSuperclass().getDeclaredField("classes");
+//            field.setAccessible(true);
+//            Vector vector = (Vector) field.get(this);
+//            vector.clear();
+//        } catch (Exception e) {
+//            e.printStackTrace();
+//        }
     }
 
     @Override

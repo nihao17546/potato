@@ -24,6 +24,7 @@ public class BootResult implements Serializable {
     private List<Java> po;
     private List<Java> dto;
     private List<Java> vo;
+    private List<Java> param;
     private List<Java> dao;
     private List<Java> services;
     private List<Java> serviceImpls;
@@ -45,6 +46,9 @@ public class BootResult implements Serializable {
         }
         if (this.vo != null) {
             this.vo.clear();
+        }
+        if (this.param != null) {
+            this.param.clear();
         }
         if (this.dao != null) {
             this.dao.clear();
@@ -122,6 +126,7 @@ public class BootResult implements Serializable {
         this.po = new ArrayList<>();
         this.dto = new ArrayList<>();
         this.vo = new ArrayList<>();
+        this.param = new ArrayList<>();
         this.dao = new ArrayList<>();
         this.services = new ArrayList<>();
         this.serviceImpls = new ArrayList<>();
@@ -154,6 +159,7 @@ public class BootResult implements Serializable {
         list.addAll(po);
         list.addAll(dto);
         list.addAll(vo);
+        list.addAll(param);
         list.addAll(dao);
         list.addAll(services);
         list.addAll(serviceImpls);

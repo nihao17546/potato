@@ -4,13 +4,14 @@ import com.appcnd.potato.generate.method.ParamInfo;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 /**
  * @author nihao 2021/07/12
  */
-public class ClassConstructor {
+public class ClassConstructor implements Serializable {
     @Getter
     private String decorate = "";
     @Getter

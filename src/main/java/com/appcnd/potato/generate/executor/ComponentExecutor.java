@@ -7,6 +7,7 @@ import com.appcnd.potato.generate.executor.handler.*;
 import com.appcnd.potato.generate.method.MethodInfo;
 import com.appcnd.potato.generate.method.ParamInfo;
 import com.appcnd.potato.meta.conf.Config;
+import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.FollowTable;
 import com.appcnd.potato.meta.conf.db.Table;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
@@ -29,6 +30,9 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Pattern;
 import java.io.File;
 import java.io.Serializable;
 import java.util.*;
@@ -52,7 +56,7 @@ public class ComponentExecutor extends Executor {
         this.context = context;
     }
 
-    private void pojo(ClassName className, Table table, List<FollowTable> associationTables, UITable uiTable, HandlerRequest handlerRequest) {
+    private void pojo(ClassName className, Table table, List<FollowTable> associationTables, UITable uiTable, OperateForm operateForm, HandlerRequest handlerRequest) {
         // po
         JavaClassContext po = new JavaClassContext(CommonUtil.getPackageName(className.getPoClassName()),
                 config.getBasic().getVersion(), "public class", CommonUtil.getSimpleClassName(className.getPoClassName()));
@@ -118,6 +122,105 @@ public class ComponentExecutor extends Executor {
         handlerRequest.setDto(po);
         context.addJavaClassContext(vo);
         handlerRequest.setDto(vo);
+
+        // param
+        if (operateForm != null) {
+            if (Boolean.TRUE.equals(operateForm.getInsert())) {
+                JavaClassContext insertReq = new JavaClassContext(className.getInsertReqClassName(), config.getBasic().getVersion(), "public class");
+                insertReq.addImplementsClassName(Serializable.class.getName());
+                fillParamFieldAndMethod(insertReq, operateForm.getElements());
+                fillParamToPoMethod(insertReq, po);
+                context.addJavaClassContext(insertReq);
+                handlerRequest.setInsertReq(insertReq);
+            }
+            if (Boolean.TRUE.equals(operateForm.getUpdate())) {
+                JavaClassContext updateReq = new JavaClassContext(className.getUpdateReqClassName(), config.getBasic().getVersion(), "public class");
+                updateReq.addImplementsClassName(Serializable.class.getName());
+                fillParamKeyFieldAndMethod(updateReq, table);
+                fillParamFieldAndMethod(updateReq, operateForm.getElements());
+                fillParamToPoMethod(updateReq, po);
+                context.addJavaClassContext(updateReq);
+                handlerRequest.setUpdateReq(updateReq);
+            }
+            if (Boolean.TRUE.equals(operateForm.getDelete())) {
+                JavaClassContext deleteReq = new JavaClassContext(className.getDeleteReqClassName(), config.getBasic().getVersion(), "public class");
+                deleteReq.addImplementsClassName(Serializable.class.getName());
+                fillParamKeyFieldAndMethod(deleteReq, table);
+                fillParamToPoMethod(deleteReq, po);
+                context.addJavaClassContext(deleteReq);
+                handlerRequest.setDeleteeq(deleteReq);
+            }
+        }
+    }
+
+    private void fillParamKeyFieldAndMethod(JavaClassContext req, Table table) {
+        for (String key : table.getPrimaryFields()) {
+            Column keyColumn = null;
+            for (Column column : table.getColumns()) {
+                if (key.equals(column.getField())) {
+                    keyColumn = column;
+                    break;
+                }
+            }
+            ClassField field = new ClassField("private", keyColumn.getJavaType().getName(), CamelUtil.underlineToCamel(keyColumn.getField()));
+            AnnotationInfo annotationInfo = null;
+            if (keyColumn.getJavaType().equals(String.class)) {
+                annotationInfo = new AnnotationInfo(NotEmpty.class.getName());
+            } else {
+                annotationInfo = new AnnotationInfo(NotNull.class.getName());
+            }
+            annotationInfo.addField("message", "主键参数" + field.getName() + "缺失");
+            field.addAnnotation(annotationInfo);
+            req.addField(field);
+            req.addMethods(GenerateUtil.getSetterAndGetterMethod(field));
+        }
+    }
+
+    private void fillParamToPoMethod(JavaClassContext req, JavaClassContext po) {
+        MethodInfo methodInfo = new MethodInfo();
+        methodInfo.setDecorate("public");
+        methodInfo.setHasContent(true);
+        methodInfo.setMethodName("transferToPo");
+        methodInfo.addContentClass(po.getClassName());
+        methodInfo.setReturnString(po.getClassName());
+        StringBuilder sb = new StringBuilder();
+        sb.append("        ").append(po.getClassName()).append(" po = new ").append(po.getClassName()).append("();\n");
+        for (ClassField field : req.getFields()) {
+            sb.append("        po.").append(CamelUtil.set(field.getName())).append("(this.").append(field.getName()).append(");\n");
+        }
+        sb.append("        return po;\n");
+        methodInfo.setContent(sb.toString());
+        req.addMethod(methodInfo);
+    }
+
+    private void fillParamFieldAndMethod(JavaClassContext javaClassContext, List<OperateElement> elements) {
+        for (OperateElement element : elements) {
+            Column column = element.getColumn();
+            ClassField field = new ClassField("private", column.getJavaType().getName(), CamelUtil.underlineToCamel(column.getField()));
+            if (element.getRule() != null) {
+                String message = element.getRule().getMessage();
+                if (Boolean.TRUE.equals(element.getRule().getRequired())) {
+                    AnnotationInfo annotationInfo = null;
+                    if (column.getJavaType().equals(String.class)) {
+                        annotationInfo = new AnnotationInfo(NotEmpty.class.getName());
+                    } else {
+                        annotationInfo = new AnnotationInfo(NotNull.class.getName());
+                    }
+                    annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "缺失"));
+                    field.addAnnotation(annotationInfo);
+                }
+                if (element.getRule().getRegular() != null && !element.getRule().getRegular().isEmpty()) {
+                    AnnotationInfo annotationInfo = new AnnotationInfo(Pattern.class.getName());
+                    annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "格式校验错误"));
+                    String reg = element.getRule().getRegular();
+                    reg = reg.replaceAll("\\\\", "\\\\\\\\");
+                    annotationInfo.addField("regexp", reg);
+                    field.addAnnotation(annotationInfo);
+                }
+            }
+            javaClassContext.addField(field);
+            javaClassContext.addMethods(GenerateUtil.getSetterAndGetterMethod(field));
+        }
     }
 
     private void componentClass(ClassName className, HandlerRequest handlerRequest) {
@@ -164,7 +267,7 @@ public class ComponentExecutor extends Executor {
         handlerRequest.setOperateForm(config.getOperateForm());
         // pojo
         pojo(context.getMainClassName(), config.getDbConf().getTable(), config.getDbConf().getAssociationTables(),
-                config.getTable(), handlerRequest);
+                config.getTable(), config.getOperateForm(), handlerRequest);
         // component
         componentClass(context.getMainClassName(), handlerRequest);
 
@@ -200,7 +303,7 @@ public class ComponentExecutor extends Executor {
                 request.setOperateForm(operateForm);
                 handlerRequest.addFollow(request);
                 // pojo
-                pojo(className, table, null, uiTable, request);
+                pojo(className, table, null, uiTable, operateForm, request);
                 // component
                 componentClass(className, request);
 

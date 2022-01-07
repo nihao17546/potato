@@ -6,6 +6,7 @@ import com.appcnd.potato.util.CommonUtil;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.Set;
 /**
  * @author nihao 2021/07/12
  */
-public class JavaClassContext {
+public class JavaClassContext implements Serializable {
     @Getter
     @Setter
     private String packageName;
@@ -58,6 +59,13 @@ public class JavaClassContext {
         this.version = version;
         this.decorate = decorate;
         this.name = CommonUtil.getSimpleClassName(className);
+    }
+
+    public JavaClassContext(String fullClassName, Integer version, String decorate) {
+        this.packageName = CommonUtil.getPackageName(fullClassName);
+        this.version = version;
+        this.decorate = decorate;
+        this.name = CommonUtil.getSimpleClassName(fullClassName);
     }
 
     public void addAnnotation(AnnotationInfo... annotation) {
@@ -152,5 +160,37 @@ public class JavaClassContext {
 
     public String getClassName() {
         return this.packageName + "." + this.name;
+    }
+
+    public JavaClassContext deepClone() {
+        ByteArrayOutputStream bos = null;
+        ObjectOutputStream oos = null;
+        ByteArrayInputStream bis = null;
+        ObjectInputStream ois = null;
+        try {
+            // 序列化
+            bos = new ByteArrayOutputStream();
+            oos = new ObjectOutputStream(bos);
+            oos.writeObject(this);
+            // 反序列化
+            bis = new ByteArrayInputStream(bos.toByteArray());
+            ois = new ObjectInputStream(bis);
+            return (JavaClassContext) ois.readObject();
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        } finally {
+            if (ois != null) {
+                try {
+                    ois.close();
+                } catch (Exception e) {
+                }
+            }
+            if (oos != null) {
+                try {
+                    oos.close();
+                } catch (Exception e) {
+                }
+            }
+        }
     }
 }
