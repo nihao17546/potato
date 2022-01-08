@@ -264,156 +264,150 @@ public class GenerateBoot {
     }
 
     public void boot(BootResult bootResult, Set<String> needLoadClasses) throws Exception {
-        if (!loadMap.containsKey(bootResult.getId())) {
-            synchronized (bootResult.getId().toString().intern()) {
-                if (!loadMap.containsKey(bootResult.getId())) {
-                    log.info("加载{}", bootResult.getId());
-                    File classPathFile = new File(coreProperties.getClassPath() + File.separator + bootResult.getId());
-                    if (classPathFile.exists()) {
-                        deleteDir(classPathFile);
-                    }
-                    String basicPath = coreProperties.getClassPath() + File.separator + bootResult.getId() + File.separator;
-                    File f = new File(basicPath + "java");
-                    if (!f.exists()) {
-                        if (!f.mkdirs()) {
-                            throw new RuntimeException(f.getAbsolutePath() + " 目录创建失败");
-                        }
-                    }
-
-                    PotatoClassLoader classLoader = new PotatoClassLoader(getClass().getClassLoader(),
-                            basicPath + "java");
-                    bootResult.setClassLoader(classLoader);
-                    List<BootResult.Java> javas = new ArrayList<>();
-                    for (BootResult.Java java : bootResult.getPo()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getDto()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getVo()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getParam()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getDao()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getServices()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getServiceImpls()) {
-                        javas.add(java);
-                    }
-                    for (BootResult.Java java : bootResult.getControllers()) {
-                        javas.add(java);
-                    }
-                    compile(javas, basicPath, needLoadClasses, bootResult.getId());
-                    for (BootResult.Mapper mapper : bootResult.getMappers()) {
-                        String simpleName = CommonUtil.getSimpleClassName(mapper.getMapperId());
-                        String mapperFileName = simpleName + "Mapper.xml";
-                        File file = new File(basicPath + "resources" +
-                                File.separator + "mappers" + File.separator + mapperFileName);
-                        if (!file.getParentFile().exists()) {
-                            boolean b = file.getParentFile().mkdirs();
-                            if (!b) {
-                                log.error("创建目录:{} 失败", file.getParentFile().getAbsolutePath());
-                                throw new RuntimeException("创建目录:" + file.getParentFile().getAbsolutePath() + "失败");
-                            }
-                        }
-                        try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
-                            byte[] bytes = mapper.getSource().getBytes();
-                            fileOutputStream.write(bytes);
-                        } catch (IOException e) {
-                            throw new RuntimeException("文件:" + file.getName() + "输出异常");
-                        }
-                    }
-
-                    TransactionFactory transactionFactory = new SpringManagedTransactionFactory();
-                    Environment environment = new Environment ("development", transactionFactory, dataSource);
-                    Configuration configuration = new Configuration(environment);
-                    TypeAliasRegistry aliasRegistry = configuration.getTypeAliasRegistry();
-                    for (BootResult.Java java : bootResult.getPo()) {
-                        aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
-                    }
-                    for (BootResult.Java java : bootResult.getDto()) {
-                        aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
-                    }
-                    for (BootResult.Java java : bootResult.getVo()) {
-                        aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
-                    }
-                    for (BootResult.Java java : bootResult.getDao()) {
-                        aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
-                    }
-                    Set<String> daoSet = new HashSet<>();
-                    Set<String> serviceSet = new HashSet<>();
-                    Set<String> controllerSet = new HashSet<>();
-                    String springBeanNamePrefix = bootResult.getId().toString() + "@";
-                    try {
-                        SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
-                        bootResult.setSqlSessionFactory(sqlSessionFactory);
-                        for (BootResult.Mapper mapper : bootResult.getMappers()) {
-                            String beanId = springBeanNamePrefix + mapper.getMapperId();
-                            daoSet.add(beanId);
-                            configuration.addMapper(classLoader.findClass(mapper.getMapperId()));
-                            ByteArrayInputStream is = new ByteArrayInputStream(mapper.getSource().getBytes());
-                            XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(is, configuration, beanId, configuration.getSqlFragments());
-                            xmlMapperBuilder.parse();
-
-                            MapperFactoryBean mapperFactoryBean = new MapperFactoryBean();
-                            mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);
-                            mapperFactoryBean.setMapperInterface(classLoader.findClass(mapper.getMapperId()));
-                            Object dao = mapperFactoryBean.getObject();
-                            springContextUtil.registerSingleton(beanId, dao);
-                            log.info("成功注册Mapper:{}", springContextUtil.getBean(beanId));
-                        }
-
-                        for (BootResult.Java java : bootResult.getServiceImpls()) {
-                            try {
-                                String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
-                                serviceSet.add(beanId);
-                                springContextUtil.registerBean(beanId, classLoader.findClass(java.getClassName()));
-                                log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
-                            } catch (Exception e) {
-                                log.error("注册Service异常:\n{}", java.getSource(), e);
-                                throw new HandlerException(HttpStatus.SYSTEM_ERROR);
-                            }
-                        }
-                        for (BootResult.Java java : bootResult.getControllers()) {
-                            try {
-                                String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
-                                controllerSet.add(beanId);
-                                springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
-                                log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
-                            } catch (Exception e) {
-                                log.error("注册Controller异常:\n{}", java.getSource(), e);
-                                throw new HandlerException(HttpStatus.SYSTEM_ERROR);
-                            }
-                        }
-                    } catch (Exception e) {
-                        for (String beanId : controllerSet) {
-                            try {
-                                springContextUtil.unregisterController(beanId);
-                            } catch (Exception e1) {}
-                            try {
-                                springContextUtil.removeBean(beanId);
-                            } catch (Exception e1) {}
-                        }
-                        for (String beanId : serviceSet) {
-                            try {
-                                springContextUtil.removeBean(beanId);
-                            } catch (Exception e1) {}
-                        }
-                        for (String beanId : daoSet) {
-                            try {
-                                springContextUtil.destroySingleton(beanId);
-                            } catch (Exception e1) {}
-                        }
-                        throw e;
-                    }
-                    loadMap.put(bootResult.getId(), bootResult);
-                }
+        log.info("加载{}", bootResult.getId());
+        File classPathFile = new File(coreProperties.getClassPath() + File.separator + bootResult.getId());
+        if (classPathFile.exists()) {
+            deleteDir(classPathFile);
+        }
+        String basicPath = coreProperties.getClassPath() + File.separator + bootResult.getId() + File.separator;
+        File f = new File(basicPath + "java");
+        if (!f.exists()) {
+            if (!f.mkdirs()) {
+                throw new RuntimeException(f.getAbsolutePath() + " 目录创建失败");
             }
         }
+
+        PotatoClassLoader classLoader = new PotatoClassLoader(getClass().getClassLoader(),
+                basicPath + "java");
+        bootResult.setClassLoader(classLoader);
+        List<BootResult.Java> javas = new ArrayList<>();
+        for (BootResult.Java java : bootResult.getPo()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getDto()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getVo()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getParam()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getDao()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getServices()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getServiceImpls()) {
+            javas.add(java);
+        }
+        for (BootResult.Java java : bootResult.getControllers()) {
+            javas.add(java);
+        }
+        compile(javas, basicPath, needLoadClasses, bootResult.getId());
+        for (BootResult.Mapper mapper : bootResult.getMappers()) {
+            String simpleName = CommonUtil.getSimpleClassName(mapper.getMapperId());
+            String mapperFileName = simpleName + "Mapper.xml";
+            File file = new File(basicPath + "resources" +
+                    File.separator + "mappers" + File.separator + mapperFileName);
+            if (!file.getParentFile().exists()) {
+                boolean b = file.getParentFile().mkdirs();
+                if (!b) {
+                    log.error("创建目录:{} 失败", file.getParentFile().getAbsolutePath());
+                    throw new RuntimeException("创建目录:" + file.getParentFile().getAbsolutePath() + "失败");
+                }
+            }
+            try (FileOutputStream fileOutputStream = new FileOutputStream(file)) {
+                byte[] bytes = mapper.getSource().getBytes();
+                fileOutputStream.write(bytes);
+            } catch (IOException e) {
+                throw new RuntimeException("文件:" + file.getName() + "输出异常");
+            }
+        }
+
+        TransactionFactory transactionFactory = new SpringManagedTransactionFactory();
+        Environment environment = new Environment ("development", transactionFactory, dataSource);
+        Configuration configuration = new Configuration(environment);
+        TypeAliasRegistry aliasRegistry = configuration.getTypeAliasRegistry();
+        for (BootResult.Java java : bootResult.getPo()) {
+            aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
+        }
+        for (BootResult.Java java : bootResult.getDto()) {
+            aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
+        }
+        for (BootResult.Java java : bootResult.getVo()) {
+            aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
+        }
+        for (BootResult.Java java : bootResult.getDao()) {
+            aliasRegistry.registerAlias(java.getClassName().toLowerCase(Locale.ENGLISH), classLoader.findClass(java.getClassName()));
+        }
+        Set<String> daoSet = new HashSet<>();
+        Set<String> serviceSet = new HashSet<>();
+        Set<String> controllerSet = new HashSet<>();
+        String springBeanNamePrefix = bootResult.getId().toString() + "@";
+        try {
+            SqlSessionFactory sqlSessionFactory = new SqlSessionFactoryBuilder().build(configuration);
+            bootResult.setSqlSessionFactory(sqlSessionFactory);
+            for (BootResult.Mapper mapper : bootResult.getMappers()) {
+                String beanId = springBeanNamePrefix + mapper.getMapperId();
+                daoSet.add(beanId);
+                configuration.addMapper(classLoader.findClass(mapper.getMapperId()));
+                ByteArrayInputStream is = new ByteArrayInputStream(mapper.getSource().getBytes());
+                XMLMapperBuilder xmlMapperBuilder = new XMLMapperBuilder(is, configuration, beanId, configuration.getSqlFragments());
+                xmlMapperBuilder.parse();
+
+                MapperFactoryBean mapperFactoryBean = new MapperFactoryBean();
+                mapperFactoryBean.setSqlSessionFactory(sqlSessionFactory);
+                mapperFactoryBean.setMapperInterface(classLoader.findClass(mapper.getMapperId()));
+                Object dao = mapperFactoryBean.getObject();
+                springContextUtil.registerSingleton(beanId, dao);
+                log.info("成功注册Mapper:{}", springContextUtil.getBean(beanId));
+            }
+
+            for (BootResult.Java java : bootResult.getServiceImpls()) {
+                try {
+                    String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                    serviceSet.add(beanId);
+                    springContextUtil.registerBean(beanId, classLoader.findClass(java.getClassName()));
+                    log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
+                } catch (Exception e) {
+                    log.error("注册Service异常:\n{}", java.getSource(), e);
+                    throw new HandlerException(HttpStatus.SYSTEM_ERROR);
+                }
+            }
+            for (BootResult.Java java : bootResult.getControllers()) {
+                try {
+                    String beanId = springBeanNamePrefix + CommonUtil.getClassNameField(CommonUtil.getSimpleClassName(java.getClassName()));
+                    controllerSet.add(beanId);
+                    springContextUtil.registerController(beanId, classLoader.findClass(java.getClassName()));
+                    log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
+                } catch (Exception e) {
+                    log.error("注册Controller异常:\n{}", java.getSource(), e);
+                    throw new HandlerException(HttpStatus.SYSTEM_ERROR);
+                }
+            }
+        } catch (Exception e) {
+            for (String beanId : controllerSet) {
+                try {
+                    springContextUtil.unregisterController(beanId);
+                } catch (Exception e1) {}
+                try {
+                    springContextUtil.removeBean(beanId);
+                } catch (Exception e1) {}
+            }
+            for (String beanId : serviceSet) {
+                try {
+                    springContextUtil.removeBean(beanId);
+                } catch (Exception e1) {}
+            }
+            for (String beanId : daoSet) {
+                try {
+                    springContextUtil.destroySingleton(beanId);
+                } catch (Exception e1) {}
+            }
+            throw e;
+        }
+        loadMap.put(bootResult.getId(), bootResult);
     }
 }

@@ -4,8 +4,6 @@ import com.appcnd.potato.dao.MetaDao;
 import com.appcnd.potato.exception.HandlerException;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
-import com.appcnd.potato.meta.conf.Basic;
-import com.appcnd.potato.meta.conf.Config;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
@@ -73,13 +71,16 @@ public class MetaServiceImpl implements IMetaService {
         if (count <= 0) {
             return listVO;
         }
-        List<Meta> list = metaDao.selectList(name, (page - 1) * pageSize, pageSize);
+        List<Meta> list = metaDao.selectList(name, null, (page - 1) * pageSize, pageSize);
         List<MetaVO> voList = list.stream().map(po -> {
             MetaVO vo = transfer(po);
             BootResult bootResult = generateBoot.getLoaded(po.getId());
             if (bootResult != null) {
-                vo.setUrl(request.getContextPath() + coreProperties.getPath() + bootResult.getUrl());
-                vo.setVersion(bootResult.getVersion());
+                if (bootResult.getVersion().equals(vo.getVersion())) {
+                    vo.setUrl(request.getContextPath() + coreProperties.getPath() + bootResult.getUrl());
+                } else {
+                    generateService.unBoot(po.getId());
+                }
             }
             return vo;
         }).collect(Collectors.toList());
@@ -222,46 +223,6 @@ public class MetaServiceImpl implements IMetaService {
             throw new HandlerException(HttpStatus.NOT_FOUND);
         }
         return transfer(po);
-    }
-
-    @Override
-    public Config getConfig(Integer id) {
-        Meta po = metaDao.selectById(id);
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
-        Config config = new Config();
-        Basic basic = new Basic();
-        basic.setTitle(po.getTitle());
-        basic.setName(po.getName());
-        basic.setVersion(po.getVersion());
-        config.setBasic(basic);
-        if (po.getTable() != null) {
-            config.setTable(CommonUtil.unserialize(po.getTable(), UIMainTable.class));
-        }
-        if (po.getDb() != null) {
-            config.setDbConf(CommonUtil.unserialize(po.getDb(), DbConf.class));
-        }
-        if (po.getSearch() != null) {
-            config.setSearchForm(CommonUtil.unserialize(po.getSearch(), SearchForm.class));
-        }
-        if (po.getOperate() != null) {
-            config.setOperateForm(CommonUtil.unserialize(po.getOperate(), OperateForm.class));
-        }
-        if (po.getStorage() != null && !po.getStorage().isEmpty()) {
-            Storage storage = CommonUtil.unserialize(po.getStorage(), Storage.class);
-            if (storage instanceof HuaweiStorage) {
-                HuaweiStorage huaweiStorage = (HuaweiStorage) storage;
-                huaweiStorage.setAk(DesUtil.decrypt(huaweiStorage.getAk(), "storage"));
-                huaweiStorage.setSk(DesUtil.decrypt(huaweiStorage.getSk(), "storage"));
-            } else if (storage instanceof QiniuStorage) {
-                QiniuStorage qiniuStorage = (QiniuStorage) storage;
-                qiniuStorage.setAk(DesUtil.decrypt(qiniuStorage.getAk(), "storage"));
-                qiniuStorage.setSk(DesUtil.decrypt(qiniuStorage.getSk(), "storage"));
-            }
-            config.setStorage(storage);
-        }
-        return config;
     }
 
     private MetaVO transfer(Meta meta) {

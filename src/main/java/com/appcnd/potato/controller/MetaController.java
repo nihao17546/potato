@@ -74,10 +74,9 @@ public class MetaController extends BaseController {
 
     @GetMapping("/boot")
     @ResponseBody
-    public String boot(@RequestParam Integer id) {
-        Config config = metaService.getConfig(id);
+    public String boot(@RequestParam Integer id, @RequestParam Integer version) {
         try {
-             generateService.boot(id, config);
+             generateService.boot(id, version);
         } catch (Exception e) {
             log.error("{}", e);
             return HttpResult.fail(e.getMessage()).json();
@@ -87,8 +86,8 @@ public class MetaController extends BaseController {
 
     @GetMapping("/unBoot")
     @ResponseBody
-    public String unBoot(@RequestParam Integer id) {
-        generateService.unBoot(id);
+    public String unBoot(@RequestParam Integer id, @RequestParam Integer version) {
+        generateService.unBoot(id, version);
         return HttpResult.success().json();
     }
 
@@ -194,7 +193,7 @@ public class MetaController extends BaseController {
             }
             strings.add(entity.getClazz());
         }
-        Config config = metaService.getConfig(param.getId());
+        Config config = generateService.getConfig(param.getId());
         Map<String,String> map = generateService.generate(param, config);
         Set<Map.Entry<String,String>> entries = map.entrySet();
         String fileName = config.getBasic().getName() + "-" + config.getBasic().getVersion() + ".rar";

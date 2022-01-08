@@ -2,6 +2,7 @@ package com.appcnd.potato.config;
 
 import com.appcnd.potato.controller.*;
 import com.appcnd.potato.generate.boot.HtmlServlet;
+import com.appcnd.potato.generate.boot.executor.BootExecutor;
 import com.appcnd.potato.model.constant.BasicConstant;
 import com.appcnd.potato.properties.CoreProperties;
 import com.appcnd.potato.service.IDbService;
@@ -61,6 +62,11 @@ public class BeanConfig {
     @Bean(name = BasicConstant.beanNamePrefix + "generateService")
     public IGenerateService generateService() {
         return new GenerateServiceImpl();
+    }
+
+    @Bean(name = BasicConstant.beanNamePrefix + "BootExecutor")
+    public BootExecutor bootExecutor() {
+        return new BootExecutor();
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "HtmlController", initMethod = "requestMapping")

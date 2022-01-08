@@ -21,12 +21,17 @@
     </select>
 
     <select id="selectList" resultType="com.appcnd.potato.model.po.Meta">
-        select id, `name`, `version`, create_time createTime, update_time updateTime, title from `meta`
-        where 1=1
+        select id, `name`, `version`, create_time createTime, update_time updateTime, title, loaded
+        from `meta` where 1=1
         <if test="name != null">
             and `name` like concat('%',#{name},'%')
         </if>
-        limit #{offset},#{pageSize}
+        <if test="loaded != null">
+            and `loaded`=#{loaded}
+        </if>
+        <if test="offset != null and pageSize != null">
+            limit #{offset},#{pageSize}
+        </if>
     </select>
 
     <delete id="deleteById">
@@ -38,7 +43,7 @@
     </select>
 
     <update id="update" parameterType="com.appcnd.potato.model.po.Meta">
-        update `meta` set update_time=#{updateTime},`version`=`version`+1
+        update `meta` set update_time=#{updateTime},`version`=`version`+1,loaded=0
         <if test="name != null">
             ,`name`=#{name}
         </if>
@@ -74,4 +79,8 @@
         </foreach>
         from `meta` where id=#{id}
     </select>
+
+    <update id="updateLoaded">
+        update `meta` set loaded=#{loaded} where id=#{id} and `version`=#{version}
+    </update>
 </mapper>
