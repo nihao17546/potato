@@ -21,6 +21,7 @@ import org.apache.http.entity.InputStreamEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.net.ssl.SSLContext;
@@ -35,11 +36,16 @@ import java.util.Map;
  */
 @Service
 public class HuaweiUploadServiceImpl extends IUploadService {
-    private final String ak = "${ak}";
-    private final String sk = "${sk}";
-    private final String bucket = "${bucket}";
-    private final String host = "${host}";
-    private final String region = "${region}";
+    @Value("${ak}")
+    private String ak;
+    @Value("${sk}")
+    private String sk;
+    @Value("${bucket}")
+    private String bucket;
+    @Value("${host}")
+    private String host;
+    @Value("${region}")
+    private String region;
 
     private final int durationSeconds = 3600;
     private static final Map<String,String> defaultHeaders = new HashMap<>();

@@ -253,10 +253,12 @@ public class GenerateServiceImpl implements IGenerateService {
                 datas.put("basePackageName", context.getPackageName());
                 datas.put("version", config.getBasic().getVersion().toString());
                 datas.put("now", SimpleDateUtil.format(new Date()));
-                datas.put("ak", qiniuStorage.getAk());
-                datas.put("sk", qiniuStorage.getSk());
-                datas.put("bucket", qiniuStorage.getBucket());
-                datas.put("host", qiniuStorage.getHost());
+                if (isBoot) {
+                    datas.put("ak", qiniuStorage.getAk());
+                    datas.put("sk", qiniuStorage.getSk());
+                    datas.put("bucket", qiniuStorage.getBucket());
+                    datas.put("host", qiniuStorage.getHost());
+                }
                 bytes = new StringSubstitutor(datas).replace(content);
                 map.put(path, bytes);
             } else if (config.getStorage() instanceof HuaweiStorage) {
@@ -270,11 +272,13 @@ public class GenerateServiceImpl implements IGenerateService {
                 datas.put("basePackageName", context.getPackageName());
                 datas.put("version", config.getBasic().getVersion().toString());
                 datas.put("now", SimpleDateUtil.format(new Date()));
-                datas.put("region", huaweiStorage.getRegion());
-                datas.put("ak", huaweiStorage.getAk());
-                datas.put("sk", huaweiStorage.getSk());
-                datas.put("bucket", huaweiStorage.getBucket());
-                datas.put("host", huaweiStorage.getHost());
+                if (isBoot) {
+                    datas.put("region", huaweiStorage.getRegion());
+                    datas.put("ak", huaweiStorage.getAk());
+                    datas.put("sk", huaweiStorage.getSk());
+                    datas.put("bucket", huaweiStorage.getBucket());
+                    datas.put("host", huaweiStorage.getHost());
+                }
                 bytes = new StringSubstitutor(datas).replace(content);
                 map.put(path, bytes);
             }
