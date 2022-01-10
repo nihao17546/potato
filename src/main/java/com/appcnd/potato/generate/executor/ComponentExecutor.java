@@ -11,8 +11,10 @@ import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.FollowTable;
 import com.appcnd.potato.meta.conf.db.Table;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
+import com.appcnd.potato.meta.conf.form.operate.elements.InputOperateElement;
 import com.appcnd.potato.meta.conf.form.operate.elements.OperateElement;
 import com.appcnd.potato.meta.conf.form.operate.elements.RemoteSelectOperateElement;
+import com.appcnd.potato.meta.conf.form.operate.elements.TextareaOperateElement;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
 import com.appcnd.potato.meta.conf.form.search.element.RemoteSelectSearchElement;
 import com.appcnd.potato.meta.conf.form.search.element.SearchElement;
@@ -23,6 +25,7 @@ import com.appcnd.potato.util.GenerateUtil;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.tuple.Pair;
+import org.hibernate.validator.constraints.Length;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.util.Assert;
@@ -217,6 +220,45 @@ public class ComponentExecutor extends Executor {
                     annotationInfo.addField("regexp", reg);
                     field.addAnnotation(annotationInfo);
                 }
+            }
+            if (element instanceof InputOperateElement) {
+                String message = element.getRule().getMessage();
+                InputOperateElement inputOperateElement = (InputOperateElement) element;
+                AnnotationInfo annotationInfo = null;
+                if (inputOperateElement.getMinlength() != null) {
+                    if (annotationInfo == null) {
+                        annotationInfo = new AnnotationInfo(Length.class.getName());
+                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                    }
+                    annotationInfo.addField("min", inputOperateElement.getMinlength());
+                }
+                if (inputOperateElement.getMaxlength() != null) {
+                    if (annotationInfo == null) {
+                        annotationInfo = new AnnotationInfo(Length.class.getName());
+                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                    }
+                    annotationInfo.addField("max", inputOperateElement.getMaxlength());
+                }
+                field.addAnnotation(annotationInfo);
+            } else if (element instanceof TextareaOperateElement) {
+                String message = element.getRule().getMessage();
+                TextareaOperateElement textareaOperateElement = (TextareaOperateElement) element;
+                AnnotationInfo annotationInfo = null;
+                if (textareaOperateElement.getMinlength() != null) {
+                    if (annotationInfo == null) {
+                        annotationInfo = new AnnotationInfo(Length.class.getName());
+                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                    }
+                    annotationInfo.addField("min", textareaOperateElement.getMinlength());
+                }
+                if (textareaOperateElement.getMaxlength() != null) {
+                    if (annotationInfo == null) {
+                        annotationInfo = new AnnotationInfo(Length.class.getName());
+                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                    }
+                    annotationInfo.addField("max", textareaOperateElement.getMaxlength());
+                }
+                field.addAnnotation(annotationInfo);
             }
             javaClassContext.addField(field);
             javaClassContext.addMethods(GenerateUtil.getSetterAndGetterMethod(field));
