@@ -4,6 +4,7 @@ import ${basePackageName}.pojo.vo.TokenResultVo;
 import ${basePackageName}.service.IUploadService;
 import com.qiniu.util.Auth;
 import com.qiniu.util.StringMap;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 /**
@@ -12,10 +13,14 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class QiniuUploadServiceImpl extends IUploadService {
-    private final String ak = "${ak}";
-    private final String sk = "${sk}";
-    private final String bucket = "${bucket}";
-    private final String host = "${host}";
+    @Value("${ak}")
+    private String ak;
+    @Value("${sk}")
+    private String sk;
+    @Value("${bucket}")
+    private String bucket;
+    @Value("${host}")
+    private String host;
 
     private Auth auth;
     private Auth getAuth() {

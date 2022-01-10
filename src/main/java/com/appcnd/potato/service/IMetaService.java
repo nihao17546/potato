@@ -25,5 +25,4 @@ public interface IMetaService {
     MetaVO getDbAndSearch(Integer id);
     MetaVO getDbAndOperate(Integer id);
     MetaVO getDbAnStorage(Integer id);
-    Config getConfig(Integer id);
 }

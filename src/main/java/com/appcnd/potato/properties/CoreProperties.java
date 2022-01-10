@@ -16,6 +16,7 @@ import java.io.File;
 public class CoreProperties {
     private String path;
     private String classPath;
+    private Boolean cluster = Boolean.FALSE;
 
     @PostConstruct
     public void init() {

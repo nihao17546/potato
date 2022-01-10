@@ -16,6 +16,7 @@ public interface MetaDao {
     int insert(Meta meta);
     Long selectCount(@Param("name") String name);
     List<Meta> selectList(@Param("name") String name,
+                          @Param("loaded") Boolean loaded,
                           @Param("offset") Integer offset,
                           @Param("pageSize") Integer pageSize);
     int deleteById(@Param("id") Integer id);
@@ -24,5 +25,8 @@ public interface MetaDao {
     Meta selectById(@Param("id") Integer id);
     Meta selectColumnsById(@Param("id") Integer id,
                            @Param("columns") List<String> columns);
+    int updateLoaded(@Param("id") Integer id,
+                     @Param("version") Integer version,
+                     @Param("loaded") Boolean loaded);
 
 }

@@ -1,5 +1,6 @@
 package com.appcnd.potato.service.impl;
 
+import com.appcnd.potato.dao.MetaDao;
 import com.appcnd.potato.exception.HandlerException;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
@@ -12,15 +13,20 @@ import com.appcnd.potato.generate.executor.BootClassExecutor;
 import com.appcnd.potato.generate.executor.BootFrontExecutor;
 import com.appcnd.potato.generate.executor.ClassExecutor;
 import com.appcnd.potato.generate.executor.ComponentExecutor;
+import com.appcnd.potato.meta.conf.Basic;
 import com.appcnd.potato.meta.conf.Config;
 import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.db.FollowTable;
 import com.appcnd.potato.meta.conf.db.Table;
+import com.appcnd.potato.meta.conf.form.operate.OperateForm;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
 import com.appcnd.potato.meta.conf.form.storage.HuaweiStorage;
 import com.appcnd.potato.meta.conf.form.storage.QiniuStorage;
+import com.appcnd.potato.meta.conf.form.storage.Storage;
+import com.appcnd.potato.meta.conf.table.UIMainTable;
 import com.appcnd.potato.model.param.GenerateParam;
+import com.appcnd.potato.model.po.Meta;
 import com.appcnd.potato.model.vo.HttpStatus;
 import com.appcnd.potato.properties.CoreProperties;
 import com.appcnd.potato.service.IGenerateService;
@@ -48,6 +54,8 @@ public class GenerateServiceImpl implements IGenerateService {
     private HtmlServlet htmlServlet;
     @Autowired
     private CoreProperties coreProperties;
+    @Autowired
+    private MetaDao metaDao;
 
     private void fillColumnMap(Map<String,Map<String, Column>> columnMap, Table table) {
         for (Column column : table.getColumns()) {
@@ -245,10 +253,12 @@ public class GenerateServiceImpl implements IGenerateService {
                 datas.put("basePackageName", context.getPackageName());
                 datas.put("version", config.getBasic().getVersion().toString());
                 datas.put("now", SimpleDateUtil.format(new Date()));
-                datas.put("ak", qiniuStorage.getAk());
-                datas.put("sk", qiniuStorage.getSk());
-                datas.put("bucket", qiniuStorage.getBucket());
-                datas.put("host", qiniuStorage.getHost());
+                if (isBoot) {
+                    datas.put("ak", qiniuStorage.getAk());
+                    datas.put("sk", qiniuStorage.getSk());
+                    datas.put("bucket", qiniuStorage.getBucket());
+                    datas.put("host", qiniuStorage.getHost());
+                }
                 bytes = new StringSubstitutor(datas).replace(content);
                 map.put(path, bytes);
             } else if (config.getStorage() instanceof HuaweiStorage) {
@@ -262,11 +272,13 @@ public class GenerateServiceImpl implements IGenerateService {
                 datas.put("basePackageName", context.getPackageName());
                 datas.put("version", config.getBasic().getVersion().toString());
                 datas.put("now", SimpleDateUtil.format(new Date()));
-                datas.put("region", huaweiStorage.getRegion());
-                datas.put("ak", huaweiStorage.getAk());
-                datas.put("sk", huaweiStorage.getSk());
-                datas.put("bucket", huaweiStorage.getBucket());
-                datas.put("host", huaweiStorage.getHost());
+                if (isBoot) {
+                    datas.put("region", huaweiStorage.getRegion());
+                    datas.put("ak", huaweiStorage.getAk());
+                    datas.put("sk", huaweiStorage.getSk());
+                    datas.put("bucket", huaweiStorage.getBucket());
+                    datas.put("host", huaweiStorage.getHost());
+                }
                 bytes = new StringSubstitutor(datas).replace(content);
                 map.put(path, bytes);
             }
@@ -300,70 +312,83 @@ public class GenerateServiceImpl implements IGenerateService {
     Pattern pattern = Pattern.compile("namespace=\\\"[a-zA-Z\\.]+\\\"");
     @Transactional(rollbackFor = Exception.class)
     @Override
-    public void boot(Integer id, Config config) throws Exception {
-        BootResult result = new BootResult();
-        GenerateContext context = getContext(id, config, true);
-        result.setBasePackage(context.getPackageName());
-        Map<String,String> map = generate(context, config, true);
-        FrontContext frontContext = context.getFrontContext();
-        Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();
-        if (frontMap != null) {
-            map.putAll(frontMap);
-        }
-        if (!CollectionUtils.isEmpty(frontContext.getFollows())) {
-            for (FrontContext follow : frontContext.getFollows()) {
-                Map<String,String> followMap = new BootFrontExecutor(follow).compile();
-                if (followMap != null) {
-                    map.putAll(followMap);
+    public void boot(Integer id, Integer version) throws Exception {
+        synchronized (id.toString().intern()) {
+            Config config = getConfig(id);
+            if (!config.getBasic().getVersion().equals(version)) {
+                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
+            }
+            int a = metaDao.updateLoaded(id, config.getBasic().getVersion(), true);
+            if (a == 0) {
+                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
+            }
+            if (generateBoot.getLoaded(id) != null) {
+                return;
+            }
+            BootResult result = new BootResult();
+            GenerateContext context = getContext(id, config, true);
+            result.setBasePackage(context.getPackageName());
+            Map<String,String> map = generate(context, config, true);
+            FrontContext frontContext = context.getFrontContext();
+            Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();
+            if (frontMap != null) {
+                map.putAll(frontMap);
+            }
+            if (!CollectionUtils.isEmpty(frontContext.getFollows())) {
+                for (FrontContext follow : frontContext.getFollows()) {
+                    Map<String,String> followMap = new BootFrontExecutor(follow).compile();
+                    if (followMap != null) {
+                        map.putAll(followMap);
+                    }
                 }
             }
-        }
 
-        String javaSrc = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator;
+            String javaSrc = "backend" + File.separator + "src" +  File.separator+ "main" + File.separator + "java" + File.separator;
 
-        result.setId(id);
-        result.setVersion(config.getBasic().getVersion());
-        result.setUrl(frontContext.getPath());
-        for (String key : map.keySet()) {
-            if (key.startsWith(javaSrc) && key.endsWith(".java")) {
-                BootResult.Java java = new BootResult.Java();
-                String classFullName = key.replace(javaSrc, "").replaceAll(Matcher.quoteReplacement(File.separator), ".");
-                classFullName = classFullName.substring(0, classFullName.length() - ".java".length());
-                java.setClassName(classFullName);
-                java.setSource(map.get(key));
+            result.setId(id);
+            result.setVersion(config.getBasic().getVersion());
+            result.setUrl(frontContext.getPath());
+            for (String key : map.keySet()) {
+                if (key.startsWith(javaSrc) && key.endsWith(".java")) {
+                    BootResult.Java java = new BootResult.Java();
+                    String classFullName = key.replace(javaSrc, "").replaceAll(Matcher.quoteReplacement(File.separator), ".");
+                    classFullName = classFullName.substring(0, classFullName.length() - ".java".length());
+                    java.setClassName(classFullName);
+                    java.setSource(map.get(key));
 
-                if (classFullName.endsWith("Po")) {
-                    result.getPo().add(java);
-                } else if (classFullName.endsWith("Dto")) {
-                    result.getDto().add(java);
-                } else if (classFullName.endsWith("Vo") || classFullName.endsWith("VO")) {
-                    result.getVo().add(java);
-                } else if (classFullName.endsWith("Req")) {
-                    result.getParam().add(java);
-                } else if (classFullName.endsWith("Dao")) {
-                    result.getDao().add(java);
-                } else if (classFullName.endsWith("Service")) {
-                    result.getServices().add(java);
-                } else if (classFullName.endsWith("ServiceImpl")) {
-                    result.getServiceImpls().add(java);
-                } else if (classFullName.endsWith("Controller")) {
-                    result.getControllers().add(java);
+                    if (classFullName.endsWith("Po")) {
+                        result.getPo().add(java);
+                    } else if (classFullName.endsWith("Dto")) {
+                        result.getDto().add(java);
+                    } else if (classFullName.endsWith("Vo") || classFullName.endsWith("VO")) {
+                        result.getVo().add(java);
+                    } else if (classFullName.endsWith("Req")) {
+                        result.getParam().add(java);
+                    } else if (classFullName.endsWith("Dao")) {
+                        result.getDao().add(java);
+                    } else if (classFullName.endsWith("Service")) {
+                        result.getServices().add(java);
+                    } else if (classFullName.endsWith("ServiceImpl")) {
+                        result.getServiceImpls().add(java);
+                    } else if (classFullName.endsWith("Controller")) {
+                        result.getControllers().add(java);
+                    }
+                } else if (key.endsWith(".xml")) {
+                    String source = map.get(key);
+                    Matcher matcher = pattern.matcher(source);
+                    if (matcher.find()) {
+                        String classFullName = source.substring(matcher.start() + "namespace=\"".length(), matcher.end() - 1);
+                        BootResult.Mapper mapper = new BootResult.Mapper();
+                        mapper.setMapperId(classFullName);
+                        mapper.setSource(source);
+                        result.getMappers().add(mapper);
+                    }
+                } else if (key.endsWith(".html")) {
+                    result.addHtml(key, map.get(key));
                 }
-            } else if (key.endsWith(".xml")) {
-                String source = map.get(key);
-                Matcher matcher = pattern.matcher(source);
-                if (matcher.find()) {
-                    String classFullName = source.substring(matcher.start() + "namespace=\"".length(), matcher.end() - 1);
-                    BootResult.Mapper mapper = new BootResult.Mapper();
-                    mapper.setMapperId(classFullName);
-                    mapper.setSource(source);
-                    result.getMappers().add(mapper);
-                }
-            } else if (key.endsWith(".html")) {
-                result.addHtml(key, map.get(key));
             }
+            generateBoot.boot(result, context.getNeedLoadClasses());
         }
-        generateBoot.boot(result, context.getNeedLoadClasses());
     }
 
     @Override
@@ -374,6 +399,58 @@ public class GenerateServiceImpl implements IGenerateService {
                 htmlServlet.removeCache(html);
             }
         }
+    }
+
+    @Transactional
+    @Override
+    public void unBoot(Integer id, Integer version) {
+        synchronized (id.toString().intern()) {
+            int a = metaDao.updateLoaded(id, version, false);
+            if (a == 0) {
+                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
+            }
+            unBoot(id);
+        }
+    }
+
+    @Override
+    public Config getConfig(Integer id) {
+        Meta po = metaDao.selectById(id);
+        if (po == null) {
+            throw new HandlerException(HttpStatus.NOT_FOUND);
+        }
+        Config config = new Config();
+        Basic basic = new Basic();
+        basic.setTitle(po.getTitle());
+        basic.setName(po.getName());
+        basic.setVersion(po.getVersion());
+        config.setBasic(basic);
+        if (po.getTable() != null) {
+            config.setTable(CommonUtil.unserialize(po.getTable(), UIMainTable.class));
+        }
+        if (po.getDb() != null) {
+            config.setDbConf(CommonUtil.unserialize(po.getDb(), DbConf.class));
+        }
+        if (po.getSearch() != null) {
+            config.setSearchForm(CommonUtil.unserialize(po.getSearch(), SearchForm.class));
+        }
+        if (po.getOperate() != null) {
+            config.setOperateForm(CommonUtil.unserialize(po.getOperate(), OperateForm.class));
+        }
+        if (po.getStorage() != null && !po.getStorage().isEmpty()) {
+            Storage storage = CommonUtil.unserialize(po.getStorage(), Storage.class);
+            if (storage instanceof HuaweiStorage) {
+                HuaweiStorage huaweiStorage = (HuaweiStorage) storage;
+                huaweiStorage.setAk(DesUtil.decrypt(huaweiStorage.getAk(), "storage"));
+                huaweiStorage.setSk(DesUtil.decrypt(huaweiStorage.getSk(), "storage"));
+            } else if (storage instanceof QiniuStorage) {
+                QiniuStorage qiniuStorage = (QiniuStorage) storage;
+                qiniuStorage.setAk(DesUtil.decrypt(qiniuStorage.getAk(), "storage"));
+                qiniuStorage.setSk(DesUtil.decrypt(qiniuStorage.getSk(), "storage"));
+            }
+            config.setStorage(storage);
+        }
+        return config;
     }
 
 }

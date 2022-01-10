@@ -31,6 +31,4 @@ public class MetaVO implements Serializable {
     private Storage storage;
 
     private String url;
-    @JSONField(name = "load_version")
-    private Integer loadVersion;
 }

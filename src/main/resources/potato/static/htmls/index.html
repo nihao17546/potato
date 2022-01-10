@@ -549,7 +549,8 @@
                 this.loading = true;
                 axios.get(window.contextPath + '/meta/unBoot',{
                     params: {
-                        id: row.id
+                        id: row.id,
+                        version: row.version
                     }
                 }).then(res => {
                     this.loading = false;
@@ -568,7 +569,8 @@
                 this.loading = true;
                 axios.get(window.contextPath + '/meta/boot',{
                     params: {
-                        id: row.id
+                        id: row.id,
+                        version: row.version
                     }
                 }).then(res => {
                     this.loading = false;

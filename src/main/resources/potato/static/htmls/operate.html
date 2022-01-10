@@ -258,7 +258,7 @@
                                     <el-form-item label="图片上传类型:"
                                                   v-if="element.elementType && typeContains[element.elementType].indexOf('acceptType') > -1"
                                                   :prop="'elements.'+indexElement+'.acceptType'"
-                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
                                         <el-select size="small" v-model="element.acceptType" multiple placeholder="请选择图片类型"
                                                    style="width: 100%;">
                                             <el-option :key="'.jpg'" label="jpg" :value="'.jpg'"></el-option>
@@ -565,7 +565,7 @@
                                     <el-form-item label="图片上传类型:"
                                                   v-if="element.elementType && typeContains[element.elementType].indexOf('acceptType') > -1"
                                                   :prop="'follows.'+index+'.elements.'+indexElement+'.acceptType'"
-                                                  :rules="[{required: false, message: '请选择', trigger: 'change'}]">
+                                                  :rules="[{required: true, message: '请选择', trigger: 'change'}]">
                                         <el-select size="small" v-model="element.acceptType" multiple placeholder="请选择图片类型"
                                                    style="width: 100%;">
                                             <el-option :key="'.jpg'" label="jpg" :value="'.jpg'"></el-option>

@@ -10,5 +10,6 @@ CREATE TABLE `meta` (
   `search` longtext,
   `operate` longtext,
   `storage` longtext,
+  `loaded` tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否已加载',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
