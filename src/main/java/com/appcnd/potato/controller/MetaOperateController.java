@@ -17,7 +17,7 @@ import java.util.ArrayList;
  * @author nihao 2021/08/26
  */
 @RequestMapping("/metaOperate")
-public class MetaOperateController extends BaseController {
+public class MetaOperateController {
     @Autowired
     private IMetaService metaService;
 

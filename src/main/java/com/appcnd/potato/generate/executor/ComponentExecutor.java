@@ -222,43 +222,47 @@ public class ComponentExecutor extends Executor {
                 }
             }
             if (element instanceof InputOperateElement) {
-                String message = element.getRule().getMessage();
-                InputOperateElement inputOperateElement = (InputOperateElement) element;
-                AnnotationInfo annotationInfo = null;
-                if (inputOperateElement.getMinlength() != null) {
-                    if (annotationInfo == null) {
-                        annotationInfo = new AnnotationInfo(Length.class.getName());
-                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                if (element.getRule() != null) {
+                    String message = element.getRule().getMessage();
+                    InputOperateElement inputOperateElement = (InputOperateElement) element;
+                    AnnotationInfo annotationInfo = null;
+                    if (inputOperateElement.getMinlength() != null) {
+                        if (annotationInfo == null) {
+                            annotationInfo = new AnnotationInfo(Length.class.getName());
+                            annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                        }
+                        annotationInfo.addField("min", inputOperateElement.getMinlength());
                     }
-                    annotationInfo.addField("min", inputOperateElement.getMinlength());
-                }
-                if (inputOperateElement.getMaxlength() != null) {
-                    if (annotationInfo == null) {
-                        annotationInfo = new AnnotationInfo(Length.class.getName());
-                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                    if (inputOperateElement.getMaxlength() != null) {
+                        if (annotationInfo == null) {
+                            annotationInfo = new AnnotationInfo(Length.class.getName());
+                            annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                        }
+                        annotationInfo.addField("max", inputOperateElement.getMaxlength());
                     }
-                    annotationInfo.addField("max", inputOperateElement.getMaxlength());
+                    field.addAnnotation(annotationInfo);
                 }
-                field.addAnnotation(annotationInfo);
             } else if (element instanceof TextareaOperateElement) {
-                String message = element.getRule().getMessage();
-                TextareaOperateElement textareaOperateElement = (TextareaOperateElement) element;
-                AnnotationInfo annotationInfo = null;
-                if (textareaOperateElement.getMinlength() != null) {
-                    if (annotationInfo == null) {
-                        annotationInfo = new AnnotationInfo(Length.class.getName());
-                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                if (element.getRule() != null) {
+                    String message = element.getRule().getMessage();
+                    TextareaOperateElement textareaOperateElement = (TextareaOperateElement) element;
+                    AnnotationInfo annotationInfo = null;
+                    if (textareaOperateElement.getMinlength() != null) {
+                        if (annotationInfo == null) {
+                            annotationInfo = new AnnotationInfo(Length.class.getName());
+                            annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                        }
+                        annotationInfo.addField("min", textareaOperateElement.getMinlength());
                     }
-                    annotationInfo.addField("min", textareaOperateElement.getMinlength());
-                }
-                if (textareaOperateElement.getMaxlength() != null) {
-                    if (annotationInfo == null) {
-                        annotationInfo = new AnnotationInfo(Length.class.getName());
-                        annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                    if (textareaOperateElement.getMaxlength() != null) {
+                        if (annotationInfo == null) {
+                            annotationInfo = new AnnotationInfo(Length.class.getName());
+                            annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "校验错误"));
+                        }
+                        annotationInfo.addField("max", textareaOperateElement.getMaxlength());
                     }
-                    annotationInfo.addField("max", textareaOperateElement.getMaxlength());
+                    field.addAnnotation(annotationInfo);
                 }
-                field.addAnnotation(annotationInfo);
             }
             javaClassContext.addField(field);
             javaClassContext.addMethods(GenerateUtil.getSetterAndGetterMethod(field));

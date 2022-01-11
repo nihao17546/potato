@@ -25,7 +25,7 @@ import java.util.Map;
  * @author nihao 2021/12/26
  */
 @Slf4j
-public class EnhancerController<T extends BaseController> implements MethodInterceptor {
+public class EnhancerController<T> implements MethodInterceptor {
     private T target;
 
     public EnhancerController(T target) {

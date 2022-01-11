@@ -33,7 +33,7 @@ import java.util.zip.ZipOutputStream;
  */
 @Slf4j
 @RequestMapping("/meta")
-public class MetaController extends BaseController {
+public class MetaController {
     @Autowired
     private IMetaService metaService;
     @Autowired

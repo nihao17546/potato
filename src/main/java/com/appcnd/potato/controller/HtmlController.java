@@ -17,7 +17,7 @@ import java.util.*;
  * @author nihao 2021/11/14
  */
 @RequestMapping("/")
-public class HtmlController extends BaseController {
+public class HtmlController {
     @Autowired
     private CoreProperties properties;
 

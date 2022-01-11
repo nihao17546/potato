@@ -20,6 +20,7 @@ import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
 
+import javax.annotation.PostConstruct;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Proxy;
@@ -69,58 +70,62 @@ public class BeanConfig {
         return new BootExecutor();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "HtmlController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "HtmlController")
     public HtmlController htmlController() {
-        modify(HtmlController.class);
         return new EnhancerController<>(new HtmlController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "SettingController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "SettingController")
     public SettingController settingController() {
-        modify(SettingController.class);
         return new EnhancerController<>(new SettingController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "MetaController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaController")
     public MetaController metaController() {
-        modify(MetaController.class);
         return new EnhancerController<>(new MetaController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "DbController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "DbController")
     public DbController dbController() {
-        modify(DbController.class);
         return new EnhancerController<>(new DbController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "MetaTableController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaTableController")
     public MetaTableController metaTableController() {
-        modify(MetaTableController.class);
         return new EnhancerController<>(new MetaTableController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "MetaDbController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaDbController")
     public MetaDbController metaDbController() {
-        modify(MetaDbController.class);
         return new EnhancerController<>(new MetaDbController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "MetaSearchController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaSearchController")
     public MetaSearchController metaSearchController() {
-        modify(MetaSearchController.class);
         return new EnhancerController<>(new MetaSearchController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "MetaOperateController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaOperateController")
     public MetaOperateController metaOperateController() {
-        modify(MetaOperateController.class);
         return new EnhancerController<>(new MetaOperateController()).creatController();
     }
 
-    @Bean(name = BasicConstant.beanNamePrefix + "MetaStorageController", initMethod = "requestMapping")
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaStorageController")
     public MetaStorageController metaStorageController() {
-        modify(MetaStorageController.class);
         return new EnhancerController<>(new MetaStorageController()).creatController();
+    }
+
+    @PostConstruct
+    public void init() {
+        modify(HtmlController.class);
+        modify(SettingController.class);
+        modify(MetaController.class);
+        modify(DbController.class);
+        modify(MetaTableController.class);
+        modify(MetaDbController.class);
+        modify(MetaSearchController.class);
+        modify(MetaOperateController.class);
+        modify(MetaStorageController.class);
     }
 
     /**

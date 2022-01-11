@@ -17,7 +17,7 @@ import java.util.Set;
  * @author nihao 2021/07/03
  */
 @RequestMapping("/metaDb")
-public class MetaDbController extends BaseController {
+public class MetaDbController {
     @Autowired
     private IMetaService metaService;
 

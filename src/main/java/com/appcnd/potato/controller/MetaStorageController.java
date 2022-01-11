@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  * @author nihao 2021/07/02
  */
 @RequestMapping("/metaStorage")
-public class MetaStorageController extends BaseController {
+public class MetaStorageController {
     @Autowired
     private IMetaService metaService;
 
