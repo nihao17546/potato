@@ -93,6 +93,18 @@ ${extraHtml}
         }
         return "";
     }
+    function parseParam(param){
+        let res = ''
+        for(let key in param){
+            if (typeof param[key] != "undefined" && param[key] != null) {
+                if (res != '') {
+                    res = res + '&'
+                }
+                res = res + key + '=' + encodeURI(param[key])
+            }
+        }
+        return res;
+    }
 ${vueUse}
     new Vue({
         name: 'boot',
