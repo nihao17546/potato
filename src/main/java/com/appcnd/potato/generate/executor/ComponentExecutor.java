@@ -131,6 +131,7 @@ public class ComponentExecutor extends Executor {
             if (Boolean.TRUE.equals(operateForm.getInsert())) {
                 JavaClassContext insertReq = new JavaClassContext(className.getInsertReqClassName(), config.getBasic().getVersion(), "public class");
                 insertReq.addImplementsClassName(Serializable.class.getName());
+                fillParamForiginKeyFieldAndMethod(insertReq, table);
                 fillParamFieldAndMethod(insertReq, operateForm.getElements());
                 fillParamToPoMethod(insertReq, po);
                 context.addJavaClassContext(insertReq);
@@ -139,7 +140,7 @@ public class ComponentExecutor extends Executor {
             if (Boolean.TRUE.equals(operateForm.getUpdate())) {
                 JavaClassContext updateReq = new JavaClassContext(className.getUpdateReqClassName(), config.getBasic().getVersion(), "public class");
                 updateReq.addImplementsClassName(Serializable.class.getName());
-                fillParamKeyFieldAndMethod(updateReq, table);
+                fillParamPrimaryKeyFieldAndMethod(updateReq, table);
                 fillParamFieldAndMethod(updateReq, operateForm.getElements());
                 fillParamToPoMethod(updateReq, po);
                 context.addJavaClassContext(updateReq);
@@ -148,7 +149,7 @@ public class ComponentExecutor extends Executor {
             if (Boolean.TRUE.equals(operateForm.getDelete())) {
                 JavaClassContext deleteReq = new JavaClassContext(className.getDeleteReqClassName(), config.getBasic().getVersion(), "public class");
                 deleteReq.addImplementsClassName(Serializable.class.getName());
-                fillParamKeyFieldAndMethod(deleteReq, table);
+                fillParamPrimaryKeyFieldAndMethod(deleteReq, table);
                 fillParamToPoMethod(deleteReq, po);
                 context.addJavaClassContext(deleteReq);
                 handlerRequest.setDeleteeq(deleteReq);
@@ -156,7 +157,7 @@ public class ComponentExecutor extends Executor {
         }
     }
 
-    private void fillParamKeyFieldAndMethod(JavaClassContext req, Table table) {
+    private void fillParamPrimaryKeyFieldAndMethod(JavaClassContext req, Table table) {
         for (String key : table.getPrimaryFields()) {
             Column keyColumn = null;
             for (Column column : table.getColumns()) {
@@ -173,6 +174,30 @@ public class ComponentExecutor extends Executor {
                 annotationInfo = new AnnotationInfo(NotNull.class.getName());
             }
             annotationInfo.addField("message", "主键参数" + field.getName() + "缺失");
+            field.addAnnotation(annotationInfo);
+            req.addField(field);
+            req.addMethods(GenerateUtil.getSetterAndGetterMethod(field));
+        }
+    }
+
+    private void fillParamForiginKeyFieldAndMethod(JavaClassContext req, Table table) {
+        if (table instanceof FollowTable) {
+            FollowTable followTable = (FollowTable) table;
+            Column keyColumn = null;
+            for (Column column : table.getColumns()) {
+                if (followTable.getForeignKey().equals(column.getField())) {
+                    keyColumn = column;
+                    break;
+                }
+            }
+            ClassField field = new ClassField("private", keyColumn.getJavaType().getName(), CamelUtil.underlineToCamel(keyColumn.getField()));
+            AnnotationInfo annotationInfo = null;
+            if (keyColumn.getJavaType().equals(String.class)) {
+                annotationInfo = new AnnotationInfo(NotEmpty.class.getName());
+            } else {
+                annotationInfo = new AnnotationInfo(NotNull.class.getName());
+            }
+            annotationInfo.addField("message", "外键参数" + field.getName() + "缺失");
             field.addAnnotation(annotationInfo);
             req.addField(field);
             req.addMethods(GenerateUtil.getSetterAndGetterMethod(field));
@@ -240,7 +265,9 @@ public class ComponentExecutor extends Executor {
                         }
                         annotationInfo.addField("max", inputOperateElement.getMaxlength());
                     }
-                    field.addAnnotation(annotationInfo);
+                    if (annotationInfo != null) {
+                        field.addAnnotation(annotationInfo);
+                    }
                 }
             } else if (element instanceof TextareaOperateElement) {
                 if (element.getRule() != null) {
@@ -261,7 +288,9 @@ public class ComponentExecutor extends Executor {
                         }
                         annotationInfo.addField("max", textareaOperateElement.getMaxlength());
                     }
-                    field.addAnnotation(annotationInfo);
+                    if (annotationInfo != null) {
+                        field.addAnnotation(annotationInfo);
+                    }
                 }
             }
             javaClassContext.addField(field);
