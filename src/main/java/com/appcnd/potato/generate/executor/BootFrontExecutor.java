@@ -196,7 +196,7 @@ public class BootFrontExecutor extends FrontExecutor {
             if (width != null) {
                 tableHtmlBuilder.append("                width=\"").append(width).append("\"\n");
             }
-            if (sortable != null) {
+            if (Boolean.TRUE.equals(sortable)) {
                 tableHtmlBuilder.append("                sortable\n");
             }
             tableHtmlBuilder.append("                prop=\"").append(prop).append("\">\n");
