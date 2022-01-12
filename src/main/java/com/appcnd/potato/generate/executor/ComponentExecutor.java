@@ -237,7 +237,8 @@ public class ComponentExecutor extends Executor {
                     annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "缺失"));
                     field.addAnnotation(annotationInfo);
                 }
-                if (element.getRule().getRegular() != null && !element.getRule().getRegular().isEmpty()) {
+                if (element.getRule().getRegular() != null && !element.getRule().getRegular().isEmpty()
+                        && element.getColumn().getJavaType().equals(String.class)) {
                     AnnotationInfo annotationInfo = new AnnotationInfo(Pattern.class.getName());
                     annotationInfo.addField("message", (message != null && !message.isEmpty()) ? message : ("参数" + field.getName() + "格式校验错误"));
                     String reg = element.getRule().getRegular();
