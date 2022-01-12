@@ -137,9 +137,6 @@ public class UpdateComponentHandler extends ComponentHandler {
         serviceImplMethod.addContentClass(className.getUpdateReqClassName());
         serviceImplMethod.setMethodName("update");
         serviceImplMethod.addParam(new ParamInfo(className.getUpdateReqClassName(), "param"));
-        StringBuilder serviceContentBuilder = new StringBuilder();
-        serviceContentBuilder.append("        ").append(request.getClassName().getPoClassName())
-                .append(" po = param.transferToPo();\n");
         ClassField daoClassField = null;
         for (ClassField classField : serviceImplClass.getFields()) {
             if (classField.getClassName().equals(daoClass.getClassName())) {
@@ -147,6 +144,25 @@ public class UpdateComponentHandler extends ComponentHandler {
                 break;
             }
         }
+        StringBuilder selectSingleParam = new StringBuilder();
+        for (int i = 0, size = request.getTable().getPrimaryFields().size(); i < size; i ++) {
+            if (i > 0) {
+                selectSingleParam.append(",");
+            }
+            String pk = request.getTable().getPrimaryFields().get(i);
+            String param = CamelUtil.underlineToCamel(pk);
+            String method = CamelUtil.get(param);
+            selectSingleParam.append("param.").append(method).append("()");
+        }
+        StringBuilder serviceContentBuilder = new StringBuilder();
+        serviceContentBuilder.append("        ").append(className.getPoClassName()).append(" dbPo = ")
+                .append("this.").append(daoClassField.getName()).append(".selectSingle(").append(selectSingleParam.toString()).append(");\n");
+        serviceContentBuilder
+                .append("        if (dbPo == null) {\n")
+                .append("             throw new NullPointerException(\"不存在\");\n")
+                .append("        }\n");
+        serviceContentBuilder.append("        ").append(request.getClassName().getPoClassName())
+                .append(" po = param.transferToPo();\n");
         for (OperateElement element : operateForm.getElements()) {
             if (element instanceof UpdateTimeElement) {
                 UpdateTimeElement updateTimeElement = (UpdateTimeElement) element;
@@ -178,6 +194,30 @@ public class UpdateComponentHandler extends ComponentHandler {
             }
         }
         if (operateForm.getUniques() != null && !operateForm.getUniques().isEmpty()) {
+            Set<String> uniqueColumns = new HashSet<>();
+            for (Unique unique : operateForm.getUniques()) {
+                uniqueColumns.addAll(unique.getColumns());
+            }
+            serviceContentBuilder.append("        ").append(request.getClassName().getPoClassName())
+                    .append(" checkPo = new ").append(request.getClassName().getPoClassName()).append("();\n");
+            for (String pk : request.getTable().getPrimaryFields()) {
+                uniqueColumns.remove(pk);
+                String getMethod = CamelUtil.get(pk);
+                String setMethod = CamelUtil.set(pk);
+                serviceContentBuilder.append("        checkPo.").append(setMethod)
+                        .append("(param.").append(getMethod).append("());\n");
+            }
+            for (String uniqueColumn : uniqueColumns) {
+                String param = CamelUtil.underlineToCamel(uniqueColumn);
+                String getMethod = CamelUtil.get(param);
+                String setMethod = CamelUtil.set(param);
+                serviceContentBuilder
+                        .append("        if (po.").append(getMethod).append("() != null) {\n")
+                        .append("            checkPo.").append(setMethod).append("(po.").append(getMethod).append("());\n")
+                        .append("        } else {\n")
+                        .append("            checkPo.").append(setMethod).append("(dbPo.").append(getMethod).append("());\n")
+                        .append("        }\n");
+            }
             serviceImplMethod.addContentClass(List.class.getName());
             int i = 0;
             for (Unique unique : operateForm.getUniques()) {
@@ -186,7 +226,7 @@ public class UpdateComponentHandler extends ComponentHandler {
                 serviceContentBuilder.append("        ")
                         .append(List.class.getName()).append("<").append(className.getPoClassName()).append("> ");
                 serviceContentBuilder.append(name)
-                        .append(" = this.").append(daoClassField.getName()).append(".").append(methodName).append("(po);\n");
+                        .append(" = this.").append(daoClassField.getName()).append(".").append(methodName).append("(checkPo);\n");
                 serviceContentBuilder.append("        if (").append(name).append(" != null && !").append(name).append(".isEmpty()) {\n");
                 serviceContentBuilder.append("            throw new IllegalArgumentException(\"")
                         .append(unique.getToast()).append("\");\n");

@@ -8,6 +8,7 @@ import com.appcnd.potato.generate.method.MethodInfo;
 import com.appcnd.potato.generate.method.ParamInfo;
 import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.FollowTable;
+import com.appcnd.potato.meta.conf.form.operate.Unique;
 import com.appcnd.potato.meta.conf.form.operate.elements.OperateElement;
 import com.appcnd.potato.util.CamelUtil;
 import com.appcnd.potato.util.SqlStringBuilder;
@@ -69,6 +70,20 @@ public class InfoComponentHandler extends ComponentHandler {
                             .append(" AS ")
                             .put(field);
                     fields.add(field);
+                }
+            }
+        }
+
+        if (request.getOperateForm().getUniques() != null) {
+            for (Unique unique : request.getOperateForm().getUniques()) {
+                for (String uniqueColumn : unique.getColumns()) {
+                    if (!fields.contains(uniqueColumn)) {
+                        String field = CamelUtil.underlineToCamel(uniqueColumn);
+                        sqlStringBuilder.append(",").put(uniqueColumn)
+                                .append(" AS ")
+                                .put(field);
+                        fields.add(field);
+                    }
                 }
             }
         }
