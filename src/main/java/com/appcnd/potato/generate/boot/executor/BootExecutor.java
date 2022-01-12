@@ -34,7 +34,7 @@ public class BootExecutor {
 
     @PostConstruct
     public void init() {
-        executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+        executorService = Executors.newSingleThreadExecutor();
         List<Meta> metaList = metaDao.selectList(null, true, null, null);
         if (metaList != null && !metaList.isEmpty()) {
             for (Meta meta : metaList) {
