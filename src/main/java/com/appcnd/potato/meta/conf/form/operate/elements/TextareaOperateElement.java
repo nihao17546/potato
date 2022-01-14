@@ -31,7 +31,7 @@ public class TextareaOperateElement extends OperateElement {
         String field = getFieldName();
         StringBuilder sb = new StringBuilder();
         sb.append("            <el-form-item label=\"").append(getLabel()).append(":\" prop=\"").append(field).append("\" label-width=\"100px\">\n")
-                .append("                <el-input type=\"textarea\" v-model.trim=\"form.").append(field).append("\"");
+                .append("                <el-input type=\"textarea\" v-model=\"form.").append(field).append("\"");
         sb.append(getFieldHtml());
         sb.append("></el-input>\n")
                 .append("            </el-form-item>\n");
