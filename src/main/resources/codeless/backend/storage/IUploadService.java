@@ -5,7 +5,7 @@ import ${basePackageName}.pojo.vo.TokenResultVo;
 import java.util.UUID;
 
 /**
- * @author codelee ${now}
+ * @author codeless ${now}
  * @version ${version}
  */
 public abstract class IUploadService {

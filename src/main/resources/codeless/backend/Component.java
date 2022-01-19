@@ -3,7 +3,7 @@ package ${packageName};
 ${imports}
 
 /**
- * @author codelee ${now}
+ * @author codeless ${now}
  * @version ${version}
  */
 public ${decorate} ${className} ${classNameSuffix}{

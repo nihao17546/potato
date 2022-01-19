@@ -4,7 +4,7 @@ import java.io.Serializable;
 ${imports}
 
 /**
- * @author codelee ${now}
+ * @author codeless ${now}
  * @version ${version}
  */
 public class ${className} implements Serializable {

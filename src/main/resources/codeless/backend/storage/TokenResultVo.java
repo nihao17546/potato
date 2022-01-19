@@ -3,7 +3,7 @@ package ${basePackageName}.pojo.vo;
 import java.io.Serializable;
 
 /**
- * @author codelee ${now}
+ * @author codeless ${now}
  * @version ${version}
  */
 public class TokenResultVo implements Serializable {

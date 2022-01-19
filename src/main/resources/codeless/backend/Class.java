@@ -2,7 +2,7 @@ package ${packageName};
 
 ${imports}
 /**
- * @author codelee ${now}
+ * @author codeless ${now}
  * @version ${version}
  */
 ${decorate} ${className} ${classNameSuffix}{
