@@ -80,8 +80,9 @@ public class GenerateBoot {
                         }
                     }
                     Set<String> htmls = bootResult.getHtml().keySet();
+                    Set<String> s = new HashSet<>(htmls);
                     bootResult.clear();
-                    return htmls;
+                    return s;
                 }
             }
         }
