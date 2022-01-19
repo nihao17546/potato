@@ -111,6 +111,7 @@
     <el-dialog
             :title="dialogTitle"
             :visible.sync="dialogVisible"
+            :close-on-press-escape="false" :close-on-click-modal="false"
             width="50%"
             :before-close="handleClose">
         <el-form :model="form" :rules="rules" ref="form" size="small" v-loading="loading">
@@ -130,6 +131,7 @@
     <el-dialog
             title="代码生成"
             :visible.sync="generate.visible"
+            :close-on-press-escape="false" :close-on-click-modal="false"
             width="50%"
             :before-close="generateClose">
         <el-form :model="generate" ref="generateForm" size="small" v-loading="loading">

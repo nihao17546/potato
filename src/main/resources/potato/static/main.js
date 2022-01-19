@@ -29,7 +29,7 @@ function validateArray(rule, value, callback) {
     }
 }
 function validateNumber(rule, value, callback) {
-    if (typeof value == 'undefined' || value == null || value == '') {
+    if (typeof value === 'undefined' || value === null || value === '') {
         if (rule.required) {
             callback(new Error(rule.message));
         } else {
@@ -44,7 +44,7 @@ function validateNumber(rule, value, callback) {
     }
 }
 function validateZNumber(rule, value, callback) {
-    if (typeof value == 'undefined' || value == null || value == '') {
+    if (typeof value === 'undefined' || value === null || value === '') {
         if (rule.required) {
             callback(new Error(rule.message));
         } else {
@@ -59,7 +59,7 @@ function validateZNumber(rule, value, callback) {
     }
 }
 function validateAllNumber(rule, value, callback) {
-    if (typeof value == 'undefined' || value == null || value == '') {
+    if (typeof value == 'undefined' || value == null || value === '') {
         if (rule.required) {
             callback(new Error(rule.message));
         } else {
