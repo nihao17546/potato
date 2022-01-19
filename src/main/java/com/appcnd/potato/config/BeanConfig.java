@@ -1,6 +1,7 @@
 package com.appcnd.potato.config;
 
 import com.appcnd.potato.controller.*;
+import com.appcnd.potato.filter.AuthFilter;
 import com.appcnd.potato.generate.boot.HtmlServlet;
 import com.appcnd.potato.generate.boot.executor.BootExecutor;
 import com.appcnd.potato.model.constant.BasicConstant;
@@ -16,6 +17,8 @@ import com.appcnd.potato.controller.EnhancerController;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.AutoConfigureAfter;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.web.servlet.ServletRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -113,6 +116,28 @@ public class BeanConfig {
     @Bean(name = BasicConstant.beanNamePrefix + "MetaStorageController")
     public MetaStorageController metaStorageController() {
         return new EnhancerController<>(new MetaStorageController()).creatController();
+    }
+
+    @ConditionalOnProperty({"spring.potato.loginname","spring.potato.password"})
+    @Bean(BasicConstant.beanNamePrefix + "authServletRegistrationBean")
+    public FilterRegistrationBean authServletRegistrationBean() {
+        FilterRegistrationBean registration = new FilterRegistrationBean();
+        registration.setFilter(new AuthFilter());
+        registration.addInitParameter("loginname", properties.getLoginname());
+        registration.addInitParameter("password", properties.getPassword());
+        registration.addUrlPatterns(properties.getPath() + "/index.html",
+                properties.getPath() + "/db.html",
+                properties.getPath() + "/operate.html",
+                properties.getPath() + "/search.html",
+                properties.getPath() + "/storage.html",
+                properties.getPath() + "/table.html",
+                properties.getPath() + "/meta/*", properties.getPath() + "/metaDb/*",
+                properties.getPath() + "/metaOperate/*", properties.getPath() + "/metaSearch/*",
+                properties.getPath() + "/metaStorage/*", properties.getPath() + "/metaTable/*",
+                properties.getPath() + "/setting/*");
+        registration.setName(BasicConstant.beanNamePrefix + "AuthFilter");
+        registration.setOrder(1);
+        return registration;
     }
 
     @PostConstruct

@@ -10,7 +10,7 @@ public class HttpStatus {
     public static final Status OK = new Status(0, "ok");
     public static final Status SYSTEM_ERROR = new Status(1, "系统异常");
     public static final Status PARAM_ERROR = new Status(400, "参数错误");
-    public static final Status NEED_LOGIN = new Status(403, "未登录");
+    public static final Status NEED_LOGIN = new Status(401, "未登录");
     public static final Status AUTH_PENDING = new Status(403, "账号待验证");
     public static final Status AUTH_FORBIDDEN = new Status(403, "账号未验证通过");
     public static final Status NOT_FOUND = new Status(404, "未找到");

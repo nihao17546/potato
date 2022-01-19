@@ -17,6 +17,8 @@ public class CoreProperties {
     private String path;
     private String classPath;
     private Boolean cluster = Boolean.FALSE;
+    private String loginname;
+    private String password;
 
     @PostConstruct
     public void init() {
