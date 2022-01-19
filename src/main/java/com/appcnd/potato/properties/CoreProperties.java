@@ -19,6 +19,7 @@ public class CoreProperties {
     private Boolean cluster = Boolean.FALSE;
     private String loginname;
     private String password;
+    private String[] excludeTables;
 
     @PostConstruct
     public void init() {
