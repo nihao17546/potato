@@ -1,10 +1,10 @@
 package com.appcnd.potato.controller;
 
 import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.meta.conf.db.Column;
+import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.db.FollowTable;
-import com.appcnd.potato.meta.conf.table.UIColumn;
-import com.appcnd.potato.meta.conf.table.UIMainTable;
-import com.appcnd.potato.meta.conf.table.UITable;
+import com.appcnd.potato.meta.conf.table.*;
 import com.appcnd.potato.meta.trans.DbTransfer;
 import com.appcnd.potato.model.param.MetaTableParam;
 import com.appcnd.potato.model.vo.HttpResult;
@@ -14,10 +14,8 @@ import com.appcnd.potato.service.IMetaService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author nihao 2021/07/02
@@ -34,6 +32,7 @@ public class MetaTableController {
         if (metaVO.getDbConf() == null) {
             throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置，请先配置数据库");
         }
+        check(metaVO.getDbConf(), metaVO.getTable());
         HttpResult result = HttpResult.success().pull("version", metaVO.getVersion());
         List<UIColumn> uiColumns = DbTransfer.getMainUIColumns(metaVO.getDbConf());
         result.pull("mainTableColumns", uiColumns);
@@ -58,7 +57,9 @@ public class MetaTableController {
                 if (uiMainTable != null) {
                     if (uiMainTable.getFollows() != null) {
                         for (UITable uiTable : uiMainTable.getFollows()) {
-                            followUiColumns.removeAll(uiTable.getColumns());
+                            if (uiTable.getColumns() != null && !uiTable.getColumns().isEmpty()) {
+                                followUiColumns.removeAll(uiTable.getColumns());
+                            }
                         }
                     }
                 }
@@ -67,6 +68,110 @@ public class MetaTableController {
             result.pull("followTableColumns", ff);
         }
         return result.json();
+    }
+
+    private void check(DbConf dbConf, UIMainTable uiMainTable) {
+        if (uiMainTable == null) {
+            return;
+        }
+        Map<String,Set<String>> mainTableMap = new HashMap<>();
+        mainTableMap.put(dbConf.getTable().getName(), dbConf.getTable().getColumns().stream().map(Column::getField).collect(Collectors.toSet()));
+        if (dbConf.getAssociationTables() != null) {
+            for (FollowTable followTable : dbConf.getAssociationTables()) {
+                mainTableMap.put(followTable.getName(), followTable.getColumns().stream().map(Column::getField).collect(Collectors.toSet()));
+            }
+        }
+        if (uiMainTable.getColumns() != null) {
+            Iterator<UIColumn> iterator = uiMainTable.getColumns().iterator();
+            while (iterator.hasNext()) {
+                UIColumn uiColumn = iterator.next();
+                String table = uiColumn.getTable();
+                Set<String> columns = mainTableMap.get(table);
+                if (columns == null) {
+                    iterator.remove();
+                    continue;
+                }
+                String field = uiColumn.getColumn().getField();
+                if (!columns.contains(field)) {
+                    iterator.remove();
+                    continue;
+                }
+            }
+        }
+        if (uiMainTable.getSorts() != null) {
+            Iterator<Sort> iterator = uiMainTable.getSorts().iterator();
+            while (iterator.hasNext()) {
+                Sort sort = iterator.next();
+                Set<String> columns = mainTableMap.get(sort.getTable());
+                if (columns == null) {
+                    iterator.remove();
+                    continue;
+                }
+                if (!columns.contains(sort.getColumn())) {
+                    iterator.remove();
+                    continue;
+                }
+            }
+        }
+
+        if (dbConf.getFollowTables() == null || dbConf.getFollowTables().isEmpty()) {
+            if (uiMainTable.getFollows() != null) {
+                uiMainTable.getFollows().clear();
+            }
+        } else {
+            if (uiMainTable.getFollows() == null || uiMainTable.getFollows().isEmpty()) {
+                List<UIFollowTable> list = new ArrayList<>();
+                for (FollowTable followTable : dbConf.getFollowTables()) {
+                    list.add(new UIFollowTable());
+                }
+                uiMainTable.setFollows(list);
+            } else {
+                if (uiMainTable.getFollows().size() > dbConf.getFollowTables().size()) {
+                    uiMainTable.setFollows(uiMainTable.getFollows().subList(0, dbConf.getFollowTables().size()));
+                } else if (uiMainTable.getFollows().size() < dbConf.getFollowTables().size()) {
+                    int size = dbConf.getFollowTables().size() - uiMainTable.getFollows().size();
+                    for (int i = 0; i < size; i ++) {
+                        uiMainTable.getFollows().add(new UIFollowTable());
+                    }
+                }
+                for (int i = 0; i < dbConf.getFollowTables().size(); i ++) {
+                    FollowTable followTable = dbConf.getFollowTables().get(i);
+                    Set<String> dbColumns = followTable.getColumns().stream().map(Column::getField).collect(Collectors.toSet());
+
+                    UIFollowTable uiFollowTable = uiMainTable.getFollows().get(i);
+                    if (uiFollowTable.getColumns() != null && !uiFollowTable.getColumns().isEmpty()) {
+                        Iterator<UIColumn> iterator = uiFollowTable.getColumns().iterator();
+                        while (iterator.hasNext()) {
+                            UIColumn uiColumn = iterator.next();
+                            String table = uiColumn.getTable();
+                            if (!table.equalsIgnoreCase(followTable.getName())) {
+                                iterator.remove();
+                                continue;
+                            }
+                            String field = uiColumn.getColumn().getField();
+                            if (!dbColumns.contains(field)) {
+                                iterator.remove();
+                                continue;
+                            }
+                        }
+                    }
+                    if (uiFollowTable.getSorts() != null) {
+                        Iterator<Sort> iterator = uiFollowTable.getSorts().iterator();
+                        while (iterator.hasNext()) {
+                            Sort sort = iterator.next();
+                            if (!sort.getTable().equalsIgnoreCase(followTable.getName())) {
+                                iterator.remove();
+                                continue;
+                            }
+                            if (!dbColumns.contains(sort.getColumn())) {
+                                iterator.remove();
+                                continue;
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 
     @PostMapping("/update")
