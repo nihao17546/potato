@@ -90,7 +90,10 @@ public class MetaOperateController {
             if (operateForm.getFollows() == null || operateForm.getFollows().isEmpty()) {
                 List<OperateForm> list = new ArrayList<>();
                 for (FollowTable followTable : dbConf.getFollowTables()) {
-                    list.add(new OperateForm());
+                    OperateForm of = new OperateForm();
+                    of.setElements(new ArrayList<>(0));
+                    of.setUniques(new ArrayList<>(0));
+                    list.add(of);
                 }
                 operateForm.setFollows(list);
             } else {
@@ -99,7 +102,10 @@ public class MetaOperateController {
                 } else if (operateForm.getFollows().size() < dbConf.getFollowTables().size()) {
                     int size = dbConf.getFollowTables().size() - operateForm.getFollows().size();
                     for (int i = 0; i < size; i ++) {
-                        operateForm.getFollows().add(new OperateForm());
+                        OperateForm of = new OperateForm();
+                        of.setElements(new ArrayList<>(0));
+                        of.setUniques(new ArrayList<>(0));
+                        operateForm.getFollows().add(of);
                     }
                 }
                 for (int i = 0; i < dbConf.getFollowTables().size(); i ++) {

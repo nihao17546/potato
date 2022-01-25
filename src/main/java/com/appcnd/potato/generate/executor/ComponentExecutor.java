@@ -122,9 +122,9 @@ public class ComponentExecutor extends Executor {
         vo.addConstructor(constructor);
 
         context.addJavaClassContext(po);
-        handlerRequest.setDto(po);
+        handlerRequest.setPo(po);
         context.addJavaClassContext(vo);
-        handlerRequest.setDto(vo);
+        handlerRequest.setVo(vo);
 
         // param
         if (operateForm != null) {
@@ -384,8 +384,8 @@ public class ComponentExecutor extends Executor {
                 componentClass(className, request);
 
                 follows.add(request);
+                index ++;
             }
-            index ++;
         }
 
         return Pair.of(handlerRequest, follows);
