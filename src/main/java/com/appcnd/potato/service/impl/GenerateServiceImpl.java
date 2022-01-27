@@ -4,7 +4,6 @@ import com.appcnd.potato.dao.MetaDao;
 import com.appcnd.potato.exception.HandlerException;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
-import com.appcnd.potato.generate.boot.HtmlServlet;
 import com.appcnd.potato.generate.constant.BootConstant;
 import com.appcnd.potato.generate.context.ClassName;
 import com.appcnd.potato.generate.context.FrontContext;
@@ -24,6 +23,7 @@ import com.appcnd.potato.meta.conf.form.search.SearchForm;
 import com.appcnd.potato.meta.conf.form.storage.HuaweiStorage;
 import com.appcnd.potato.meta.conf.form.storage.QiniuStorage;
 import com.appcnd.potato.meta.conf.form.storage.Storage;
+import com.appcnd.potato.meta.conf.table.UIFollowTable;
 import com.appcnd.potato.meta.conf.table.UIMainTable;
 import com.appcnd.potato.model.param.GenerateParam;
 import com.appcnd.potato.model.po.Meta;
@@ -50,8 +50,6 @@ import java.util.stream.Collectors;
 public class GenerateServiceImpl implements IGenerateService {
     @Autowired
     private GenerateBoot generateBoot;
-    @Autowired
-    private HtmlServlet htmlServlet;
     @Autowired
     private CoreProperties coreProperties;
     @Autowired
@@ -141,7 +139,12 @@ public class GenerateServiceImpl implements IGenerateService {
         context.setPackageName(param.getPackageName());
         context.setColumnMap(getColumnMap(config.getDbConf()));
         context.setMainClassName(new ClassName(param.getPackageName(), entityMap.get(config.getDbConf().getTable().getName())));
-        String path = BootConstant.requestPrefix + "page/" + DesUtil.encrypt(param.getId() + "," + config.getBasic().getVersion()) + ".html";
+        String path = null;
+        if (config.getTable().getUri() == null || config.getTable().getUri().isEmpty()) {
+            path = "/" + DesUtil.encrypt(param.getId().toString()) + ".html";
+        } else {
+            path = config.getTable().getUri();
+        }
         String listRequestPath;
         if (isBoot) {
             listRequestPath = coreProperties.getPath() + BootConstant.requestPrefix + CommonUtil.getClassNameField(context.getMainClassName().getEntityName()) + "/list";
@@ -166,8 +169,12 @@ public class GenerateServiceImpl implements IGenerateService {
                 if (config.getSearchForm() != null && config.getSearchForm().getFollows() != null) {
                     followSearch = config.getSearchForm().getFollows().get(index);
                 }
-                String followPath = BootConstant.requestPrefix + "page/"
-                        + DesUtil.encrypt(param.getId() + "," + config.getBasic().getVersion() + "," + index) + ".html";
+                String followPath = null;
+                if (config.getTable().getFollows().get(index).getUri() == null || config.getTable().getFollows().get(index).getUri().isEmpty()) {
+                    followPath = "/" + DesUtil.encrypt(param.getId() + "," + index) + ".html";
+                } else {
+                    followPath = config.getTable().getFollows().get(index).getUri();
+                }
                 String followListRequestPath;
                 if (isBoot) {
                     followListRequestPath = coreProperties.getPath() + BootConstant.requestPrefix + CommonUtil.getClassNameField(className.getEntityName()) + "/list";
@@ -309,6 +316,16 @@ public class GenerateServiceImpl implements IGenerateService {
         return map;
     }
 
+    private void checkUri(String uri, Integer id) {
+        if (uri == null || uri.isEmpty()) {
+            return;
+        }
+        BootResult bootResult = generateBoot.getLoaded(uri);
+        if (bootResult != null && !bootResult.getId().equals(id)) {
+            throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "页面路由 " + uri + " 已存在，请重新设置");
+        }
+    }
+
     Pattern pattern = Pattern.compile("namespace=\\\"[a-zA-Z\\.]+\\\"");
     @Transactional(rollbackFor = Exception.class)
     @Override
@@ -325,6 +342,14 @@ public class GenerateServiceImpl implements IGenerateService {
             if (generateBoot.getLoaded(id) != null) {
                 return;
             }
+            // 校验路由
+            checkUri(config.getTable().getUri(), id);
+            if (config.getTable().getFollows() != null) {
+                for (UIFollowTable followTable : config.getTable().getFollows()) {
+                    checkUri(followTable.getUri(), id);
+                }
+            }
+
             BootResult result = new BootResult();
             GenerateContext context = getContext(id, config, true);
             result.setBasePackage(context.getPackageName());
@@ -393,12 +418,7 @@ public class GenerateServiceImpl implements IGenerateService {
 
     @Override
     public void unBoot(Integer id) {
-        Set<String> htmls = generateBoot.unLoad(id);
-        if (htmls != null) {
-            for (String html : htmls) {
-                htmlServlet.removeCache(html);
-            }
-        }
+        generateBoot.unLoad(id);
     }
 
     @Transactional

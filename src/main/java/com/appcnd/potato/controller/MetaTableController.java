@@ -177,6 +177,21 @@ public class MetaTableController {
     @PostMapping("/update")
     @ResponseBody
     public String update(@RequestBody MetaTableParam param) {
+        // 校验页面路由
+        Set<String> set = new HashSet<>();
+        if (param.getConfig().getUri() != null && !param.getConfig().getUri().isEmpty()) {
+            set.add(param.getConfig().getUri());
+        }
+        if (param.getConfig().getFollows() != null) {
+            for (UIFollowTable followTable : param.getConfig().getFollows()) {
+                if (followTable.getUri() != null && !followTable.getUri().isEmpty()) {
+                    if (set.contains(followTable.getUri())) {
+                        return HttpResult.fail("路由 " + followTable.getUri() + " 重复，请重新设置").json();
+                    }
+                    set.add(followTable.getUri());
+                }
+            }
+        }
         metaService.updateTable(param);
         return HttpResult.success().json();
     }

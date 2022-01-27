@@ -46,6 +46,10 @@ public class GenerateContext {
     @Setter
     private ResponseParam responseParam;
 
+    @Getter
+    @Setter
+    private String htmlUri;
+
     public void addNeedLoadClasse(String className) {
         if (needLoadClasses == null) {
             needLoadClasses = new HashSet<>();

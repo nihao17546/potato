@@ -2,7 +2,6 @@ package com.appcnd.potato.config;
 
 import com.appcnd.potato.controller.*;
 import com.appcnd.potato.filter.AuthFilter;
-import com.appcnd.potato.generate.boot.HtmlServlet;
 import com.appcnd.potato.generate.boot.executor.BootExecutor;
 import com.appcnd.potato.model.constant.BasicConstant;
 import com.appcnd.potato.properties.CoreProperties;
@@ -41,16 +40,6 @@ public class BeanConfig {
     @Bean(BasicConstant.beanNamePrefix + "resourceServletRegistrationBean")
     public ServletRegistrationBean resourceServletRegistrationBean() {
         return new ServletRegistrationBean(new ResourceServlet(BasicConstant.resourcePath, properties.getPath()), properties.getPath() + "/static/*");
-    }
-
-    @Bean(name = BasicConstant.beanNamePrefix + "htmlServlet")
-    public HtmlServlet htmlServlet() {
-        return new HtmlServlet();
-    }
-
-    @Bean(BasicConstant.beanNamePrefix + "htmlServletRegistrationBean")
-    public ServletRegistrationBean htmlServletRegistrationBean(@Autowired HtmlServlet htmlServlet) {
-        return new ServletRegistrationBean(htmlServlet, properties.getPath() + "/boot/page/*");
     }
 
     @Bean(name = BasicConstant.beanNamePrefix + "metaService")

@@ -44,12 +44,21 @@ public class GenerateBoot {
     }
 
     private final Map<Integer,BootResult> loadMap = new ConcurrentHashMap<>();
+    private final Map<String,Integer> loadKey = new ConcurrentHashMap<>();
 
     public BootResult getLoaded(Integer metaId) {
         return loadMap.get(metaId);
     }
 
-    public Set<String> unLoad(Integer metaId) {
+    public BootResult getLoaded(String htmlKey) {
+        Integer metaId = loadKey.get(htmlKey);
+        if (metaId == null) {
+            return null;
+        }
+        return getLoaded(metaId);
+    }
+
+    public void unLoad(Integer metaId) {
         if (loadMap.containsKey(metaId)) {
             synchronized(metaId.toString().intern()) {
                 if (loadMap.containsKey(metaId)) {
@@ -80,13 +89,13 @@ public class GenerateBoot {
                         }
                     }
                     Set<String> htmls = bootResult.getHtml().keySet();
-                    Set<String> s = new HashSet<>(htmls);
+                    for (String htmlKey : htmls) {
+                        loadKey.remove(htmlKey);
+                    }
                     bootResult.clear();
-                    return s;
                 }
             }
         }
-        return null;
     }
 
     private boolean deleteDir(File dir) {
@@ -410,5 +419,8 @@ public class GenerateBoot {
             throw e;
         }
         loadMap.put(bootResult.getId(), bootResult);
+        for (String htmlKey : bootResult.getHtml().keySet()) {
+            loadKey.put(htmlKey, bootResult.getId());
+        }
     }
 }

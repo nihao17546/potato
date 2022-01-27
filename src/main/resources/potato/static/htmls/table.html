@@ -40,6 +40,13 @@
                             <template slot="append">px</template>
                         </el-input>
                     </el-form-item>
+                    <el-form-item label="页面路由:" prop="uri" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的路由,“/”开头,“.html”结尾',validator: validateHtmlUri, trigger: 'change'},
+                                  {required: false, message: '不能填写系统内置路由',validator: validateSystemHtmlUri, trigger: 'change'}]">
+                        <el-input v-model="form.uri" clearable placeholder="不填由系统随机生成">
+                            <template slot="prepend">${potatoPath}</template>
+                        </el-input>
+                    </el-form-item>
                     <el-row :gutter="24">
                         <el-col :span="6">
                             <el-form-item label="排序字段:" prop="sorts" :label-width="formLabelWidth">
@@ -201,6 +208,13 @@
                                   :rules="[{required: false, message: '请输入正确的数字格式',validator: validateNumber, trigger: 'change'}]">
                         <el-input v-model="follow.optionColumnWidth" clearable>
                             <template slot="append">px</template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item label="页面路由:" :prop="'follows.'+index+'.uri'" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的路由,“/”开头,“.html”结尾',validator: validateHtmlUri, trigger: 'change'},
+                                  {required: false, message: '不能填写系统内置路由',validator: validateSystemHtmlUri, trigger: 'change'}]">
+                        <el-input v-model="follow.uri" clearable placeholder="不填由系统随机生成">
+                            <template slot="prepend">${potatoPath}</template>
                         </el-input>
                     </el-form-item>
                     <el-row :gutter="24">

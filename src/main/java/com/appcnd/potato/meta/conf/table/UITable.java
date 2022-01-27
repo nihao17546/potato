@@ -16,4 +16,6 @@ public abstract class UITable implements Serializable {
     private List<Sort> sorts;
     // 操作列列宽
     private Integer optionColumnWidth;
+    // 页面路径
+    private String uri;
 }

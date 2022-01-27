@@ -59,7 +59,7 @@ function validateZNumber(rule, value, callback) {
     }
 }
 function validateAllNumber(rule, value, callback) {
-    if (typeof value == 'undefined' || value == null || value === '') {
+    if (typeof value === 'undefined' || value === null || value === '') {
         if (rule.required) {
             callback(new Error(rule.message));
         } else {
@@ -70,6 +70,42 @@ function validateAllNumber(rule, value, callback) {
             callback();
         } else {
             callback(new Error(rule.message));
+        }
+    }
+}
+function validateHtmlUri(rule, value, callback) {
+    if (typeof value === 'undefined' || value === null || value === '') {
+        if (rule.required) {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    } else {
+        if((/^(\/([0-9]|[a-z]|[A-Z])+)+\.html$/.test(value))){
+            callback();
+        } else {
+            callback(new Error(rule.message));
+        }
+    }
+}
+function validateSystemHtmlUri(rule, value, callback) {
+    if (typeof value === 'undefined' || value === null || value === '') {
+        if (rule.required) {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    } else {
+        if (value === '/db.html'
+            || value === '/error.html'
+            || value === '/index.html'
+            || value === '/operate.html'
+            || value === '/search.html'
+            || value === '/storage.html'
+            || value === '/table.html') {
+            callback(new Error(rule.message));
+        } else {
+            callback();
         }
     }
 }
