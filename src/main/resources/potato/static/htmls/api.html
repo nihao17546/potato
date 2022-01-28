@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>接口路由配置</title>
+    <link rel="shortcut icon" href="${contextPath}/static/img/logo.png">
+    <link rel="stylesheet" href="${contextPath}/static/element-ui/theme-chalk/index.css">
+    <script src="${contextPath}/static/vue.min.js"></script>
+    <script src="${contextPath}/static/element-ui/index.js"></script>
+    <script src="${contextPath}/static/axios.min.js"></script>
+    <script src="${contextPath}/static/main.js"></script>
+    <style>
+        .icon-style {
+            font-size: 19px;
+        }
+    </style>
+</head>
+<body>
+<div id="app" v-loading="loading">
+    <el-card class="box-card">
+        <div slot="header">
+            <el-link href="${contextPath}/index.html"><i class="el-icon-back"></i></el-link>
+            <el-divider direction="vertical"></el-divider>
+            <span>接口路由配置</span>
+            <el-button style="float: right;" type="primary" size="small" @click="submit">确认</el-button>
+        </div>
+        <el-form :model="form" :rules="rules" ref="form" :inline="true" size="small">
+            <el-tabs type="border-card">
+                <el-tab-pane v-if="db.table" :label="'主表-'+db.table.name">
+                    <el-form-item label="页面路由:" prop="uri" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的路由,“/”开头,“.html”结尾',validator: validateHtmlUri, trigger: 'change'},
+                                  {required: false, message: '不能填写系统内置路由',validator: validateSystemHtmlUri, trigger: 'change'}]">
+                        <el-input v-model="form.uri" clearable placeholder="不填由系统随机生成">
+                            <template slot="prepend">${potatoPath}</template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item label="http接口前缀:" prop="apiPrefix" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的路由,“/”开头',validator: validateApi, trigger: 'change'},
+                                  {required: false, message: '不能填写系统内置路由',validator: validateSystemApi, trigger: 'change'}]">
+                        <el-input v-model="form.apiPrefix" clearable placeholder="不填由系统随机生成">
+                            <template slot="prepend">${potatoPath}</template>
+                        </el-input>
+                    </el-form-item>
+                </el-tab-pane>
+                <el-tab-pane v-if="form.follows" :label="'从表-'+db.followTables[index].name" v-for="(follow, index) in form.follows" :name="index">
+                    <el-form-item label="页面路由:" :prop="'follows.'+index+'.uri'" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的路由,“/”开头,“.html”结尾',validator: validateHtmlUri, trigger: 'change'},
+                                  {required: false, message: '不能填写系统内置路由',validator: validateSystemHtmlUri, trigger: 'change'}]">
+                        <el-input v-model="follow.uri" clearable placeholder="不填由系统随机生成">
+                            <template slot="prepend">${potatoPath}</template>
+                        </el-input>
+                    </el-form-item>
+                    <el-form-item label="http接口前缀:" :prop="'follows.'+index+'.apiPrefix'" :label-width="formLabelWidth"
+                                  :rules="[{required: false, message: '请输入正确的路由,“/”开头',validator: validateApi, trigger: 'change'},
+                                  {required: false, message: '不能填写系统内置路由',validator: validateSystemApi, trigger: 'change'}]">
+                        <el-input v-model="follow.apiPrefix" clearable placeholder="不填由系统随机生成">
+                            <template slot="prepend">${potatoPath}</template>
+                        </el-input>
+                    </el-form-item>
+                </el-tab-pane>
+            </el-tabs>
+        </el-form>
+    </el-card>
+</div>
+<script>
+    window.contextPath = '${contextPath}'
+    var vue = new Vue({
+        name: 'operate',
+        el: '#app',
+        data() {
+            return {
+                id: ${id},
+                version: null,
+                loading: false,
+                formLabelWidth: '100px',
+                form: {},
+                db: {},
+                rules: {}
+            }
+        },
+        methods: {
+            submit() {
+                this.loading = true;
+                this.$refs['form'].validate((valid) => {
+                    if (valid) {
+                        axios.post('${contextPath}/metaApi/update',{
+                            id: this.id,
+                            config: this.form,
+                            version: this.version
+                        }).then(res => {
+                            if (res.data.status != 0) {
+                                this.$message.error(res.data.msg);
+                                this.loading = false;
+                            }
+                            else {
+                                this.loading = false;
+                                window.location.href = window.contextPath + '/index.html'
+                            }
+                        }).catch(res => {
+                            console.error(res)
+                            this.loading = false;
+                        })
+                    } else {
+                        this.loading = false;
+                        return false;
+                    }
+                });
+            }
+        },
+        mounted() {
+            this.loading = true
+            axios.get('${contextPath}/metaApi/info',{
+                params: {
+                    id: this.id
+                }
+            }).then(res => {
+                if (res.data.status != 0) {
+                    this.$message.error(res.data.msg);
+                }
+                else {
+                    this.version = res.data.content.version
+                    this.$set(this,'form',res.data.content.api)
+                    this.$set(this,'db',res.data.content.db)
+                    this.loading = false
+                }
+            }).catch(res => {
+                console.error(res)
+            })
+        },
+        created: function () {
+        }
+    })
+</script>
+</body>
+</html>

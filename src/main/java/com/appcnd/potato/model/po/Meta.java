@@ -22,5 +22,6 @@ public class Meta implements Serializable {
     private String operate;
     // 对象存储配置
     private String storage;
+    private String api;
     private Boolean loaded;
 }

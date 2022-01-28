@@ -21,7 +21,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.sql.Timestamp;
 import java.util.*;
@@ -489,7 +488,6 @@ public class ListComponentHandler extends ComponentHandler {
         controllerGetListMethod.setDecorate("public");
         controllerGetListMethod.setHasContent(true);
         controllerGetListMethod.setMethodName("list");
-        controllerGetListMethod.addAnnotation(new AnnotationInfo(ResponseBody.class.getName()));
         AnnotationInfo requestMapping = new AnnotationInfo(RequestMapping.class.getName());
 
         requestMapping.addField("value", request.getFrontContext().getListRequest());
@@ -702,7 +700,6 @@ public class ListComponentHandler extends ComponentHandler {
 
 
         controllerListContentBuilder.append(");\n");
-        request.getControllerClass().addAnnotation(new AnnotationInfo(Controller.class.getName()));
         controllerGetListMethod.setContent(controllerListContentBuilder.toString());
         request.getControllerClass().addMethod(controllerGetListMethod);
 

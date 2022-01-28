@@ -1,5 +1,6 @@
 package com.appcnd.potato.generate.context;
 
+import com.appcnd.potato.generate.constant.ApiConstant;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
 import com.appcnd.potato.meta.conf.form.search.element.SearchElement;
 import com.appcnd.potato.meta.conf.form.storage.Storage;
@@ -22,6 +23,7 @@ import java.util.*;
 @Data
 public class FrontContext {
     private String title;
+    private String httpRequest;
     private String listRequest;
     private String infoRequest;
     private String saveRequest;
@@ -56,14 +58,26 @@ public class FrontContext {
         remoteContexts.add(remoteContext);
     }
 
-    public FrontContext(String title, String listRequest, UITable uiTable, SearchForm searchForm, String path, Storage storage, ResponseParam responseParam) {
+    public FrontContext(String title, String httpRequest, UITable uiTable, SearchForm searchForm, String path, Storage storage, ResponseParam responseParam,
+                        boolean insert, boolean update, boolean delete) {
         this.title = title;
-        this.listRequest = listRequest;
-        this.infoRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/getInfo";
-        this.saveRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/save";
-        this.updateRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/update";
-        this.deleteRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/delete";
-        this.tokenRequest = listRequest.substring(0, listRequest.lastIndexOf("/")) + "/token";
+        this.httpRequest = httpRequest;
+        this.listRequest = ApiConstant.LIST;
+        if (insert) {
+            this.saveRequest = ApiConstant.SAVE;
+        }
+        if (update) {
+            this.updateRequest = ApiConstant.UPDATE;
+        }
+        if (delete) {
+            this.deleteRequest = ApiConstant.DELETE;
+        }
+        if (insert || update) {
+            this.infoRequest = ApiConstant.INFO;
+        }
+        if (storage != null) {
+            this.tokenRequest = ApiConstant.TOKEN;
+        }
         this.uiTable = uiTable;
         this.propMap = new HashMap<>();
         this.path = path;
@@ -103,12 +117,13 @@ public class FrontContext {
         }
     }
 
-    public void addFollow(String listRequest, UIFollowTable uiTable, SearchForm searchForm, String foreignKey, String table,
-                          String parentKey, String parentTable, String path , Storage storage, ResponseParam responseParam) {
+    public void addFollow(String httpRequest, UIFollowTable uiTable, SearchForm searchForm, String foreignKey, String table,
+                          String parentKey, String parentTable, String path , Storage storage, ResponseParam responseParam,
+                          boolean insert, boolean update, boolean delete) {
         if (follows == null) {
             follows = new ArrayList<>();
         }
-        FrontContext frontContext = new FrontContext(uiTable.getBottom(), listRequest, uiTable, searchForm, path, storage, responseParam);
+        FrontContext frontContext = new FrontContext(uiTable.getBottom(), httpRequest, uiTable, searchForm, path, storage, responseParam, insert, update, delete);
         frontContext.setForeignKey(foreignKey);
         frontContext.setParentKey(parentKey);
         frontContext.setParentTable(parentTable);

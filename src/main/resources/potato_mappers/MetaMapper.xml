@@ -65,6 +65,9 @@
         <if test="storage != null">
             ,`storage`=#{storage}
         </if>
+        <if test="api != null">
+            ,`api`=#{api}
+        </if>
         where id=#{id} and `version`=#{version}
     </update>
 

@@ -79,6 +79,12 @@ public class HtmlController {
         doExtra(response, request, "table");
     }
 
+    @RequestMapping({"api.html"})
+    public void api(HttpServletResponse response,
+                      HttpServletRequest request) throws IOException {
+        doExtra(response, request, "api");
+    }
+
     private void doExtra(HttpServletResponse response,
                          HttpServletRequest request, String key) throws IOException {
         request.setAttribute("potatoPath", properties.getPath());

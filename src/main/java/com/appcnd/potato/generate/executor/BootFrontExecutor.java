@@ -292,7 +292,7 @@ public class BootFrontExecutor extends FrontExecutor {
                         methodsBuilder
                                 .append("                    images_upload_handler: (blobInfo, succFun, failFun) => {\n")
                                 .append("                        let file = blobInfo.blob();\n")
-                                .append("                        axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                                .append("                        axios.get('").append("${contextPath}").append(context.getHttpRequest()).append(context.getTokenRequest()).append("',{\n")
                                 .append("                            params: {\n")
                                 .append("                                file_name: file.name\n")
                                 .append("                            }\n")
@@ -366,7 +366,7 @@ public class BootFrontExecutor extends FrontExecutor {
                                 .append("                            input.onchange = function() {\n")
                                 .append("                                let file = this.files[0];\n")
                                 .append("                                if (file) {\n")
-                                .append("                                    axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                                .append("                                    axios.get('").append("${contextPath}").append(context.getHttpRequest()).append(context.getTokenRequest()).append("',{\n")
                                 .append("                                        params: {\n")
                                 .append("                                            file_name: file.name\n")
                                 .append("                                        }\n")
@@ -507,9 +507,9 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                this.loading = true;\n")
                     .append("                this.$refs[formName].validate((valid) => {\n")
                     .append("                    if (valid) {\n")
-                    .append("                        let url = '").append("${contextPath}").append(context.getSaveRequest()).append("';\n")
+                    .append("                        let url = '").append("${contextPath}").append(context.getHttpRequest()).append(context.getSaveRequest()).append("';\n")
                     .append("                        if ( this.formTitle == '编辑') {\n")
-                    .append("                            url = '").append("${contextPath}").append(context.getUpdateRequest()).append("'\n")
+                    .append("                            url = '").append("${contextPath}").append(context.getHttpRequest()).append(context.getUpdateRequest()).append("'\n")
                     .append("                        }\n")
                     .append("                        axios.post(url, this.form).then(res => {\n")
                     .append("                            this.loading = false;\n")
@@ -564,7 +564,7 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("                for(let i = 0; i < pks.length; i ++) {\n")
                         .append("                    param[pks[i]] = row[pks[i]]\n")
                         .append("                }\n")
-                        .append("                axios.get('").append("${contextPath}").append(context.getInfoRequest()).append("',{\n")
+                        .append("                axios.get('").append("${contextPath}").append(context.getHttpRequest()).append(context.getInfoRequest()).append("',{\n")
                         .append("                    params: param\n")
                         .append("                }).then(res => {\n")
                         .append("                    if (res.data.").append(context.getResponseVoSetting().getStatusKey()).append(" == ").append(context.getResponseVoSetting().getSuccessValue()).append(") {\n")
@@ -612,7 +612,7 @@ public class BootFrontExecutor extends FrontExecutor {
                         .append("                        param[pks[i]] = row[pks[i]]\n")
                         .append("                    }\n")
                         .append("                    this.loading = true;\n")
-                        .append("                    axios.get('").append("${contextPath}").append(context.getDeleteRequest()).append("',{\n")
+                        .append("                    axios.get('").append("${contextPath}").append(context.getHttpRequest()).append(context.getDeleteRequest()).append("',{\n")
                         .append("                        params: param\n")
                         .append("                    }).then(res => {\n")
                         .append("                        this.loading = false;\n")
@@ -685,7 +685,7 @@ public class BootFrontExecutor extends FrontExecutor {
         tableHtmlBuilder.append("                </el-table>\n");
 
 
-        String getListUrl = "${contextPath}" + context.getListRequest();
+        String getListUrl = "${contextPath}" + context.getHttpRequest() + context.getListRequest();
 
         datasBuilder.append("                list: [],\n");
         datasBuilder.append("                sort: null,\n");
@@ -821,7 +821,7 @@ public class BootFrontExecutor extends FrontExecutor {
                 methodsBuilder
                         .append("            mdUploadFile(file, prop){\n")
                         .append("                const $vm = this.$refs['MD'+prop];\n")
-                        .append("                axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                        .append("                axios.get('").append("${contextPath}").append(context.getHttpRequest()).append(context.getTokenRequest()).append("',{\n")
                         .append("                    params: {\n")
                         .append("                        file_name: file.name\n")
                         .append("                    }\n")
@@ -1016,7 +1016,7 @@ public class BootFrontExecutor extends FrontExecutor {
                     .append("                console.log(file)\n")
                     .append("                this.uploadImageProgress[key] = 0\n")
                     .append("                this.uploadImageProgress = JSON.parse(JSON.stringify(this.uploadImageProgress))\n")
-                    .append("                axios.get('").append("${contextPath}").append(context.getTokenRequest()).append("',{\n")
+                    .append("                axios.get('").append("${contextPath}").append(context.getHttpRequest()).append(context.getTokenRequest()).append("',{\n")
                     .append("                    params: {\n")
                     .append("                        file_name: file.name\n")
                     .append("                    }\n")

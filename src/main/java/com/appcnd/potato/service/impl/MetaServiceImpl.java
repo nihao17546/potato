@@ -4,6 +4,7 @@ import com.appcnd.potato.dao.MetaDao;
 import com.appcnd.potato.exception.HandlerException;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
+import com.appcnd.potato.meta.conf.api.ApiConf;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
@@ -136,6 +137,9 @@ public class MetaServiceImpl implements IMetaService {
                 }
                 meta.setStorage(CommonUtil.serialize(metaStorageParam.getConfig()));
             }
+        } else if (param instanceof MetaApiParam) {
+            MetaApiParam metaApiParam = (MetaApiParam) param;
+            meta.setApi(CommonUtil.serialize(metaApiParam.getConfig()));
         }
         Integer version = metaDao.selectVersionById(param.getId());
         if (version == null) {
@@ -177,6 +181,11 @@ public class MetaServiceImpl implements IMetaService {
 
     @Override
     public void updateStorage(MetaStorageParam param) {
+        update(param);
+    }
+
+    @Override
+    public void updateApi(MetaApiParam param) {
         update(param);
     }
 
@@ -225,6 +234,15 @@ public class MetaServiceImpl implements IMetaService {
         return transfer(po);
     }
 
+    @Override
+    public MetaVO getDbAndApi(Integer id) {
+        Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`api`","version"));
+        if (po == null) {
+            throw new HandlerException(HttpStatus.NOT_FOUND);
+        }
+        return transfer(po);
+    }
+
     private MetaVO transfer(Meta meta) {
         MetaVO metaVO = new MetaVO();
         metaVO.setId(meta.getId());
@@ -244,6 +262,9 @@ public class MetaServiceImpl implements IMetaService {
         }
         if (meta.getOperate() != null) {
             metaVO.setOperate(CommonUtil.unserialize(meta.getOperate(), OperateForm.class));
+        }
+        if (meta.getApi() != null) {
+            metaVO.setApi(CommonUtil.unserialize(meta.getApi(), ApiConf.class));
         }
         if (meta.getStorage() != null && !meta.getStorage().isEmpty()) {
             Storage storage = CommonUtil.unserialize(meta.getStorage(), Storage.class);

@@ -88,6 +88,21 @@ function validateHtmlUri(rule, value, callback) {
         }
     }
 }
+function validateApi(rule, value, callback) {
+    if (typeof value === 'undefined' || value === null || value === '') {
+        if (rule.required) {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    } else {
+        if((/^(\/([0-9]|[a-z]|[A-Z])+)+$/.test(value))){
+            callback();
+        } else {
+            callback(new Error(rule.message));
+        }
+    }
+}
 function validateSystemHtmlUri(rule, value, callback) {
     if (typeof value === 'undefined' || value === null || value === '') {
         if (rule.required) {
@@ -102,7 +117,51 @@ function validateSystemHtmlUri(rule, value, callback) {
             || value === '/operate.html'
             || value === '/search.html'
             || value === '/storage.html'
-            || value === '/table.html') {
+            || value === '/table.html'
+            || value === '/api.html') {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    }
+}
+function validateSystemApi(rule, value, callback) {
+    if (typeof value === 'undefined' || value === null || value === '') {
+        if (rule.required) {
+            callback(new Error(rule.message));
+        } else {
+            callback();
+        }
+    } else {
+        if (value === '/db/tables'
+            || value === '/db/descTable'
+            || value === '/metaApi/info'
+            || value === '/metaApi/update'
+            || value === '/meta/add'
+            || value === '/meta/update'
+            || value === '/meta/list'
+            || value === '/meta/delete'
+            || value === '/meta/boot'
+            || value === '/meta/unBoot'
+            || value === '/meta/getBootCode'
+            || value === '/meta/generate'
+            || value === '/metaDb/info'
+            || value === '/metaDb/update'
+            || value === '/metaOperate/info'
+            || value === '/metaOperate/update'
+            || value === '/metaSearch/info'
+            || value === '/metaSearch/update'
+            || value === '/metaStorage/info'
+            || value === '/metaStorage/update'
+            || value === '/metaTable/info'
+            || value === '/metaTable/update'
+            || value === '/setting/size'
+            || value === '/setting/judge'
+            || value === '/setting/searchElementType'
+            || value === '/setting/operateElementType'
+            || value === '/setting/java'
+            || value === '/setting/storageElementType'
+            || value === '/setting/tableColumnFormatterData') {
             callback(new Error(rule.message));
         } else {
             callback();

@@ -14,6 +14,7 @@ import com.appcnd.potato.generate.executor.ClassExecutor;
 import com.appcnd.potato.generate.executor.ComponentExecutor;
 import com.appcnd.potato.meta.conf.Basic;
 import com.appcnd.potato.meta.conf.Config;
+import com.appcnd.potato.meta.conf.api.ApiConf;
 import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.db.FollowTable;
@@ -32,6 +33,7 @@ import com.appcnd.potato.properties.CoreProperties;
 import com.appcnd.potato.service.IGenerateService;
 import com.appcnd.potato.util.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -139,20 +141,27 @@ public class GenerateServiceImpl implements IGenerateService {
         context.setPackageName(param.getPackageName());
         context.setColumnMap(getColumnMap(config.getDbConf()));
         context.setMainClassName(new ClassName(param.getPackageName(), entityMap.get(config.getDbConf().getTable().getName())));
+        ApiConf apiConf = config.getApi();
         String path = null;
-        if (config.getTable().getUri() == null || config.getTable().getUri().isEmpty()) {
+        if (apiConf == null || apiConf.getUri() == null || apiConf.getUri().isEmpty()) {
             path = "/" + DesUtil.encrypt(param.getId().toString()) + ".html";
         } else {
-            path = config.getTable().getUri();
+            path = apiConf.getUri();
         }
-        String listRequestPath;
-        if (isBoot) {
-            listRequestPath = coreProperties.getPath() + BootConstant.requestPrefix + CommonUtil.getClassNameField(context.getMainClassName().getEntityName()) + "/list";
+        String httpRequest;
+        if (config.getApi() != null && config.getApi().getApiPrefix() != null && !config.getApi().getApiPrefix().isEmpty()) {
+            httpRequest = config.getApi().getApiPrefix();
         } else {
-            listRequestPath = BootConstant.requestPrefix + CommonUtil.getClassNameField(context.getMainClassName().getEntityName()) + "/list";
+            httpRequest = GenerateUtil.getWord("/api/", param.getId());
         }
-        FrontContext frontContext = new FrontContext(config.getBasic().getTitle(), listRequestPath,
-                config.getTable(), config.getSearchForm(), path, config.getStorage(), param.getResponseParam());
+        if (isBoot) {
+            httpRequest = coreProperties.getPath() + httpRequest;
+        }
+        FrontContext frontContext = new FrontContext(config.getBasic().getTitle(), httpRequest,
+                config.getTable(), config.getSearchForm(), path, config.getStorage(), param.getResponseParam(),
+                config.getOperateForm() != null && Boolean.TRUE.equals(config.getOperateForm().getInsert()),
+                config.getOperateForm() != null && Boolean.TRUE.equals(config.getOperateForm().getUpdate()),
+                config.getOperateForm() != null && Boolean.TRUE.equals(config.getOperateForm().getDelete()));
         context.setFrontContext(frontContext);
         if (config.getDbConf().getAssociationTables() != null) {
             for (FollowTable followTable : config.getDbConf().getAssociationTables()) {
@@ -170,21 +179,36 @@ public class GenerateServiceImpl implements IGenerateService {
                     followSearch = config.getSearchForm().getFollows().get(index);
                 }
                 String followPath = null;
-                if (config.getTable().getFollows().get(index).getUri() == null || config.getTable().getFollows().get(index).getUri().isEmpty()) {
+                if (apiConf == null || apiConf.getFollows() == null || apiConf.getFollows().isEmpty()
+                        || apiConf.getFollows().get(index).getUri() == null
+                        || apiConf.getFollows().get(index).getUri().isEmpty()) {
                     followPath = "/" + DesUtil.encrypt(param.getId() + "," + index) + ".html";
                 } else {
-                    followPath = config.getTable().getFollows().get(index).getUri();
+                    followPath = apiConf.getFollows().get(index).getUri();
                 }
-                String followListRequestPath;
-                if (isBoot) {
-                    followListRequestPath = coreProperties.getPath() + BootConstant.requestPrefix + CommonUtil.getClassNameField(className.getEntityName()) + "/list";
+                String followHttpRequest;
+                if (apiConf != null && apiConf.getFollows() != null && !apiConf.getFollows().isEmpty()
+                        && apiConf.getFollows().get(index).getApiPrefix() != null
+                        && !apiConf.getFollows().get(index).getApiPrefix().isEmpty()) {
+                    followHttpRequest = apiConf.getFollows().get(index).getApiPrefix();
                 } else {
-                    followListRequestPath = BootConstant.requestPrefix + CommonUtil.getClassNameField(className.getEntityName()) + "/list";
+                    followHttpRequest = GenerateUtil.getWord("/api/", param.getId()) + GenerateUtil.getWord("/", index + 1);
                 }
-                context.getFrontContext().addFollow(followListRequestPath,
+                if (isBoot) {
+                    followHttpRequest = coreProperties.getPath() + followHttpRequest;
+                }
+                OperateForm operateForm = null;
+                if (config.getOperateForm() != null && config.getOperateForm().getFollows() != null && !config.getOperateForm().getFollows().isEmpty()) {
+                    operateForm = config.getOperateForm().getFollows().get(index);
+                }
+                context.getFrontContext().addFollow(followHttpRequest,
                         config.getTable().getFollows().get(index), followSearch,
                         followTable.getForeignKey(), followTable.getName(),
-                        followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath, config.getStorage(), param.getResponseParam());
+                        followTable.getParentKey(), config.getDbConf().getTable().getName(), followPath, config.getStorage(), param.getResponseParam(),
+                        operateForm != null && Boolean.TRUE.equals(operateForm.getInsert()),
+                        operateForm != null && Boolean.TRUE.equals(operateForm.getUpdate()),
+                        operateForm != null && Boolean.TRUE.equals(operateForm.getDelete())
+                        );
                 index ++;
             }
         }
@@ -302,10 +326,10 @@ public class GenerateServiceImpl implements IGenerateService {
 
             StringBuilder requestMappingBuilder = new StringBuilder();
             requestMappingBuilder.append("{")
-                    .append("\"").append(context.getFrontContext().getTokenRequest()).append("\"");
+                    .append("\"").append(context.getFrontContext().getHttpRequest()).append("\"");
             if (context.getFrontContext().getFollows() != null && !context.getFrontContext().getFollows().isEmpty()) {
                 for (FrontContext follow : context.getFrontContext().getFollows()) {
-                    requestMappingBuilder.append(",").append("\"").append(follow.getTokenRequest()).append("\"");
+                    requestMappingBuilder.append(",").append("\"").append(follow.getHttpRequest()).append("\"");
                 }
             }
             requestMappingBuilder.append("}");
@@ -316,13 +340,23 @@ public class GenerateServiceImpl implements IGenerateService {
         return map;
     }
 
-    private void checkUri(String uri, Integer id) {
-        if (uri == null || uri.isEmpty()) {
+    private void checkApi(ApiConf apiConf, Integer id) {
+        if (apiConf == null) {
             return;
         }
-        BootResult bootResult = generateBoot.getLoaded(uri);
-        if (bootResult != null && !bootResult.getId().equals(id)) {
-            throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "页面路由 " + uri + " 已存在，请重新设置");
+        if (apiConf.getUri() != null && !apiConf.getUri().isEmpty()) {
+            BootResult bootResult = generateBoot.getLoaded(apiConf.getUri());
+            if (bootResult != null && !bootResult.getId().equals(id)) {
+                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "页面路由: " + apiConf.getUri() +
+                        " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
+            }
+        }
+        if (apiConf.getApiPrefix() != null && !apiConf.getApiPrefix().isEmpty()) {
+            BootResult bootResult = generateBoot.getLoadedByApi(coreProperties.getPath() + apiConf.getApiPrefix());
+            if (bootResult != null && !bootResult.getId().equals(id)) {
+                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "http接口前缀: " + apiConf.getApiPrefix() +
+                        " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
+            }
         }
     }
 
@@ -343,18 +377,41 @@ public class GenerateServiceImpl implements IGenerateService {
                 return;
             }
             // 校验路由
-            checkUri(config.getTable().getUri(), id);
-            if (config.getTable().getFollows() != null) {
-                for (UIFollowTable followTable : config.getTable().getFollows()) {
-                    checkUri(followTable.getUri(), id);
+            checkApi(config.getApi(), id);
+            if (config.getApi() != null && config.getApi().getFollows() != null && !config.getApi().getFollows().isEmpty()) {
+                for (ApiConf apiConf : config.getApi().getFollows()) {
+                    checkApi(apiConf, id);
                 }
             }
 
             BootResult result = new BootResult();
+            result.setName(config.getBasic().getName());
             GenerateContext context = getContext(id, config, true);
             result.setBasePackage(context.getPackageName());
             Map<String,String> map = generate(context, config, true);
             FrontContext frontContext = context.getFrontContext();
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getPath(), "页面路由");
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getListRequest(), "列表查询接口");
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getSaveRequest(), "新增接口");
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getUpdateRequest(), "更新接口");
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getDeleteRequest(), "删除接口");
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getInfoRequest(), "详情查询接口");
+            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getTokenRequest(), "对象存储获取token接口");
+            result.addHttpRequest(frontContext.getHttpRequest());
+            if (frontContext.getFollows() != null) {
+                int index = 0;
+                for (FrontContext fc : frontContext.getFollows()) {
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getPath(), "页面路由");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getListRequest(), "列表查询接口");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getSaveRequest(), "新增接口");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getUpdateRequest(), "更新接口");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getDeleteRequest(), "删除接口");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getInfoRequest(), "详情查询接口");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getTokenRequest(), "对象存储获取token接口");
+                    result.addHttpRequest(fc.getHttpRequest());
+                    index ++;
+                }
+            }
             Map<String,String> frontMap = new BootFrontExecutor(frontContext).compile();
             if (frontMap != null) {
                 map.putAll(frontMap);
@@ -456,6 +513,9 @@ public class GenerateServiceImpl implements IGenerateService {
         }
         if (po.getOperate() != null) {
             config.setOperateForm(CommonUtil.unserialize(po.getOperate(), OperateForm.class));
+        }
+        if (po.getApi() != null) {
+            config.setApi(CommonUtil.unserialize(po.getApi(), ApiConf.class));
         }
         if (po.getStorage() != null && !po.getStorage().isEmpty()) {
             Storage storage = CommonUtil.unserialize(po.getStorage(), Storage.class);

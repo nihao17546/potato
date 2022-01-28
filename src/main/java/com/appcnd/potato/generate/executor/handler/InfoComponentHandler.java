@@ -15,7 +15,6 @@ import com.appcnd.potato.util.SqlStringBuilder;
 import org.apache.ibatis.annotations.Param;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.*;
 
@@ -179,7 +178,6 @@ public class InfoComponentHandler extends ComponentHandler {
         controllerGetInfoMethod.setDecorate("public");
         controllerGetInfoMethod.setHasContent(true);
         controllerGetInfoMethod.setMethodName("getSingle");
-        controllerGetInfoMethod.addAnnotation(new AnnotationInfo(ResponseBody.class.getName()));
         AnnotationInfo requestMapping = new AnnotationInfo(RequestMapping.class.getName());
         requestMapping.addField("value", request.getFrontContext().getInfoRequest());
         requestMapping.addField("produces", "application/json;charset=UTF-8");

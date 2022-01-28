@@ -17,6 +17,7 @@ public class BootResult implements Serializable {
     private static final long serialVersionUID = -272881234560692158L;
 
     private Integer id;
+    private String name;
     private Integer version;
 
     private String basePackage;
@@ -32,6 +33,9 @@ public class BootResult implements Serializable {
     private List<Mapper> mappers;
     private Map<String,Html> html;
     private String url;
+    private List<String> httpRequest;
+    private List<ApiTab> apiTabs;
+
 
     private PotatoClassLoader classLoader;
 
@@ -70,6 +74,12 @@ public class BootResult implements Serializable {
         }
         if (this.classLoader != null) {
             this.classLoader.clear();
+        }
+        if (this.httpRequest != null) {
+            this.httpRequest.clear();
+        }
+        if (this.apiTabs != null) {
+            this.apiTabs.clear();
         }
         this.classLoader = null;
         if (this.sqlSessionFactory != null && this.sqlSessionFactory.getConfiguration() != null) {
@@ -113,6 +123,10 @@ public class BootResult implements Serializable {
         }
     }
 
+    public void addHttpRequest(String httpRequest) {
+        this.httpRequest.add(httpRequest);
+    }
+
     public void addHtml(String path, String source) {
         if (html == null) {
             html = new HashMap<>();
@@ -120,6 +134,27 @@ public class BootResult implements Serializable {
         Html html = new Html();
         html.setSource(source);
         this.html.put(path, html);
+    }
+
+    public void addApi(String table, String urlPrefix, String url, String desc) {
+        if (url == null) {
+            return;
+        }
+        Api api = new Api();
+        api.setName(desc);
+        api.setUrl(urlPrefix + url);
+        for (ApiTab apiTab : apiTabs) {
+            if (apiTab.getName().equalsIgnoreCase(table)) {
+                apiTab.getApis().add(api);
+                return;
+            }
+        }
+        ApiTab apiTab = new ApiTab();
+        apiTab.setName(table);
+        List<Api> apis = new ArrayList<>();
+        apis.add(api);
+        apiTab.setApis(apis);
+        apiTabs.add(apiTab);
     }
 
     public BootResult() {
@@ -132,6 +167,20 @@ public class BootResult implements Serializable {
         this.serviceImpls = new ArrayList<>();
         this.controllers = new ArrayList<>();
         this.mappers = new ArrayList<>();
+        this.httpRequest = new ArrayList<>();
+        this.apiTabs = new ArrayList<>();
+    }
+
+    @Data
+    public static class ApiTab {
+        private String name;
+        private List<Api> apis;
+    }
+
+    @Data
+    public static class Api {
+        private String name;
+        private String url;
     }
 
     @Data

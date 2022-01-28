@@ -2,6 +2,7 @@ package com.appcnd.potato.controller;
 
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
+import com.appcnd.potato.generate.constant.ApiConstant;
 import com.appcnd.potato.meta.conf.Config;
 import com.appcnd.potato.model.param.GenerateParam;
 import com.appcnd.potato.model.param.MetaParam;
@@ -10,6 +11,7 @@ import com.appcnd.potato.service.IMetaService;
 import com.appcnd.potato.util.CommonUtil;
 import com.appcnd.potato.model.vo.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.tomcat.util.codec.binary.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -20,10 +22,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -173,6 +172,30 @@ public class MetaController {
                 p.addChild(c);
             }
         }
+
+        // api
+        List<BootCodeVo.ApiTable> apiTabs = new ArrayList<>();
+        Map<String,BootCodeVo.ApiTable> cacheMap = new HashMap<>();
+        for (BootResult.ApiTab apiTab : bootResult.getApiTabs()) {
+            String table = apiTab.getName();
+            BootCodeVo.ApiTable apiTable = cacheMap.get(table);
+            if (apiTable == null) {
+                apiTable = new BootCodeVo.ApiTable();
+                apiTable.setTable(table);
+                apiTable.setUrls(new ArrayList<>());
+                cacheMap.put(table, apiTable);
+                apiTabs.add(apiTable);
+            }
+            for (BootResult.Api api : apiTab.getApis()) {
+                String desc = api.getName();
+                String url = api.getUrl();
+                BootCodeVo.ApiUrl apiUrl = new BootCodeVo.ApiUrl();
+                apiUrl.setDesc(desc);
+                apiUrl.setUrl(url);
+                apiTable.getUrls().add(apiUrl);
+            }
+        }
+        vo.setTabList(apiTabs);
 
         return HttpResult.success().pull(vo).json();
     }

@@ -32,6 +32,7 @@ import org.springframework.util.Assert;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -317,6 +318,10 @@ public class ComponentExecutor extends Executor {
         JavaClassContext controllerClass = new JavaClassContext(CommonUtil.getPackageName(className.getControllerClassName()),
                 config.getBasic().getVersion(), "public class",
                 CommonUtil.getSimpleClassName(className.getControllerClassName()));
+        controllerClass.addAnnotation(new AnnotationInfo(RestController.class.getName()));
+        AnnotationInfo mappingAnnotation = new AnnotationInfo(RequestMapping.class.getName());
+        mappingAnnotation.addField("value", handlerRequest.getFrontContext().getHttpRequest());
+        controllerClass.addAnnotation(mappingAnnotation);
         context.addJavaClassContext(daoClass, serviceClass, serviceImplClass, controllerClass);
 
         handlerRequest.setDaoClass(daoClass);

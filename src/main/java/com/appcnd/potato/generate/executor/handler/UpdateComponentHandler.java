@@ -19,7 +19,6 @@ import com.appcnd.potato.util.SqlStringBuilder;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.util.*;
 
@@ -241,7 +240,6 @@ public class UpdateComponentHandler extends ComponentHandler {
         controllerMethod.setDecorate("public");
         controllerMethod.setHasContent(true);
         controllerMethod.setMethodName("update");
-        controllerMethod.addAnnotation(new AnnotationInfo(ResponseBody.class.getName()));
         AnnotationInfo requestMapping = new AnnotationInfo(RequestMapping.class.getName());
         requestMapping.addField("value", frontContext.getUpdateRequest());
         requestMapping.addField("produces", "application/json;charset=UTF-8");

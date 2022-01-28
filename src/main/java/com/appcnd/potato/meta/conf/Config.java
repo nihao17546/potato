@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf;
 
+import com.appcnd.potato.meta.conf.api.ApiConf;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
@@ -21,4 +22,5 @@ public class Config implements Serializable {
     private SearchForm searchForm;
     private OperateForm operateForm;
     private Storage storage;
+    private ApiConf api;
 }

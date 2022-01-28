@@ -6,6 +6,7 @@ import com.appcnd.potato.properties.CoreProperties;
 import com.appcnd.potato.util.CommonUtil;
 import com.appcnd.potato.util.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.tuple.Pair;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -45,6 +46,7 @@ public class GenerateBoot {
 
     private final Map<Integer,BootResult> loadMap = new ConcurrentHashMap<>();
     private final Map<String,Integer> loadKey = new ConcurrentHashMap<>();
+    private final Map<String,Integer> loadApiKey = new ConcurrentHashMap<>();
 
     public BootResult getLoaded(Integer metaId) {
         return loadMap.get(metaId);
@@ -52,6 +54,14 @@ public class GenerateBoot {
 
     public BootResult getLoaded(String htmlKey) {
         Integer metaId = loadKey.get(htmlKey);
+        if (metaId == null) {
+            return null;
+        }
+        return getLoaded(metaId);
+    }
+
+    public BootResult getLoadedByApi(String apiPrefix) {
+        Integer metaId = loadApiKey.get(apiPrefix);
         if (metaId == null) {
             return null;
         }
@@ -91,6 +101,9 @@ public class GenerateBoot {
                     Set<String> htmls = bootResult.getHtml().keySet();
                     for (String htmlKey : htmls) {
                         loadKey.remove(htmlKey);
+                    }
+                    for (String httpRequest : bootResult.getHttpRequest()) {
+                        loadApiKey.remove(httpRequest);
                     }
                     bootResult.clear();
                 }
@@ -421,6 +434,9 @@ public class GenerateBoot {
         loadMap.put(bootResult.getId(), bootResult);
         for (String htmlKey : bootResult.getHtml().keySet()) {
             loadKey.put(htmlKey, bootResult.getId());
+        }
+        for (String httpRequest : bootResult.getHttpRequest()) {
+            loadApiKey.put(httpRequest, bootResult.getId());
         }
     }
 }

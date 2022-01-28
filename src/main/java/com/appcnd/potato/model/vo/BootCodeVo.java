@@ -11,12 +11,25 @@ import java.util.List;
 @Data
 public class BootCodeVo {
     private List<Label> labels;
+    private List<ApiTable> tabList;
 
     public void addLabel(Label label) {
         if (labels == null) {
             labels = new ArrayList<>();
         }
         labels.add(label);
+    }
+
+    @Data
+    public static class ApiTable {
+        private String table;
+        private List<ApiUrl> urls;
+    }
+
+    @Data
+    public static class ApiUrl {
+        private String desc;
+        private String url;
     }
 
     @Data

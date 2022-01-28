@@ -107,6 +107,11 @@ public class BeanConfig {
         return new EnhancerController<>(new MetaStorageController()).creatController();
     }
 
+    @Bean(name = BasicConstant.beanNamePrefix + "MetaApiController")
+    public MetaApiController metaApiController() {
+        return new EnhancerController<>(new MetaApiController()).creatController();
+    }
+
     @ConditionalOnProperty({"spring.potato.loginname","spring.potato.password"})
     @Bean(BasicConstant.beanNamePrefix + "authServletRegistrationBean")
     public FilterRegistrationBean authServletRegistrationBean() {
@@ -140,6 +145,7 @@ public class BeanConfig {
         modify(MetaSearchController.class);
         modify(MetaOperateController.class);
         modify(MetaStorageController.class);
+        modify(MetaApiController.class);
     }
 
     /**

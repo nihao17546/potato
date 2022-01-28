@@ -1,5 +1,6 @@
 package com.appcnd.potato.model.vo;
 
+import com.appcnd.potato.meta.conf.api.ApiConf;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
@@ -28,6 +29,7 @@ public class MetaVO implements Serializable {
     private UIMainTable table;
     private SearchForm search;
     private OperateForm operate;
+    private ApiConf api;
     private Storage storage;
 
     private String url;

@@ -72,7 +72,7 @@
                     <el-divider v-if="props.row.url" direction="vertical"></el-divider>
                     <el-link v-if="props.row.url" :href="props.row.url" target="_blank">查看</el-link>
                     <el-divider direction="vertical"></el-divider>
-                    <el-button v-if="props.row.url" type="text" @click="showCode(props.row)">已装载的代码</el-button>
+                    <el-button v-if="props.row.url" type="text" @click="showCode(props.row)">加载详情</el-button>
                     <el-divider v-if="props.row.url" direction="vertical"></el-divider>
                     <el-dropdown @command="handleCommand" trigger="click">
                         <span class="el-dropdown-link">编辑<i class="el-icon-arrow-down el-icon--right"></i></span>
@@ -83,6 +83,7 @@
                             <el-dropdown-item icon="el-icon-s-grid" :command="{'row':props.row,'t':'table'}">表格配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-search" :command="{'row':props.row,'t':'search'}">搜索表单配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-tickets" :command="{'row':props.row,'t':'operate'}">操作表单配置</el-dropdown-item>
+                            <el-dropdown-item icon="el-icon-tickets" :command="{'row':props.row,'t':'api'}">接口路由配置</el-dropdown-item>
                             <el-dropdown-item icon="el-icon-delete" :command="{'row':props.row,'t':'delete'}">删除</el-dropdown-item>
                         </el-dropdown-menu>
                     </el-dropdown>
@@ -221,18 +222,37 @@
     </el-dialog>
 
     <el-dialog
-            title="已加载代码"
+            title="加载详情"
             :visible.sync="bootCode.visible"
             width="80%"
             :before-close="bootCodeClose">
-        <el-row>
-            <el-col :span="6">
-                <el-tree :data="bootCode.labels" @node-click="handleNodeClick"></el-tree>
-            </el-col>
-            <el-col :span="18">
-                <el-input type="textarea" readOnly autosize v-model="code"></el-input>
-            </el-col>
-        </el-row>
+        <el-card class="box-card">
+            <el-collapse v-model="bootCode.active" accordion>
+                <el-collapse-item title="接口路由地址详情" name="1">
+                    <template v-for="(item, key, index) in bootCode.tabList">
+                        <div style="margin-bottom: 12px;">
+                            <el-tag>{{item.table}}</el-tag>
+                            <el-table :data="item.urls"
+                                      border size="mini"
+                                      style="width: 100%; margin-top: 5px;">
+                                <el-table-column label="地址" prop="url"></el-table-column>
+                                <el-table-column label="说明" prop="desc"></el-table-column>
+                            </el-table>
+                        </div>
+                    </template>
+                </el-collapse-item>
+                <el-collapse-item title="已加载代码" name="2">
+                    <el-row>
+                        <el-col :span="6">
+                            <el-tree :data="bootCode.labels" @node-click="handleNodeClick"></el-tree>
+                        </el-col>
+                        <el-col :span="18">
+                            <el-input type="textarea" readOnly autosize v-model="code"></el-input>
+                        </el-col>
+                    </el-row>
+                </el-collapse-item>
+            </el-collapse>
+        </el-card>
     </el-dialog>
 </div>
 </body>
@@ -353,7 +373,9 @@
                 javas: [],
                 bootCode: {
                     visible: false,
-                    labels: []
+                    labels: [],
+                    tabList: [],
+                    active: '1'
                 },
                 code: ''
             }
@@ -395,7 +417,9 @@
             bootCodeClose() {
                 this.bootCode = {
                     visible: false,
-                    labels: []
+                    labels: [],
+                    tabList: [],
+                    active: '1'
                 }
                 this.code = ''
             },
@@ -414,7 +438,8 @@
                         this.loading = false
                         this.bootCode = {
                             visible: true,
-                            labels: res.data.content.labels
+                            labels: res.data.content.labels,
+                            tabList: res.data.content.tabList
                         }
                     }
                 }).catch(res => {
@@ -695,6 +720,8 @@
                     window.location.href = window.contextPath + '/operate.html?id=' + command.row.id
                 } else if (command.t == 'storage') {
                     window.location.href = window.contextPath + '/storage.html?id=' + command.row.id
+                } else if (command.t == 'api') {
+                    window.location.href = window.contextPath + '/api.html?id=' + command.row.id
                 }
             }
         },
