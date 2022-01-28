@@ -390,7 +390,7 @@ public class GenerateServiceImpl implements IGenerateService {
             result.setBasePackage(context.getPackageName());
             Map<String,String> map = generate(context, config, true);
             FrontContext frontContext = context.getFrontContext();
-            result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getPath(), "页面路由");
+            result.addApi(config.getDbConf().getTable().getName(), coreProperties.getPath(), frontContext.getPath(), "页面路由");
             result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getListRequest(), "列表查询接口");
             result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getSaveRequest(), "新增接口");
             result.addApi(config.getDbConf().getTable().getName(), frontContext.getHttpRequest(), frontContext.getUpdateRequest(), "更新接口");
@@ -401,7 +401,7 @@ public class GenerateServiceImpl implements IGenerateService {
             if (frontContext.getFollows() != null) {
                 int index = 0;
                 for (FrontContext fc : frontContext.getFollows()) {
-                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getPath(), "页面路由");
+                    result.addApi(config.getDbConf().getFollowTables().get(index).getName(), coreProperties.getPath(), fc.getPath(), "页面路由");
                     result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getListRequest(), "列表查询接口");
                     result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getSaveRequest(), "新增接口");
                     result.addApi(config.getDbConf().getFollowTables().get(index).getName(), fc.getHttpRequest(), fc.getUpdateRequest(), "更新接口");
