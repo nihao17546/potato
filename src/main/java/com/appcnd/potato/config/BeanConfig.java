@@ -125,6 +125,7 @@ public class BeanConfig {
                 properties.getPath() + "/search.html",
                 properties.getPath() + "/storage.html",
                 properties.getPath() + "/table.html",
+                properties.getPath() + "/api.html",
                 properties.getPath() + "/meta/*", properties.getPath() + "/metaDb/*",
                 properties.getPath() + "/metaOperate/*", properties.getPath() + "/metaSearch/*",
                 properties.getPath() + "/metaStorage/*", properties.getPath() + "/metaTable/*",
