@@ -108,11 +108,11 @@ public class HtmlController {
         response.getWriter().write(text);
     }
 
-    @RequestMapping("{path}.html")
+    @RequestMapping({"{path}.html","{path}/**.html"})
     public void extra(HttpServletResponse response,
                       HttpServletRequest request,
                       @PathVariable String path) throws IOException {
-        String htmlKey = "/" + path + ".html";
+        String htmlKey = request.getRequestURI().substring(request.getContextPath().length() + properties.getPath().length());
         BootResult bootResult = generateBoot.getLoaded(htmlKey);
         if (bootResult == null) {
             throw new HandlerException(HttpStatus.NOT_FOUND);

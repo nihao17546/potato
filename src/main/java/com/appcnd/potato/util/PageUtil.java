@@ -17,7 +17,7 @@ public class PageUtil {
 
     public static String getPage(HttpServletRequest request, String commonCmsUrl, String page, Map<String,String> params) throws IOException {
         String filePath = BasicConstant.resourcePath
-                + request.getRequestURI().substring(request.getContextPath().length() + request.getServletPath().length())
+//                + request.getRequestURI().substring(request.getContextPath().length() + request.getServletPath().length())
                 + "/htmls/" + page + ".html";
         String text = readFromResource(filePath);
         if (text == null) {
