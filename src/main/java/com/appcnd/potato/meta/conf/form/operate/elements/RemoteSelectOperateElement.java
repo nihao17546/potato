@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form.operate.elements;
 
+import com.appcnd.potato.meta.conf.form.annotition.HtmlField;
 import com.appcnd.potato.meta.conf.form.enums.ElementSize;
 import com.appcnd.potato.meta.conf.form.operate.enums.OperateElementType;
 import lombok.Data;
@@ -12,9 +13,13 @@ import java.util.Objects;
 @Data
 public class RemoteSelectOperateElement extends OperateElement {
     private final OperateElementType elementType = OperateElementType.SELECT_REMOTE;
+    @HtmlField
     private ElementSize size;
+    @HtmlField
     private Boolean clearable = true;
+    @HtmlField
     private String placeholder;
+    @HtmlField
     private Boolean filterable = true;
     private String sql;
     private String labelColumn;

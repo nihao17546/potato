@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form.operate.elements;
 
+import com.appcnd.potato.meta.conf.form.annotition.HtmlField;
 import com.appcnd.potato.meta.conf.form.enums.ElementSize;
 import com.appcnd.potato.meta.conf.form.operate.enums.OperateElementType;
 import com.appcnd.potato.meta.conf.form.option.Option;
@@ -13,9 +14,13 @@ import java.util.List;
 @Data
 public class SelectOperateElement extends OperateElement {
     private final OperateElementType elementType = OperateElementType.SELECT;
+    @HtmlField
     private ElementSize size;
+    @HtmlField
     private Boolean clearable = true;
+    @HtmlField
     private String placeholder;
+    @HtmlField
     private Boolean filterable = true;
     private List<Option> options;
 

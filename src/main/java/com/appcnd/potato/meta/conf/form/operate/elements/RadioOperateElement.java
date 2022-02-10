@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form.operate.elements;
 
+import com.appcnd.potato.meta.conf.form.annotition.HtmlField;
 import com.appcnd.potato.meta.conf.form.enums.ElementSize;
 import com.appcnd.potato.meta.conf.form.operate.enums.OperateElementType;
 import com.appcnd.potato.meta.conf.form.option.Option;
@@ -13,7 +14,9 @@ import java.util.List;
 @Data
 public class RadioOperateElement extends OperateElement {
     private final OperateElementType elementType = OperateElementType.RADIO;
+    @HtmlField
     private Boolean border = false;
+    @HtmlField
     private ElementSize size;
     private List<Option> options;
 
