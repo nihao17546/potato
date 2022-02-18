@@ -122,7 +122,9 @@ public class PotatoDataSourceAutoConfigure implements ApplicationContextAware {
     public DbDao dbDao(@Autowired MapperBoot mapperBoot) {
         log.info("创建 DbDao");
         String data = getResource("DbMapper.xml");
-        return mapperBoot.registerMapper(data, DbDao.class);
+        DbDao dbDao = mapperBoot.registerMapper(data, DbDao.class);
+        dbDao.initDatabase();
+        return dbDao;
     }
 
     private String getResource(String fileName) {

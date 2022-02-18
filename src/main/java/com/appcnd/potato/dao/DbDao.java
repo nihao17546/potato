@@ -13,4 +13,5 @@ public interface DbDao {
     List<String> selectTables();
     Map<String,Object> descTable(@Param("table") String table);
     List<TableFieldInfo> getTableFieldInfo(@Param("table") String table);
+    void initDatabase();
 }
