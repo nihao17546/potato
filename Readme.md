@@ -63,7 +63,7 @@ spring.potato.cluster=false
 ```
 
 - 5.启动项目
-![POTATO](http://activity.appcnd.com/potato/21bcae859a7447bd84b52bcd401e8c20.png "Potato低代码开发插件")
+![POTATO](https://s.wqisland.com/ops/img/ef642b51059c4a2ea6c22210046cfb88.png "Potato低代码开发插件")
 > 如项目访问地址为127.0.0.1:9000/ppp，以上步配置为例，管理配置页面路径为：127.0.0.1:9000/ppp/potato/index.html
 
 
