@@ -2,7 +2,7 @@
 
 当前最新版本： 1.0.0（发布日期：2022-02-10）
 
-[![AUR](https://img.shields.io/badge/license-Springboot%202.x-blue.svg)](https://github.com/nihao17546/potato)
+[![AUR](https://img.shields.io/badge/license-Apache%20License%202.0-blue.svg)](https://github.com/nihao17546/potato)
 [![](https://img.shields.io/badge/Author-neil-orange.svg)](https://www.appcnd.com)
 [![](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/nihao17546/potato)
 
