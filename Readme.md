@@ -5,6 +5,8 @@
 [![AUR](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](https://github.com/nihao17546/potato)
 [![](https://img.shields.io/badge/Author-nihao-orange.svg)](https://www.appcnd.com)
 [![](https://img.shields.io/badge/version-1.0.0-brightgreen.svg)](https://github.com/nihao17546/potato)
+[![](https://img.shields.io/badge/-Springboot%202.x-green.svg)](https://spring.io/projects/spring-boot)
+[![](https://img.shields.io/badge/-Element%20ui%202.14.1-blue.svg)](https://element.eleme.cn/#/zh-CN)
 
 项目介绍：
 -----------------------------------
