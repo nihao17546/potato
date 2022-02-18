@@ -8,7 +8,7 @@
 [![](https://img.shields.io/badge/-Springboot%202.x-green.svg)](https://spring.io/projects/spring-boot)
 [![](https://img.shields.io/badge/-Element%20ui%202.14.1-blue.svg)](https://element.eleme.cn/#/zh-CN)
 
-项目介绍：
+项目介绍
 -----------------------------------
 Potato 是一款基于Java的`低代码插件`！通过该插件可以不用写任何前后端代码实现常规`后台管理系统`的开发，并且对原有项目代码无侵入。
 可在线生成前后端代码、代码可直接发布生效或导出代码。
