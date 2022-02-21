@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form.search.element;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.appcnd.potato.meta.conf.form.Element;
 import com.appcnd.potato.meta.conf.form.search.SearchColumn;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
@@ -21,5 +22,7 @@ import lombok.Data;
 })
 public abstract class SearchElement extends Element {
     private SearchColumn column;
+
+    @JSONField(serialize = false)
     public abstract String getOptions(String field);
 }

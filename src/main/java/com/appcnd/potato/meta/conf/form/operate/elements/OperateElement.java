@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form.operate.elements;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.form.Element;
 import com.appcnd.potato.meta.conf.form.operate.Rule;
@@ -34,8 +35,10 @@ public abstract class OperateElement extends Element {
     // 字段
     private Column column;
 
+    @JSONField(serialize = false)
     public abstract String getHtml();
 
+    @JSONField(serialize = false)
     public String getFieldName() {
         return CamelUtil.underlineToCamel(column.getField());
     }

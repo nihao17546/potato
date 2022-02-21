@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form.option;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import lombok.Data;
@@ -20,6 +21,9 @@ public abstract class Option implements Serializable {
     private static final long serialVersionUID = -2460217802448037453L;
     private String label;
 
+    @JSONField(serialize = false)
     public abstract String getOptionHtml();
+
+    @JSONField(serialize = false)
     public abstract String getRadioHtml();
 }

@@ -1,5 +1,6 @@
 package com.appcnd.potato.meta.conf.form;
 
+import com.alibaba.fastjson.annotation.JSONField;
 import com.appcnd.potato.meta.conf.form.annotition.HtmlField;
 import com.appcnd.potato.util.CamelUtil;
 import lombok.Data;
@@ -15,6 +16,7 @@ public abstract class Element implements Serializable {
     private static final long serialVersionUID = 807787700208506705L;
     private String label;
 
+    @JSONField(serialize = false)
     protected String getFieldHtml() {
         StringBuilder sb = new StringBuilder();
         Field[] fields = this.getClass().getDeclaredFields();
