@@ -1,6 +1,6 @@
 package com.appcnd.potato.generate.executor;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.generate.constant.BootConstant;
 import com.appcnd.potato.generate.context.FrontContext;
 import com.appcnd.potato.generate.context.FrontSearchElementContext;
@@ -246,7 +246,8 @@ public class BootFrontExecutor extends FrontExecutor {
                     MarkdownElement markdownElement = (MarkdownElement) element;
                     if (Boolean.TRUE.equals(markdownElement.getUploadImage())) {
                         if (context.getStorage() == null) {
-                            throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "Markdown图片上传未配置对象存储");
+                            ExceptionAssert.isTrue(context.getStorage() == null)
+                                    .throwException(HttpStatus.PARAM_ERROR.getCode(), "Markdown图片上传未配置对象存储");
                         }
                         hasMarkdownUseStorage = true;
                     }
@@ -894,9 +895,7 @@ public class BootFrontExecutor extends FrontExecutor {
         }
 
         if (hasUploadImage) {
-            if (context.getStorage() == null) {
-                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "图片上传未配置对象存储");
-            }
+            ExceptionAssert.isNull(context.getStorage()).throwException(HttpStatus.PARAM_ERROR.getCode(), "图片上传未配置对象存储");
             if (hasCutImage) {
                 cssBuilder.append("    <link rel=\"stylesheet\" href=\"${contextPath}${potatoPath}/static/cropper/cropper.css\">\n");
                 jsBuilder.append("    <script src=\"${contextPath}${potatoPath}/static/jquery.min.js\"></script>\n");

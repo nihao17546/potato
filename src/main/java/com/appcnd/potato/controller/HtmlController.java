@@ -1,6 +1,6 @@
 package com.appcnd.potato.controller;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
 import com.appcnd.potato.model.vo.HttpStatus;
@@ -98,13 +98,9 @@ public class HtmlController {
             String v = request.getParameter(k);
             params.put(k, v);
         }
-        if (!params.containsKey("id")) {
-            throw new HandlerException(HttpStatus.PARAM_ERROR);
-        }
+        ExceptionAssert.ifTrue(!params.containsKey("id")).throwException(HttpStatus.PARAM_ERROR);
         String text = PageUtil.getPage(request, properties.getPath(), key, params);
-        if (text == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(text).throwException(HttpStatus.NOT_FOUND);
         response.getWriter().write(text);
     }
 
@@ -114,9 +110,7 @@ public class HtmlController {
                       @PathVariable String path) throws IOException {
         String htmlKey = request.getRequestURI().substring(request.getContextPath().length() + properties.getPath().length());
         BootResult bootResult = generateBoot.getLoaded(htmlKey);
-        if (bootResult == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(bootResult).throwException(HttpStatus.NOT_FOUND);
         String html = bootResult.getHtml().get(htmlKey).getSource();
         html = Parser.parse(html, "contextPath", request.getContextPath());
         html = Parser.parse(html, "potatoPath", properties.getPath());

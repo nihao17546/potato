@@ -1,6 +1,6 @@
 package com.appcnd.potato.controller;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.meta.conf.db.FollowTable;
 import com.appcnd.potato.model.param.MetaDbParam;
 import com.appcnd.potato.model.vo.HttpResult;
@@ -52,9 +52,7 @@ public class MetaDbController {
     }
 
     private void checkTable(Set<String> tables, String table) {
-        if (tables.contains(table)) {
-            throw new HandlerException(HttpStatus.PARAM_ERROR);
-        }
+        ExceptionAssert.ifTrue(tables.contains(table)).throwException(HttpStatus.PARAM_ERROR);
         tables.add(table);
     }
 

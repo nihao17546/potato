@@ -1,7 +1,7 @@
 package com.appcnd.potato.service.impl;
 
 import com.appcnd.potato.dao.MetaDao;
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
 import com.appcnd.potato.generate.constant.BootConstant;
@@ -24,7 +24,6 @@ import com.appcnd.potato.meta.conf.form.search.SearchForm;
 import com.appcnd.potato.meta.conf.form.storage.HuaweiStorage;
 import com.appcnd.potato.meta.conf.form.storage.QiniuStorage;
 import com.appcnd.potato.meta.conf.form.storage.Storage;
-import com.appcnd.potato.meta.conf.table.UIFollowTable;
 import com.appcnd.potato.meta.conf.table.UIMainTable;
 import com.appcnd.potato.model.param.GenerateParam;
 import com.appcnd.potato.model.po.Meta;
@@ -33,7 +32,6 @@ import com.appcnd.potato.properties.CoreProperties;
 import com.appcnd.potato.service.IGenerateService;
 import com.appcnd.potato.util.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringSubstitutor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,12 +84,8 @@ public class GenerateServiceImpl implements IGenerateService {
     }
 
     private void check(Config config) {
-        if (config.getDbConf() == null) {
-            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置");
-        }
-        if (config.getTable() == null) {
-            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "表格未配置");
-        }
+        ExceptionAssert.isNull(config.getDbConf()).throwException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置");
+        ExceptionAssert.isNull(config.getTable()).throwException(HttpStatus.SYSTEM_ERROR.getCode(), "表格未配置");
     }
 
     private GenerateContext getContext(Integer id, Config config, boolean isBoot) {
@@ -346,17 +340,15 @@ public class GenerateServiceImpl implements IGenerateService {
         }
         if (apiConf.getUri() != null && !apiConf.getUri().isEmpty()) {
             BootResult bootResult = generateBoot.getLoaded(apiConf.getUri());
-            if (bootResult != null && !bootResult.getId().equals(id)) {
-                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "页面路由: " + apiConf.getUri() +
-                        " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
-            }
+            ExceptionAssert.isTrue(bootResult != null && !bootResult.getId().equals(id))
+                    .throwException(HttpStatus.PARAM_ERROR.getCode(), "页面路由: " + apiConf.getUri() +
+                            " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
         }
         if (apiConf.getApiPrefix() != null && !apiConf.getApiPrefix().isEmpty()) {
             BootResult bootResult = generateBoot.getLoadedByApi(coreProperties.getPath() + apiConf.getApiPrefix());
-            if (bootResult != null && !bootResult.getId().equals(id)) {
-                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "http接口前缀: " + apiConf.getApiPrefix() +
-                        " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
-            }
+            ExceptionAssert.isTrue(bootResult != null && !bootResult.getId().equals(id))
+                    .throwException(HttpStatus.PARAM_ERROR.getCode(), "http接口前缀: " + apiConf.getApiPrefix() +
+                            " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
         }
     }
 
@@ -366,13 +358,11 @@ public class GenerateServiceImpl implements IGenerateService {
     public void boot(Integer id, Integer version) throws Exception {
         synchronized (id.toString().intern()) {
             Config config = getConfig(id);
-            if (!config.getBasic().getVersion().equals(version)) {
-                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
-            }
+            ExceptionAssert.isTrue(!config.getBasic().getVersion().equals(version))
+                    .throwException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
             int a = metaDao.updateLoaded(id, config.getBasic().getVersion(), true);
-            if (a == 0) {
-                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
-            }
+            ExceptionAssert.isTrue(a == 0)
+                    .throwException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
             if (generateBoot.getLoaded(id) != null) {
                 return;
             }
@@ -483,9 +473,8 @@ public class GenerateServiceImpl implements IGenerateService {
     public void unBoot(Integer id, Integer version) {
         synchronized (id.toString().intern()) {
             int a = metaDao.updateLoaded(id, version, false);
-            if (a == 0) {
-                throw new HandlerException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
-            }
+            ExceptionAssert.isTrue(a == 0)
+                    .throwException(HttpStatus.PARAM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
             unBoot(id);
         }
     }
@@ -493,9 +482,7 @@ public class GenerateServiceImpl implements IGenerateService {
     @Override
     public Config getConfig(Integer id) {
         Meta po = metaDao.selectById(id);
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         Config config = new Config();
         Basic basic = new Basic();
         basic.setTitle(po.getTitle());

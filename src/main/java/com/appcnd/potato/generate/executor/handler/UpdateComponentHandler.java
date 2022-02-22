@@ -1,6 +1,6 @@
 package com.appcnd.potato.generate.executor.handler;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.generate.annotation.AnnotationInfo;
 import com.appcnd.potato.generate.context.*;
 import com.appcnd.potato.generate.executor.ComponentExecutor;
@@ -183,7 +183,7 @@ public class UpdateComponentHandler extends ComponentHandler {
                                 .append("(new ").append(java.sql.Time.class.getName()).append("(")
                                 .append(System.class.getName()).append(".currentTimeMillis()));\n");
                     } else {
-                        throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "数据格式不支持");
+                        ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR.getCode(), "数据格式不支持");
                     }
                 } else if (updateTimeElement.getTimeFormatType() == TimeFormatType.LONG) {
                     serviceImplMethod.addContentClass(System.class.getName());

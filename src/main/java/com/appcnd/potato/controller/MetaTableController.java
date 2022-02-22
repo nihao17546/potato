@@ -1,6 +1,6 @@
 package com.appcnd.potato.controller;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.db.FollowTable;
@@ -29,9 +29,7 @@ public class MetaTableController {
     @ResponseBody
     public String info(@RequestParam Integer id) {
         MetaVO metaVO = metaService.getDbAndTable(id);
-        if (metaVO.getDbConf() == null) {
-            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置，请先配置数据库");
-        }
+        ExceptionAssert.isNull(metaVO.getDbConf()).throwException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置，请先配置数据库");
         check(metaVO.getDbConf(), metaVO.getTable());
         HttpResult result = HttpResult.success().pull("version", metaVO.getVersion());
         List<UIColumn> uiColumns = DbTransfer.getMainUIColumns(metaVO.getDbConf());

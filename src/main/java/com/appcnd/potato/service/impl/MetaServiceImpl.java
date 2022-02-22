@@ -1,7 +1,7 @@
 package com.appcnd.potato.service.impl;
 
 import com.appcnd.potato.dao.MetaDao;
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.generate.boot.BootResult;
 import com.appcnd.potato.generate.boot.GenerateBoot;
 import com.appcnd.potato.meta.conf.api.ApiConf;
@@ -48,9 +48,7 @@ public class MetaServiceImpl implements IMetaService {
 
     private void checkName(Integer id, String name) {
         List<Meta> list = metaDao.selectByNameAndNeId(id, name);
-        if (list != null && !list.isEmpty()) {
-            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "配置名称已存在");
-        }
+        ExceptionAssert.isEmpty(list).throwException(HttpStatus.SYSTEM_ERROR.getCode(), "配置名称已存在");
     }
 
     @Override
@@ -142,16 +140,12 @@ public class MetaServiceImpl implements IMetaService {
             meta.setApi(CommonUtil.serialize(metaApiParam.getConfig()));
         }
         Integer version = metaDao.selectVersionById(param.getId());
-        if (version == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(version).throwException(HttpStatus.NOT_FOUND);
         meta.setId(param.getId());
         meta.setVersion(version);
         meta.setUpdateTime(new Date());
         int a = metaDao.update(meta);
-        if (a == 0) {
-            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
-        }
+        ExceptionAssert.isTrue(a == 0).throwException(HttpStatus.SYSTEM_ERROR.getCode(), "数据已被修改，请刷新后重新操作");
         generateService.unBoot(param.getId());
     }
 
@@ -192,54 +186,42 @@ public class MetaServiceImpl implements IMetaService {
     @Override
     public MetaVO getDb(Integer id) {
         Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","version"));
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         return transfer(po);
     }
 
     @Override
     public MetaVO getDbAndTable(Integer id) {
         Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`table`","version"));
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         return transfer(po);
     }
 
     @Override
     public MetaVO getDbAndSearch(Integer id) {
         Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`search`","version"));
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         return transfer(po);
     }
 
     @Override
     public MetaVO getDbAndOperate(Integer id) {
         Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`operate`","version"));
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         return transfer(po);
     }
 
     @Override
     public MetaVO getDbAnStorage(Integer id) {
         Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`storage`","version"));
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         return transfer(po);
     }
 
     @Override
     public MetaVO getDbAndApi(Integer id) {
         Meta po = metaDao.selectColumnsById(id, Arrays.asList("id","db","`api`","version"));
-        if (po == null) {
-            throw new HandlerException(HttpStatus.NOT_FOUND);
-        }
+        ExceptionAssert.ifNull(po).throwException(HttpStatus.NOT_FOUND);
         return transfer(po);
     }
 

@@ -1,6 +1,6 @@
 package com.appcnd.potato.controller;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.model.param.MetaStorageParam;
 import com.appcnd.potato.model.vo.HttpResult;
 import com.appcnd.potato.model.vo.HttpStatus;
@@ -22,9 +22,7 @@ public class MetaStorageController {
     @ResponseBody
     public String info(@RequestParam Integer id) {
         MetaVO metaVO = metaService.getDbAnStorage(id);
-        if (metaVO.getDbConf() == null) {
-            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置，请先配置数据库");
-        }
+        ExceptionAssert.isNull(metaVO.getDbConf()).throwException(HttpStatus.SYSTEM_ERROR.getCode(), "数据库未配置，请先配置数据库");
         return HttpResult.success().pull(metaVO).json();
     }
 

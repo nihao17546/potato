@@ -1,12 +1,11 @@
 package com.appcnd.potato.generate.boot;
 
-import com.appcnd.potato.exception.HandlerException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.model.vo.HttpStatus;
 import com.appcnd.potato.properties.CoreProperties;
 import com.appcnd.potato.util.CommonUtil;
 import com.appcnd.potato.util.SpringContextUtil;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.ibatis.builder.xml.XMLMapperBuilder;
 import org.apache.ibatis.mapping.Environment;
 import org.apache.ibatis.session.Configuration;
@@ -148,7 +147,7 @@ public class GenerateBoot {
                 continue;
             } catch (Exception e) {
                 log.error("解析class: {} 异常", className, e);
-                throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析class:" + className + "异常");
+                ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR.getCode(), "解析class:" + className + "异常");
             }
             if (classLoader != null) {
                 if (classLoader instanceof URLClassLoader) {
@@ -171,7 +170,7 @@ public class GenerateBoot {
                             }
                         } catch (Exception e) {
                             log.error("解析classpath: {} 异常", path, e);
-                            throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析classpath:" + path + "异常");
+                            ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR.getCode(), "解析classpath:" + path + "异常");
                         }
                     }
                 }
@@ -185,7 +184,7 @@ public class GenerateBoot {
                     jarFile = new JarFile(jar);
                 } catch (Exception e) {
                     log.error("解析jar: {} 异常", jar, e);
-                    throw new HandlerException(HttpStatus.SYSTEM_ERROR.getCode(), "解析jar:" + jar + "异常");
+                    ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR.getCode(), "解析jar:" + jar + "异常");
                 }
                 for (Enumeration<JarEntry> e = jarFile.entries(); e.hasMoreElements();) {
                     JarEntry jarEntry = e.nextElement();
@@ -396,7 +395,7 @@ public class GenerateBoot {
                     log.info("成功注册Service:{}", springContextUtil.getBean(beanId));
                 } catch (Exception e) {
                     log.error("注册Service异常:\n{}", java.getSource(), e);
-                    throw new HandlerException(HttpStatus.SYSTEM_ERROR);
+                    ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR);
                 }
             }
             for (BootResult.Java java : bootResult.getControllers()) {
@@ -407,7 +406,7 @@ public class GenerateBoot {
                     log.info("成功注册Controller:{}", springContextUtil.getBean(beanId));
                 } catch (Exception e) {
                     log.error("注册Controller异常:\n{}", java.getSource(), e);
-                    throw new HandlerException(HttpStatus.SYSTEM_ERROR);
+                    ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR);
                 }
             }
         } catch (Exception e) {
