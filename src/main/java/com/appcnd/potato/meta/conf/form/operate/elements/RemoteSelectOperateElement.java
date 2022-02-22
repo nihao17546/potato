@@ -3,6 +3,7 @@ package com.appcnd.potato.meta.conf.form.operate.elements;
 import com.appcnd.potato.meta.conf.form.annotition.HtmlField;
 import com.appcnd.potato.meta.conf.form.enums.ElementSize;
 import com.appcnd.potato.meta.conf.form.operate.enums.OperateElementType;
+import com.appcnd.potato.util.CommonUtil;
 import lombok.Data;
 
 import java.util.Objects;
@@ -24,6 +25,12 @@ public class RemoteSelectOperateElement extends OperateElement {
     private String sql;
     private String labelColumn;
     private String valueColumn;
+
+    public void setSql(String sql) {
+        // 校验sql合法性
+        CommonUtil.checkSelectSql(sql);
+        this.sql = sql;
+    }
 
     @Override
     public String getHtml() {

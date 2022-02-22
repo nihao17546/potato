@@ -1,7 +1,13 @@
 package com.appcnd.potato.util;
 
+import com.alibaba.druid.sql.ast.SQLStatement;
+import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
+import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
+import com.alibaba.druid.sql.parser.ParserException;
+import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.model.vo.HttpResult;
 import com.alibaba.fastjson.JSON;
+import com.appcnd.potato.model.vo.HttpStatus;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
@@ -419,6 +425,17 @@ public class CommonUtil {
             chars[0] = (char) a;
         }
         return new String(chars);
+    }
+
+    public static void checkSelectSql(String sql) {
+        try {
+            MySqlStatementParser parser = new MySqlStatementParser(sql);
+            SQLStatement statement = parser.parseStatement();
+            ExceptionAssert.isTrue(!(statement instanceof SQLSelectStatement))
+                    .throwException(HttpStatus.SYSTEM_ERROR.getCode(), "远程下拉菜单sql校验错误");
+        } catch (ParserException e) {
+            ExceptionAssert.throwException(HttpStatus.SYSTEM_ERROR.getCode(), "远程下拉菜单sql解析错误");
+        }
     }
 
 }
