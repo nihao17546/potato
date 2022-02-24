@@ -342,14 +342,22 @@ public class GenerateServiceImpl implements IGenerateService {
             BootResult bootResult = generateBoot.getLoaded(apiConf.getUri());
             ExceptionAssert.isTrue(bootResult != null && !bootResult.getId().equals(id))
                     .throwException(HttpStatus.PARAM_ERROR.getCode(), "页面路由: " + apiConf.getUri() +
-                            " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
+                            " 已存在，所在项目: " + (bootResult != null ? bootResult.getName() : "") + "，请重新设置");
         }
         if (apiConf.getApiPrefix() != null && !apiConf.getApiPrefix().isEmpty()) {
             BootResult bootResult = generateBoot.getLoadedByApi(coreProperties.getPath() + apiConf.getApiPrefix());
             ExceptionAssert.isTrue(bootResult != null && !bootResult.getId().equals(id))
                     .throwException(HttpStatus.PARAM_ERROR.getCode(), "http接口前缀: " + apiConf.getApiPrefix() +
-                            " 已存在，所在项目: " + bootResult.getName() + "，请重新设置");
+                            " 已存在，所在项目: " + (bootResult != null ? bootResult.getName() : "") + "，请重新设置");
         }
+    }
+
+    public static void main(String[] args) {
+        BootResult bootResult = null;
+        Integer id = 1;
+        ExceptionAssert.isTrue(bootResult != null && !bootResult.getId().equals(id))
+                .throwException(HttpStatus.PARAM_ERROR.getCode(), "http接口前缀: " + "" +
+                        " 已存在，所在项目: " + (bootResult != null ? bootResult.getName() : "") + "，请重新设置");
     }
 
     Pattern pattern = Pattern.compile("namespace=\\\"[a-zA-Z\\.]+\\\"");

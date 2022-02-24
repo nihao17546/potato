@@ -1,15 +1,8 @@
 package com.appcnd.potato.meta.conf.form.search.element;
 
-import com.alibaba.druid.sql.ast.SQLStatement;
-import com.alibaba.druid.sql.ast.statement.SQLSelectStatement;
-import com.alibaba.druid.sql.dialect.mysql.parser.MySqlStatementParser;
-import com.alibaba.druid.sql.parser.ParserException;
-import com.appcnd.potato.exception.ExceptionAssert;
 import com.appcnd.potato.meta.conf.form.annotition.HtmlField;
 import com.appcnd.potato.meta.conf.form.enums.ElementSize;
 import com.appcnd.potato.meta.conf.form.search.enums.SearchElementType;
-import com.appcnd.potato.model.vo.HttpStatus;
-import com.appcnd.potato.util.CommonUtil;
 import lombok.Data;
 
 import java.util.Objects;
@@ -35,12 +28,6 @@ public class RemoteSelectSearchElement extends SearchElement {
     private String sql;
     private String labelColumn;
     private String valueColumn;
-
-    public void setSql(String sql) {
-        // 校验sql合法性
-        CommonUtil.checkSelectSql(sql);
-        this.sql = sql;
-    }
 
     @Override
     public String getOptions(String field) {

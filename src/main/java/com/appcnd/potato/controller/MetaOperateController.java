@@ -7,11 +7,13 @@ import com.appcnd.potato.meta.conf.db.FollowTable;
 import com.appcnd.potato.meta.conf.form.operate.OperateForm;
 import com.appcnd.potato.meta.conf.form.operate.Unique;
 import com.appcnd.potato.meta.conf.form.operate.elements.OperateElement;
+import com.appcnd.potato.meta.conf.form.operate.elements.RemoteSelectOperateElement;
 import com.appcnd.potato.model.param.MetaOperateParam;
 import com.appcnd.potato.model.vo.HttpResult;
 import com.appcnd.potato.model.vo.HttpStatus;
 import com.appcnd.potato.model.vo.MetaVO;
 import com.appcnd.potato.service.IMetaService;
+import com.appcnd.potato.util.CommonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -142,6 +144,14 @@ public class MetaOperateController {
     @PostMapping("/update")
     @ResponseBody
     public String update(@RequestBody MetaOperateParam param) {
+        if (param.getConfig().getElements() != null) {
+            for (OperateElement element : param.getConfig().getElements()) {
+                if (element instanceof RemoteSelectOperateElement) {
+                    RemoteSelectOperateElement remoteSelectOperateElement = (RemoteSelectOperateElement) element;
+                    CommonUtil.checkSelectSql(remoteSelectOperateElement.getSql());
+                }
+            }
+        }
         metaService.updateOperate(param);
         return HttpResult.success().json();
     }

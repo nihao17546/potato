@@ -5,6 +5,7 @@ import com.appcnd.potato.meta.conf.db.Column;
 import com.appcnd.potato.meta.conf.db.DbConf;
 import com.appcnd.potato.meta.conf.db.FollowTable;
 import com.appcnd.potato.meta.conf.form.search.SearchForm;
+import com.appcnd.potato.meta.conf.form.search.element.RemoteSelectSearchElement;
 import com.appcnd.potato.meta.conf.form.search.element.SearchElement;
 import com.appcnd.potato.meta.conf.table.UIColumn;
 import com.appcnd.potato.meta.trans.DbTransfer;
@@ -13,6 +14,7 @@ import com.appcnd.potato.model.vo.HttpResult;
 import com.appcnd.potato.model.vo.HttpStatus;
 import com.appcnd.potato.model.vo.MetaVO;
 import com.appcnd.potato.service.IMetaService;
+import com.appcnd.potato.util.CommonUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -142,6 +144,14 @@ public class MetaSearchController {
     @PostMapping("/update")
     @ResponseBody
     public String update(@RequestBody MetaSearchParam param) {
+        if (param.getConfig().getElements() != null) {
+            for (SearchElement element : param.getConfig().getElements()) {
+                if (element instanceof RemoteSelectSearchElement) {
+                    RemoteSelectSearchElement remoteSelectSearchElement = (RemoteSelectSearchElement) element;
+                    CommonUtil.checkSelectSql(remoteSelectSearchElement.getSql());
+                }
+            }
+        }
         metaService.updateSearch(param);
         return HttpResult.success().json();
     }
